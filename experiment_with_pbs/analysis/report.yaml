@@ -1,0 +1,96 @@
+# ── Baseline (working-point) ────────────────────────────────────────────
+baseline:
+  snr_db: 8.0
+  freq_sep: 0.03
+  eig_mag: 0.98
+  eig_mag_spread: 0.0
+  delays_over_timesteps: 0.325
+  spatial_dim: 30
+  temporal_dim: 200
+  top_amplitude: 1.0
+  num_modes: 5
+  max_rank: 20
+  artificial_damping: 1.0
+
+
+
+# ── Global filters — applied before plotting ───────────────────────────
+filters:
+  methods:
+#    - AIC
+    - AICc
+    - BIC
+    - GAP
+    - dcDMD
+#    - MVG-SAMP
+    - ModeMatDMD
+    - ModeEnergy
+    - BlockVandermondeMatching
+    - SMS
+
+  noise_modes: ["gaussian", "hetero", "ar1"]         # empty → keep all
+
+# ── Axis scales for parameters and metrics log or lin ───────────────────────────
+axis_scale:
+  eigenvalue_magnitude: log
+  freq_sep: log
+
+# ── Report content — order matters (appears in final file) ─────────────
+plots:
+  sweeps:
+    - snr_db
+    - freq_sep
+    - eig_mag
+    - delays_over_timesteps
+    - top_amplitude
+    - spatial_dim
+    - temporal_dim
+    - max_rank
+    - num_modes
+    - artificial_damping
+#  heatmaps:
+#    - [snr_db, freq_sep]
+#    - [snr_db, eig_mag]
+
+options:                       # NEW
+  report_auc:    true          # compute AUC for 1-D sweeps
+  auc_metrics:   ["f1"]   # only integrate these
+  heatmap_cmap:  "magma"       # global colour-map for all heat-maps
+  closest_match: true        # NEW → allow nearest numeric if exact not found
+
+style:                       # NEW  ──────────────
+  markers:       false       # true → seaborn markers per method
+  line_width:    1.5         # matplotlib linewidth
+  font_scale:    0.9         # < 1.0 shrinks all fonts
+  sweep_height:  5           # inches per facet row
+  sweep_aspect:  1.6         # width / height
+  show_baseline: true       # draw dashed x-line; omit or false → no line
+  auc_table_fontsize: 8  # default 8
+  auc_table_colwidth: 0.15  # figure-fraction; default 0.8
+  auc_table_gap: 0.8 # extra bottom margin; default 0.15
+  auc_table_tie_eps: 0.0001
+  # fixed look-up tables  (key = method name)
+  palette:
+    ModeMatDMD: "#1f77b4"
+    ModeEnergy: "#ff7f0e"
+    BlockVandermondeMatching: "#2ca02c"
+    AICc: "#17becf"
+    BIC: "#7f7f7f"
+    GAP: "#bcbd22"
+    dcDMD: "#e377c2"
+
+  dashes:
+    ModeMatDMD: ""                # solid line
+    ModeEnergy: ""
+    BlockVandermondeMatching: ""
+    SMS: ""
+
+    default: [3, 4]               # dashed for all others
+
+
+# ── Plotting options ───────────────────────────────────────────────────
+metric: "order_hit_prob"      # or order_diff_mean / order_diff_std
+ci_bands: false                 # true → ±std on diff metrics
+output_dir: 'C:\Users\Yoav\OneDrive - Technion\HadasBenistyLab\experiments\DMD\order-detection\020725_no_damp'
+report_format: html
+save_plots: true
