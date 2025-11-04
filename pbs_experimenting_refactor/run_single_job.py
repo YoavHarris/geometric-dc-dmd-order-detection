@@ -28,12 +28,12 @@ from algorithms.info_criteria import (
     InformationCriteriaOrderEstimator,
     gap_ranks,
 )
-from algorithms.algo_utils import subspace_stats
 
 from dmd.dmd_tools import DelayEmbedding
 from utils.data_generation import DMDDataGenerator
 from utils.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
 from utils.visualizations import imshow_complex, plot_mode_table
+from analysis.subspace_analysis import compute_subspace_principal_angles
 
 
 # Methods that require delay embedding (num_delays > 1)
@@ -67,6 +67,13 @@ def _skip_run_with_empty_csv(
         "abs_diff_mean", "abs_diff_std", "bias_frac_over", "bias_frac_under",
         "bias_skewness", "order_hit_prob", "mean_time_sec",
         "precision", "recall", "f1", "accuracy", "tp", "fp", "fn", "tn",
+        # subspace proximity
+        "max_pa_clean_mean", "max_pa_clean_std",
+        "sine_max_pa_clean_mean", "sine_max_pa_clean_std",
+        "mean_pa_clean_mean", "mean_pa_clean_std",
+        "max_pa_practical_mean", "max_pa_practical_std",
+        "sine_max_pa_practical_mean", "sine_max_pa_practical_std",
+        "mean_pa_practical_mean", "mean_pa_practical_std",
     ]
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -93,6 +100,60 @@ def cluster_scores(
     )
     labels = clustering.fit(scores).labels_
     return labels.astype(int), int(labels.sum())
+
+
+def compute_subspace_proximity_stats(
+    clean_angles: np.ndarray,
+    practical_angles: np.ndarray,
+) -> Dict[str, float]:
+    """
+    Compute summary statistics from principal angle arrays.
+    
+    Returns dictionary with 6 keys:
+        - max_pa_clean, sine_max_pa_clean, mean_pa_clean
+        - max_pa_practical, sine_max_pa_practical, mean_pa_practical
+    """
+    return {
+        "max_pa_clean": float(clean_angles.max()),
+        "sine_max_pa_clean": float(np.sin(clean_angles.max())),
+        "mean_pa_clean": float(clean_angles.mean()),
+        "max_pa_practical": float(practical_angles.max()),
+        "sine_max_pa_practical": float(np.sin(practical_angles.max())),
+        "mean_pa_practical": float(practical_angles.mean()),
+    }
+
+
+def compute_subspace_proximity_analysis(
+    noisy_signal: np.ndarray,
+    clean_signal: np.ndarray,
+    true_modes: np.ndarray,
+    true_eigenvalues: np.ndarray,
+    num_modes: int,
+    num_delays: int,
+) -> Dict[str, float]:
+    """
+    Compute subspace proximity summary statistics.
+    
+    Returns dictionary with 6 keys: max/sine_max/mean for clean and practical angles.
+    """
+    # Delay embed both signals
+    delay_emb_noisy = DelayEmbedding(L=num_delays).transform(noisy_signal)
+    delay_emb_clean = DelayEmbedding(L=num_delays).transform(clean_signal)
+    
+    # Compute principal angles
+    angle_results = compute_subspace_principal_angles(
+        embedded_data=delay_emb_noisy[:, :-1],
+        true_modes=true_modes,
+        true_eigenvalues=true_eigenvalues,
+        num_modes=num_modes,
+        embedded_signal=delay_emb_clean[:, :-1],
+    )
+    
+    # Extract summary statistics
+    return compute_subspace_proximity_stats(
+        clean_angles=angle_results["clean_subspace_angles"],
+        practical_angles=angle_results["practical_subspace_angles"],
+    )
 
 
 class MethodEvaluator:
@@ -243,8 +304,14 @@ class MetricsTracker:
         self.metrics = defaultdict(
             lambda: dict(tp=0, fp=0, fn=0, tn=0, order_diffs=[], order_hits=[])
         )
+        # Subspace proximity stats (collected per iteration)
         self.subspace_stats = {
-            key: [] for key in ["overlap_rho", "chordal_dist", "sin_theta_max"]
+            "max_pa_clean": [],
+            "sine_max_pa_clean": [],
+            "mean_pa_clean": [],
+            "max_pa_practical": [],
+            "sine_max_pa_practical": [],
+            "mean_pa_practical": [],
         }
     
     def update(
@@ -269,11 +336,10 @@ class MetricsTracker:
             rec["fn"] += int((~p & t).sum())
             rec["tn"] += int((~p & ~t).sum())
     
-    def add_subspace_stats(self, stats: dict):
-        """Add subspace statistics."""
+    def add_subspace_proximity_stats(self, stats: Dict[str, float]):
+        """Add subspace proximity statistics from current iteration."""
         for key, value in stats.items():
-            if key in self.subspace_stats:
-                self.subspace_stats[key].append(value)
+            self.subspace_stats[key].append(value)
     
     def to_dataframe(
         self,
@@ -325,13 +391,20 @@ class MetricsTracker:
             
             summary_rows.append(summary)
         
-        # Add subspace statistics
+        # Add subspace proximity statistics (mean and std across iterations)
+        subspace_summary = {}
         for key, values in self.subspace_stats.items():
             if values:
-                values_arr = np.array(values)
-                for row in summary_rows:
-                    row[f"{key}_mean"] = values_arr.mean()
-                    row[f"{key}_std"] = values_arr.std(ddof=0)
+                arr = np.array(values)
+                subspace_summary[f"{key}_mean"] = arr.mean()
+                subspace_summary[f"{key}_std"] = arr.std(ddof=1)
+            else:
+                subspace_summary[f"{key}_mean"] = np.nan
+                subspace_summary[f"{key}_std"] = np.nan
+        
+        # Add subspace stats to all rows
+        for row in summary_rows:
+            row.update(subspace_summary)
         
         return pd.DataFrame(summary_rows)
 
@@ -351,20 +424,6 @@ def compute_dmd_and_ground_truth(
     true_mask[true_idx] = 1
     
     return proj_dmd, exact_dmd, true_mask
-
-
-def compute_subspace_stats_for_iteration(
-    exact_modes: np.ndarray,
-    gt_indices: np.ndarray,
-    svd_subspace: np.ndarray,
-    num_modes: int,
-) -> dict:
-    """Compute subspace statistics for current iteration."""
-    return subspace_stats(
-        exact_modes[:, gt_indices],
-        svd_subspace[:, :num_modes],
-        num_modes,
-    )
 
 
 def run_experiment(job_config: Dict, plot: bool = False) -> None:
@@ -461,23 +520,12 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
         proj_dmd, exact_dmd, true_mask = compute_dmd_and_ground_truth(
             sig, max_rank, num_delays, gt_eigs
         )
-        gt_indices = get_gt_eigs_indices(gt_eigs, proj_dmd.eigs)
         
-        # Delay embedding for subspace analysis
-        delay_emb_sig = DelayEmbedding(L=num_delays).transform(sig)
-        U, s, Vh = np.linalg.svd(delay_emb_sig[:, :-1])
-        U_M = U[:, :max_rank]
-        
-        # Align modes
-        aligned_ex_modes, _ = align_modes_and_amplitudes_phases(
-            exact_dmd.modes, exact_dmd.amplitudes
+        # Subspace proximity analysis
+        proximity_stats = compute_subspace_proximity_analysis(
+            sig, sig_clean, modes, gt_eigs, num_modes, num_delays
         )
-        
-        # Subspace statistics
-        stats = compute_subspace_stats_for_iteration(
-            aligned_ex_modes, gt_indices, U_M, num_modes
-        )
-        metrics_tracker.add_subspace_stats(stats)
+        metrics_tracker.add_subspace_proximity_stats(proximity_stats)
         
         # Evaluate all methods
         order_estimates, pred_masks = method_evaluator.evaluate(
