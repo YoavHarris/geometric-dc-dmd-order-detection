@@ -50,7 +50,7 @@ def build_pbs_script(
         f"#PBS -e {os.path.join(logs_dir, f'job_{job_id:04d}.err')}",
         "",
         f"cd {code_dir}",
-        f"{interpreter} {worker_script} {job_config_path}",
+        f"{interpreter} {worker_script} run {job_config_path}",
     ]
     
     return "\n".join(lines)

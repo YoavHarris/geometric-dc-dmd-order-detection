@@ -16,6 +16,7 @@ import pandas as pd
 import scipy
 from scipy import optimize
 from tqdm import tqdm
+import fire
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -544,15 +545,14 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
     )
 
 
-def main():
-    """Main entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: python run_single_job.py <job_config.yaml> [--plot]")
-        sys.exit(1)
+def run(config_path: str, plot: bool = False) -> None:
+    """
+    Run a single experiment job from YAML config.
     
-    config_path = sys.argv[1]
-    plot = "--plot" in sys.argv
-    
+    Args:
+        config_path: Path to job configuration YAML file
+        plot: Whether to generate plots (default: False)
+    """
     # Load job configuration
     with open(config_path, "r", encoding="utf-8") as f:
         job_config = yaml.safe_load(f)
@@ -568,4 +568,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    fire.Fire(run)

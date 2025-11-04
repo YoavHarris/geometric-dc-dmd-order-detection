@@ -24,7 +24,7 @@ Successfully refactored the PBS experiment system with the following improvement
 ```
 pbs_experimenting_refactor/
 ├── experiment_runner.py          # Main CLI (Fire-based)
-├── run_single_job.py             # Worker (reads YAML)
+├── run_single_job.py             # Worker (Fire-based, reads YAML)
 ├── config_validator.py           # Validation logic
 ├── param_generator.py            # Parameter sweeps
 ├── job_config_builder.py         # Build job YAMLs
@@ -35,6 +35,18 @@ pbs_experimenting_refactor/
 ├── README.md                     # Documentation
 └── REFACTORING_NOTES.md          # This file
 ```
+
+### 🔥 Python Fire Throughout
+
+Both CLI scripts use Python Fire for consistency:
+- `experiment_runner.py`: Fire-based with `ExperimentRunner` class
+- `run_single_job.py`: Fire-based with `run()` function
+
+Benefits:
+- Consistent interface
+- Auto-generated help
+- Flexible argument syntax
+- No manual argparse boilerplate
 
 ## No Changes Needed to Existing Methods
 
@@ -185,7 +197,7 @@ Column structure remains the same:
 
 2. **Manual job test:**
    ```bash
-   python run_single_job.py job_configs/job0000.yaml --plot
+   python run_single_job.py run job_configs/job0000.yaml --plot
    ```
 
 3. **Validate config:**

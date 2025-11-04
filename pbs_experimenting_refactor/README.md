@@ -219,10 +219,13 @@ For debugging, run a single job manually:
 
 ```bash
 # Run a specific job
-python run_single_job.py experiment_output/job_configs/job0042.yaml
+python run_single_job.py run experiment_output/job_configs/job0042.yaml
 
 # With plotting
-python run_single_job.py experiment_output/job_configs/job0042.yaml --plot
+python run_single_job.py run experiment_output/job_configs/job0042.yaml --plot
+
+# Fire also supports this syntax
+python run_single_job.py run --config_path=experiment_output/job_configs/job0042.yaml --plot
 ```
 
 ## Validation
