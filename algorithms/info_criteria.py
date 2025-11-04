@@ -32,7 +32,7 @@ class InformationCriteriaOrderEstimator:
 
     def fit(
         self,
-        X: NDArray[np.complexfloating],
+        data: NDArray[np.complexfloating],
         max_rank: int,
         min_rank: int = 1,
         plot: bool = False,
@@ -41,26 +41,27 @@ class InformationCriteriaOrderEstimator:
 
         Parameters
         ----------
-        X : ndarray of shape (D, N)
-            Snapshot matrix (*D* state variables over *N* time steps).
+        data : array (spatial_dim, num_snapshots)
+            Snapshot matrix.
         max_rank : int
-            Maximum rank *m* to test (inclusive).
+            Maximum rank to test (inclusive).
         min_rank : int, default 1
-            Minimum rank *m* to test (inclusive).
+            Minimum rank to test (inclusive).
         plot : bool, default False
             Display the criterion curves.
 
         Returns
         -------
         dict
-            ``{"AIC": m_aic, "AICc": m_aicc, "BIC": m_bic}`` — the rank
-            that minimises each information criterion.
+            {"AIC": rank_aic, "AICc": rank_aicc, "BIC": rank_bic} — the rank
+            that minimizes each information criterion.
         """
 
-        D, N_total = X.shape
-        L = self.num_delays
-        N_tilde = N_total - L + 1  # usable snapshots after delay embedding
-        if N_tilde <= 1:
+        spatial_dim, num_snapshots = data.shape
+        num_delays = self.num_delays
+        num_usable_snapshots = num_snapshots - num_delays + 1
+        
+        if num_usable_snapshots <= 1:
             raise ValueError("num_delays too large for the number of snapshots")
 
         self.ranks.clear()
@@ -68,20 +69,22 @@ class InformationCriteriaOrderEstimator:
         self._aicc.clear()
         self._bic.clear()
 
-        for r in range(min_rank, max_rank + 1):
-            # --- Fit rank‑m DMD (user must supply 'fit_dmd') -------------
-            dmd = fit_dmd(X, num_delays=L, svd_rank=r)
-            X_hat = dmd.reconstructed_data[:, L - 1 : L - 1 + N_tilde]
+        for rank in range(min_rank, max_rank + 1):
+            # Fit rank-constrained DMD
+            dmd = fit_dmd(data, num_delays=num_delays, svd_rank=rank)
+            reconstruction = dmd.reconstructed_data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots]
 
-            residual = X[:, L - 1 : L - 1 + N_tilde] - X_hat
-            rss = float(np.sum(np.abs(residual) ** 2))
+            residual = data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots] - reconstruction
+            residual_sum_squares = float(np.sum(np.abs(residual) ** 2))
 
-            n_obs = D * N_tilde  # complex observations treated as units
-            n_params = 2 * r * (D + 1) + 1  # eigenvalues, modes, noise variance
+            num_observations = spatial_dim * num_usable_snapshots
+            num_parameters = 2 * rank * (spatial_dim + 1) + 1  # eigenvalues, modes, noise variance
 
-            aic, aicc, bic = self._compute_information_criteria(rss, n_obs, n_params)
+            aic, aicc, bic = self._compute_information_criteria(
+                residual_sum_squares, num_observations, num_parameters
+            )
 
-            self.ranks.append(r)
+            self.ranks.append(rank)
             self._aic.append(aic)
             self._aicc.append(aicc)
             self._bic.append(bic)
@@ -119,19 +122,23 @@ class InformationCriteriaOrderEstimator:
 
     @staticmethod
     def _compute_information_criteria(
-        rss: float,
-        n_obs: int,
-        n_params: int,
+        residual_sum_squares: float,
+        num_observations: int,
+        num_parameters: int,
     ) -> Tuple[float, float, float]:
-        """Return (AIC, AICc, BIC) given residuals, data count, parameter count."""
-        rss = max(rss, np.finfo(float).tiny)  # avoid log(0)
+        """Return (AIC, AICc, BIC) given residuals, observations, and parameters."""
+        # Avoid log(0)
+        residual_sum_squares = max(residual_sum_squares, np.finfo(float).eps)
 
-        aic = 2 * n_obs * np.log(rss / n_obs) + 2 * n_params
-        if n_obs > n_params + 1:
-            aicc = aic + 2 * n_params * (n_params + 1) / (n_obs - n_params - 1)
+        aic = 2 * num_observations * np.log(residual_sum_squares / num_observations) + 2 * num_parameters
+        
+        if num_observations > num_parameters + 1:
+            aicc = aic + 2 * num_parameters * (num_parameters + 1) / (num_observations - num_parameters - 1)
         else:
             aicc = np.inf
-        bic = n_obs * np.log(rss / n_obs) + n_params * np.log(n_obs)
+            
+        bic = num_observations * np.log(residual_sum_squares / num_observations) + num_parameters * np.log(num_observations)
+        
         return aic, aicc, bic
 
     # ------------------------------------------------------------------
@@ -149,14 +156,21 @@ class InformationCriteriaOrderEstimator:
         plt.show()
 
 
-def gap_ranks(X: NDArray[np.floating]) -> int:
+def gap_ranks(data: NDArray[np.floating]) -> int:
     """
     Estimate optimal rank via the largest singular value gap.
 
-    Returns:
+    Parameters
+    ----------
+    data : array
+        Data matrix to analyze.
+
+    Returns
+    -------
+    int
         Estimated rank based on the largest singular value gap.
     """
-    _, s, _ = np.linalg.svd(X, full_matrices=False)
-    gaps = -np.diff(s)
+    _, singular_values, _ = np.linalg.svd(data, full_matrices=False)
+    gaps = -np.diff(singular_values)
     largest_gap_index = np.argmax(gaps)
     return largest_gap_index + 1
