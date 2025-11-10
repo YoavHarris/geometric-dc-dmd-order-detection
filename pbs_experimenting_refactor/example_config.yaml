@@ -10,11 +10,11 @@ experiment:
 # ──────────────────────────────────────────────────────────────────────────────
 methods:
   - AIC
-  - AICc
   - BIC
   - GAP
   - ExactModeNorm
   - STC
+  - ESL-Norm
   - NestedDMD
   - FixedEigenvalueBVFit
 

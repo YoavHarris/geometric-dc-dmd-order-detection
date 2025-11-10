@@ -10,7 +10,6 @@ All bookkeeping is carried out in the *physical* state space of dimension
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -24,11 +23,11 @@ class InformationCriteriaOrderEstimator:
         self.num_delays: int = num_delays
 
         # Filled by ``fit``
-        self.ranks: List[int] = []
-        self._aic: List[float] = []
-        self._aicc: List[float] = []
-        self._bic: List[float] = []
-        self._best: Dict[str, int] = {}
+        self.ranks: list[int] = []
+        self._aic: list[float] = []
+        self._aicc: list[float] = []
+        self._bic: list[float] = []
+        self._best: dict[str, int] = {}
 
     def fit(
         self,
@@ -36,7 +35,7 @@ class InformationCriteriaOrderEstimator:
         max_rank: int,
         min_rank: int = 1,
         plot: bool = False,
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """Run the rank scan and return the best rank for each criterion.
 
         Parameters
@@ -60,7 +59,7 @@ class InformationCriteriaOrderEstimator:
         spatial_dim, num_snapshots = data.shape
         num_delays = self.num_delays
         num_usable_snapshots = num_snapshots - num_delays + 1
-        
+
         if num_usable_snapshots <= 1:
             raise ValueError("num_delays too large for the number of snapshots")
 
@@ -72,13 +71,20 @@ class InformationCriteriaOrderEstimator:
         for rank in range(min_rank, max_rank + 1):
             # Fit rank-constrained DMD
             dmd = fit_dmd(data, num_delays=num_delays, svd_rank=rank)
-            reconstruction = dmd.reconstructed_data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots]
+            reconstruction = dmd.reconstructed_data[
+                :, num_delays - 1 : num_delays - 1 + num_usable_snapshots
+            ]
 
-            residual = data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots] - reconstruction
+            residual = (
+                data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots]
+                - reconstruction
+            )
             residual_sum_squares = float(np.sum(np.abs(residual) ** 2))
 
             num_observations = spatial_dim * num_usable_snapshots
-            num_parameters = 2 * rank * (spatial_dim + 1) + 1  # eigenvalues, modes, noise variance
+            num_parameters = (
+                2 * rank * (spatial_dim + 1) + 1
+            )  # eigenvalues, modes, noise variance
 
             aic, aicc, bic = self._compute_information_criteria(
                 residual_sum_squares, num_observations, num_parameters
@@ -110,7 +116,7 @@ class InformationCriteriaOrderEstimator:
     # ------------------------------------------------------------------
 
     @property
-    def best_ranks(self) -> Dict[str, int]:
+    def best_ranks(self) -> dict[str, int]:
         """Return the cached best ranks (call :py:meth:`fit` first)."""
         if not self._best:
             raise RuntimeError("Call 'fit' before requesting results.")
@@ -125,20 +131,27 @@ class InformationCriteriaOrderEstimator:
         residual_sum_squares: float,
         num_observations: int,
         num_parameters: int,
-    ) -> Tuple[float, float, float]:
+    ) -> tuple[float, float, float]:
         """Return (AIC, AICc, BIC) given residuals, observations, and parameters."""
         # Avoid log(0)
         residual_sum_squares = max(residual_sum_squares, np.finfo(float).eps)
 
-        aic = 2 * num_observations * np.log(residual_sum_squares / num_observations) + 2 * num_parameters
-        
+        aic = (
+            2 * num_observations * np.log(residual_sum_squares / num_observations)
+            + 2 * num_parameters
+        )
+
         if num_observations > num_parameters + 1:
-            aicc = aic + 2 * num_parameters * (num_parameters + 1) / (num_observations - num_parameters - 1)
+            aicc = aic + 2 * num_parameters * (num_parameters + 1) / (
+                num_observations - num_parameters - 1
+            )
         else:
             aicc = np.inf
-            
-        bic = num_observations * np.log(residual_sum_squares / num_observations) + num_parameters * np.log(num_observations)
-        
+
+        bic = num_observations * np.log(
+            residual_sum_squares / num_observations
+        ) + num_parameters * np.log(num_observations)
+
         return aic, aicc, bic
 
     # ------------------------------------------------------------------

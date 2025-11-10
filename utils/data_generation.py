@@ -64,7 +64,9 @@ def get_heteroscedastic_noise(
     ns, nt = shape
     t = np.linspace(0.0, 1.0, nt)
     sigma = sigma_min + (sigma_max - sigma_min) * t  # length-nt
-    noise = rng.standard_normal(size=shape).astype(np.float64) * sigma  # broadcast on rows
+    noise = (
+        rng.standard_normal(size=shape).astype(np.float64) * sigma
+    )  # broadcast on rows
     raw_var = np.mean(noise**2)
     return noise * np.sqrt(total_variance / raw_var)
 
@@ -158,7 +160,7 @@ class DMDDataGenerator:
         self.rho_spec = eigenvalue_magnitude  # scalar or sequence
         self.rho_spread = eigenvalue_magnitude_spread  # None → 0
         self.rho_mode = rho_mode.lower()
-        self.dtheta = frequency_separation
+        self.domega = frequency_separation
         self.snr_db = snr_db
         self.top_amplitude = top_amplitude
         self.dt = dt
@@ -219,25 +221,25 @@ class DMDDataGenerator:
             return self.rng.uniform(lo, hi, size=n_modes).astype(np.float64)
         raise ValueError("rho_mode must be 'random' or 'linspace'")
 
-    def _build_thetas(
-        self, n_modes: int, theta_max: float = 0.2 * np.pi, theta_min: float = 0.0
+    def build_omegas(
+        self, n_modes: int, omega_max: float = 0.2 * np.pi, omega_min: float = 0.0
     ) -> NDArray[np.floating]:
 
-        if (n_modes - 1) * self.dtheta > theta_max - theta_min:
+        if (n_modes - 1) * self.domega > omega_max - omega_min:
             raise ValueError(
-                f"Cannot fit {n_modes} frequencies with separation {self.dtheta} in given range."
+                f"Cannot fit {n_modes} frequencies with separation {self.domega} in given range."
             )
-        theta0_upper_bound = theta_max - (n_modes - 1) * self.dtheta
-        theta0 = self.rng.uniform(theta_min, theta0_upper_bound)
-        thetas = theta0 + np.arange(n_modes) * self.dtheta
-        return thetas
+        omega0_upper_bound = omega_max - (n_modes - 1) * self.domega
+        omega0 = self.rng.uniform(omega_min, omega0_upper_bound)
+        omegas = omega0 + np.arange(n_modes) * self.domega
+        return omegas
 
     def _build_eigenvalues(self, n_modes: int) -> NDArray[np.complexfloating]:
         rho_vec = self._build_rhos(n_modes)
-        theta_vec = self._build_thetas(
+        omega_vec = self.build_omegas(
             n_modes,
         )
-        eigenvalues = rho_vec * np.exp(1j * theta_vec)
+        eigenvalues = rho_vec * np.exp(1j * omega_vec)
         return eigenvalues
 
     def _build_unit_modes(
@@ -289,7 +291,6 @@ class DMDDataGenerator:
     ) -> NDArray[np.complexfloating]:
         power = np.mean(np.abs(X_clean) ** 2)
         var = power / (10 ** (self.snr_db / 10))
-        # TODO: Consider adding a fix term that accounts for num_modes.
         ns, nt = X_clean.shape
 
         if self.noise_mode == "gaussian":
