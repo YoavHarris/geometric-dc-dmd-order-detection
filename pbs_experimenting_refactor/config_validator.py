@@ -381,8 +381,9 @@ def _validate_parameter_compatibility(config: Dict[str, Any]) -> None:
 
     # Check dimension limit
     L_max = int(tau_max * N_max)
+    D_max = np.max(get_values("spatial_dim"))
     MAX_LD = 15_000
-    if L_max * np.min(get_values("spatial_dim") or [1]) > MAX_LD:
+    if L_max * D_max > MAX_LD:
         raise ConfigValidationError(
             f"num_delays * spatial_dim would exceed {MAX_LD}. "
             f"L_max={L_max}, check parameters."
