@@ -1,0 +1,58 @@
+# ===== Single DMD order-detection job =====
+job_id: 1
+output_path: results/example_job.csv
+
+# Reproducibility
+base_random_seed: 1234
+random_seed: 1235
+
+# ---- Parameters for this single job ----
+parameters:
+  # Signal/noise
+  snr_db: 10                # signal-to-noise ratio in decibels
+  noise_mode: gaussian       # noise type used by data generator
+
+  # Spectrum
+  freq_sep: 0.025            # minimum normalized frequency separation
+  eig_mag: 0.98               # eigenvalue magnitude (1.0 = undamped)
+  eig_mag_spread: 0.0        # optional variability in eigenvalue magnitude
+  artificial_damping: 1.0    # <1.0 adds extra decay to the data
+
+  # Dimensions
+  temporal_dim: 200          # number of time steps
+  spatial_dim: 50           # spatial dimension (D)
+  num_modes: 3               # true number of modes
+  top_amplitude: 1.0         # amplitude of the strongest mode
+
+  # Delay embedding
+  delays_over_timesteps: 0.33   # ratio of delays to time steps (L/N)
+
+  # DMD truncation
+  max_rank: 10               # rank used for DMD (>= num_modes)
+
+# ---- Static arguments ----
+static_args:
+  n_iter: 20                # number of Monte Carlo iterations
+  dt: 1.0                   # sampling interval
+  rho_mode: random          # mode for random phase/amplitude generation
+
+# ---- Methods to evaluate ----
+methods:
+  - AIC
+  - BIC
+  - GAP
+  - ExactModeNorm
+  - STC
+  - ESL-Norm
+  - NestedDMD
+  - FixedEigenvalueBVFit
+
+# ---- Clustering configuration ----
+clustering:
+  algorithm: gmm            # can be 'gmm' or 'kmeans'
+  strategy: mean             # can be 'mean', 'median', 'otsu', etc.
+  normalization: min_max    # can be 'min_max' or 'zscore'
+
+# ---- Additional options ----
+options:
+  use_nyquist_cap: True
