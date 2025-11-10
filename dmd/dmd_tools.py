@@ -90,7 +90,7 @@ def align_modes_and_amplitudes_phases(
     Given modes and amplitudes, we produce:
         modes_aligned = modes * diag(exp(i*angle(amplitudes)))
         amplitudes_real = |amplitudes| >= 0
-    
+
     so that modes @ amplitudes == modes_aligned @ amplitudes_real element-wise.
 
     Returns
@@ -116,11 +116,11 @@ def collapse_hankel(
     num_delays: int,
     num_snapshots: int,
     *,
-    agg: str = "mean"
+    agg: str = "mean",
 ) -> NDArray:
     """
     Collapse Hankel (delay-embedded) matrix back to original snapshot space.
-    
+
     Parameters
     ----------
     hankel_matrix : array (num_delays * spatial_dim, num_embedded_snapshots)
@@ -133,17 +133,17 @@ def collapse_hankel(
         Original number of snapshots (before embedding).
     agg : {"mean", "sum", "first", "last"}, default "mean"
         How to aggregate overlapping entries.
-        
+
     Returns
     -------
     snapshots : array (spatial_dim, num_snapshots)
         Reconstructed snapshot matrix.
     """
     num_embedded_snapshots = num_snapshots - num_delays + 1
-    
+
     # Reshape to (num_delays, spatial_dim, num_embedded_snapshots)
     reshaped = hankel_matrix.reshape(num_delays, spatial_dim, num_embedded_snapshots)
-    
+
     snapshots = np.zeros((spatial_dim, num_snapshots), dtype=hankel_matrix.dtype)
 
     if agg in ("mean", "sum"):
@@ -164,7 +164,9 @@ def collapse_hankel(
             unfilled_mask = ~filled[delay_idx:end_idx]
             if unfilled_mask.any():
                 unfilled_indices = np.where(unfilled_mask)[0]
-                snapshots[:, delay_idx + unfilled_indices] = reshaped[delay_idx, :, unfilled_mask]
+                snapshots[:, delay_idx + unfilled_indices] = reshaped[
+                    delay_idx, :, unfilled_mask
+                ]
                 filled[delay_idx:end_idx][unfilled_mask] = True
         return snapshots
 
@@ -174,7 +176,7 @@ def collapse_hankel(
 class DelayEmbedding:
     """
     Delay-embedding (Hankel matrix) transformation with reversible inverse.
-    
+
     Stacks consecutive time delays to create augmented state vectors.
     """
 
@@ -187,19 +189,19 @@ class DelayEmbedding:
     def transform(self, snapshots: NDArray, *, copy: bool = False) -> NDArray:
         """
         Create delay-embedded matrix (Hankel structure).
-        
+
         Parameters
         ----------
         snapshots : array (spatial_dim, num_snapshots)
             Original snapshot matrix.
         copy : bool
             If True, return a copy instead of a view.
-            
+
         Returns
         -------
         embedded : array (num_delays * spatial_dim, num_embedded_snapshots)
             Delay-embedded matrix where num_embedded_snapshots = num_snapshots - num_delays + 1.
-            
+
         Notes
         -----
         Returns a zero-copy view matching pyDMD's row ordering:
@@ -208,7 +210,7 @@ class DelayEmbedding:
         """
         spatial_dim, num_snapshots = snapshots.shape
         num_embedded_snapshots = num_snapshots - self.num_delays + 1
-        
+
         if num_embedded_snapshots < 1:
             raise ValueError("num_delays cannot exceed num_snapshots")
 
@@ -232,14 +234,14 @@ class DelayEmbedding:
     ) -> NDArray:
         """
         Collapse delay-embedded data back to original snapshot space.
-        
+
         Parameters
         ----------
         embedded_data : array (num_delays * spatial_dim, num_embedded_snapshots)
             Delay-embedded matrix to collapse.
         agg : {"mean", "sum", "first", "last"}, default "mean"
             How to aggregate overlapping entries.
-            
+
         Returns
         -------
         snapshots : array (spatial_dim, num_snapshots)
@@ -247,7 +249,7 @@ class DelayEmbedding:
         """
         if self._original_shape is None:
             raise RuntimeError("transform() must be called before inverse_transform()")
-        
+
         spatial_dim, num_snapshots = self._original_shape
         return collapse_hankel(
             embedded_data, spatial_dim, self.num_delays, num_snapshots, agg=agg
@@ -281,7 +283,7 @@ class DMD:
     ):
         if variant not in {"projected", "exact"}:
             raise ValueError("variant must be 'projected' or 'exact'")
-        
+
         self.variant = variant
         self.svd_rank = svd_rank
         self.scale = scale_mode_by_eigenvalue
@@ -292,7 +294,7 @@ class DMD:
         self.modes: NDArray | None = None
         self.amplitudes: NDArray | None = None
         self._num_snapshots: int = 0
-        
+
         # SVD components (for inspection)
         self.U = None
         self.singular_values = None
@@ -349,7 +351,9 @@ class DMD:
         singular_inv = np.diag(1 / singular_trunc)
 
         # Reduced operator (truncation_rank x truncation_rank)
-        reduced_operator = left_trunc.conj().T @ future_snapshots @ right_trunc @ singular_inv
+        reduced_operator = (
+            left_trunc.conj().T @ future_snapshots @ right_trunc @ singular_inv
+        )
 
         # Eigen-decomposition of reduced operator
         eigenvalues, reduced_eigenvectors = linalg.eig(reduced_operator)
@@ -375,18 +379,18 @@ class DMD:
         self.eigs = eigenvalues
         self.modes = modes
         self.amplitudes = amplitudes
-        
+
         return self
 
     def reconstruct(self, timesteps: Sequence[int] | NDArray) -> NDArray:
         """
         Reconstruct state(s) at specified integer timesteps.
-        
+
         Parameters
         ----------
         timesteps : sequence or array of int
             Zero-based timestep indices to reconstruct.
-            
+
         Returns
         -------
         reconstruction : array (spatial_dim, num_timesteps)
@@ -394,13 +398,15 @@ class DMD:
         """
         timesteps_array = np.asarray(timesteps)
         # Dynamics: amplitudes * eigenvalues^t for each mode and time
-        time_evolution = self.amplitudes[:, None] * (self.eigs[:, None] ** timesteps_array)
+        time_evolution = self.amplitudes[:, None] * (
+            self.eigs[:, None] ** timesteps_array
+        )
         return self.modes @ time_evolution
 
     def reconstructed_data(self) -> NDArray:
         """
         Rebuild the full training sequence.
-        
+
         Returns
         -------
         reconstruction : array (spatial_dim, num_snapshots)
@@ -418,7 +424,7 @@ def demo_dmd_pipeline(
 ):
     """
     Demonstrate DMD pipeline: generate data -> embed -> fit -> reconstruct.
-    
+
     Parameters
     ----------
     spatial_dim : int

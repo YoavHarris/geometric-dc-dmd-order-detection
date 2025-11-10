@@ -22,7 +22,7 @@ def build_pbs_script(
 ) -> str:
     """
     Build the content of a PBS submission script for one job.
-    
+
     Args:
         pbs_cfg: PBS configuration dictionary
         interpreter: Path to Python interpreter
@@ -31,13 +31,13 @@ def build_pbs_script(
         job_config_path: Path to job YAML config
         job_id: Job ID number
         output_dir: Output directory for logs
-        
+
     Returns:
         PBS script content as string
     """
     logs_dir = os.path.join(output_dir, "logs")
     os.makedirs(logs_dir, exist_ok=True)
-    
+
     lines = [
         "#!/bin/bash",
         f"#PBS -q {pbs_cfg['queue']}",
@@ -45,21 +45,21 @@ def build_pbs_script(
         f"#PBS -l ncpus={pbs_cfg['ncpus']}",
         f"#PBS -l mpiprocs={pbs_cfg['mpiprocs']}",
         f"#PBS -l walltime={pbs_cfg['walltime']}",
-        f"#PBS -N job_{job_id:04d}",
-        f"#PBS -o {os.path.join(logs_dir, f'job_{job_id:04d}.out')}",
-        f"#PBS -e {os.path.join(logs_dir, f'job_{job_id:04d}.err')}",
+        f"#PBS -N job_{job_id}",
+        f"#PBS -o {os.path.join(logs_dir, f'job_{job_id}.out')}",
+        f"#PBS -e {os.path.join(logs_dir, f'job_{job_id}.err')}",
         "",
         f"cd {code_dir}",
         f"{interpreter} {worker_script} run {job_config_path}",
     ]
-    
+
     return "\n".join(lines)
 
 
 def write_script(content: str, script_path: str) -> None:
     """
     Write the PBS script content to the given filesystem path.
-    
+
     Args:
         content: Script content
         script_path: Path to write script to
@@ -74,27 +74,27 @@ def submit_job(
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     Submit the PBS script via qsub, retrying on failure.
-    
+
     Args:
         script_path: Path to PBS script
         retries: Number of retry attempts
         retry_delay: Delay between retries in seconds
-        
+
     Returns:
         Tuple of (stdout, stderr). On success, stderr is None.
     """
     for attempt in range(1, retries + 1):
         proc = subprocess.run(["qsub", script_path], capture_output=True, text=True)
-        
+
         if proc.returncode == 0:
             return proc.stdout.strip(), None
-        
+
         logging.warning(
             f"[PBS submit] job script={script_path} failed "
             f"(attempt {attempt}/{retries}): {proc.stderr.strip()}"
         )
         time.sleep(retry_delay)
-    
+
     # After retries exhausted
     err = proc.stderr.strip() if proc.stderr else "Unknown error"
     return None, err
@@ -104,21 +104,21 @@ def fetch_running_job_ids() -> Set[int]:
     """
     Return set of job IDs currently in the PBS queue.
     Looks for jobs named 'job_XXXX' where XXXX is the job ID.
-    
+
     Returns:
         Set of running job IDs
     """
     running: set[int] = set()
-    
+
     proc = subprocess.run(
         ["qstat", "-u", getpass.getuser()],
         capture_output=True,
         text=True,
     )
-    
+
     if proc.returncode != 0:
         return running
-    
+
     # Parse qstat output
     # Skip header lines (first 2 lines)
     for line in proc.stdout.splitlines()[2:]:
@@ -130,14 +130,14 @@ def fetch_running_job_ids() -> Set[int]:
                 running.add(int(job_id_str))
             except (ValueError, IndexError):
                 pass
-    
+
     return running
 
 
 def check_pbs_available() -> bool:
     """
     Check if PBS commands are available.
-    
+
     Returns:
         True if qsub/qstat are available
     """
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     # Test PBS availability
     if check_pbs_available():
         print("✓ PBS is available")
-        
+
         running = fetch_running_job_ids()
         if running:
             print(f"  Currently running jobs: {sorted(running)}")
@@ -164,4 +164,3 @@ if __name__ == "__main__":
             print("  No running jobs")
     else:
         print("✗ PBS is not available (qstat not found)")
-
