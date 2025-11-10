@@ -694,4 +694,4 @@ def run(config_path: str, plot: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    fire.Fire(run)
+    fire.Fire({"run": run})
