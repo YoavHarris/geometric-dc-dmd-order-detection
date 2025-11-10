@@ -130,6 +130,14 @@ class ExperimentRunner:
 
         # Generate parameter combinations
         param_combos = generate_job_parameters(cfg)
+        seen = set()
+        for i, d in enumerate(param_combos):
+            key = tuple(sorted(d.items()))
+            if key in seen:
+                raise RuntimeError(
+                    f"Duplicate parameter point detected at index {i}: {d}"
+                )
+            seen.add(key)
         print(f"✓ Generated {len(param_combos)} parameter combinations")
 
         # Write job configs
