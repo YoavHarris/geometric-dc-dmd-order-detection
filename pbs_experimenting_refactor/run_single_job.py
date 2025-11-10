@@ -557,7 +557,7 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
     )
 
     # Run iterations
-    for i in tqdm(range(n_iter), desc=f"Job {job_id:04d}"):
+    for i in tqdm(range(n_iter), desc=f"Job {job_id}"):
         plot_iter = plot and i == 0
         iter_seed = random_seed + i
 
@@ -649,7 +649,7 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
     summary_df.to_csv(output_path, index=False)
 
     # Print summary
-    print(f"\n✓ Job {job_id:04d} completed in {time.time() - start_time:.1f}s")
+    print(f"\n✓ Job {job_id} completed in {time.time() - start_time:.1f}s")
     print(f"  Results saved to: {output_path}")
     print("\nMetrics Summary:")
     pd.set_option("display.max_columns", None)

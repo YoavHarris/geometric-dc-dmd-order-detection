@@ -21,7 +21,7 @@ def load_state(state_path: str) -> Dict[str, Any]:
     """Load state from JSON file."""
     if not os.path.exists(state_path):
         return DEFAULT_STATE.copy()
-    
+
     with open(state_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -30,7 +30,7 @@ def save_state(state: Dict[str, Any], state_path: str) -> None:
     """Save state to JSON file."""
     path = Path(state_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(state_path, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 
@@ -86,44 +86,44 @@ def get_combined(state_path: str) -> List[int]:
 def find_finished_jobs(output_dir: str, total_jobs: int) -> Set[int]:
     """
     Find which jobs have finished by checking for results.csv files.
-    
+
     Args:
         output_dir: Output directory path
         total_jobs: Total number of jobs
-        
+
     Returns:
         Set of finished job IDs
     """
     finished = set()
     job_outputs_dir = Path(output_dir) / "job_outputs"
-    
+
     if not job_outputs_dir.exists():
         return finished
-    
+
     for job_id in range(total_jobs):
-        results_file = job_outputs_dir / f"job{job_id:04d}" / "results.csv"
+        results_file = job_outputs_dir / f"job{job_id}" / "results.csv"
         if results_file.exists():
             finished.add(job_id)
-    
+
     return finished
 
 
 def find_attempted_jobs(output_dir: str) -> Set[int]:
     """
     Find which jobs have been attempted (output directory exists).
-    
+
     Args:
         output_dir: Output directory path
-        
+
     Returns:
         Set of attempted job IDs
     """
     attempted = set()
     job_outputs_dir = Path(output_dir) / "job_outputs"
-    
+
     if not job_outputs_dir.exists():
         return attempted
-    
+
     for item in job_outputs_dir.iterdir():
         if item.is_dir() and item.name.startswith("job"):
             try:
@@ -131,23 +131,23 @@ def find_attempted_jobs(output_dir: str) -> Set[int]:
                 attempted.add(job_id)
             except ValueError:
                 pass
-    
+
     return attempted
 
 
 if __name__ == "__main__":
     import sys
-    
+
     if len(sys.argv) != 2:
         print("Usage: python state_manager.py <output_dir>")
         sys.exit(1)
-    
+
     output_dir = sys.argv[1]
     state_path = os.path.join(output_dir, "jobs_state.json")
-    
+
     # Display current state
     state = load_state(state_path)
-    
+
     print("Current State:")
     print(f"  Succeeded: {len(state.get('succeeded', []))}")
     print(f"  Failed: {len(state.get('failed', []))}")
