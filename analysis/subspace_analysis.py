@@ -96,9 +96,6 @@ def compute_practical_basis(
 ) -> NDArray[np.complex128]:
     """
     Compute practical BV basis following the paper's formula (equations 31-36).
-
-    Q = E_embedded @ conj(Psi_T) @ (Psi_T^T @ conj(Psi_T))^{-1}
-    practical_mode_j = normalize(clean_bv_mode_j + q_j)
     """
     LD, T = embedded_noise.shape
 

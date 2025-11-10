@@ -72,8 +72,6 @@ List methods to evaluate (comment out to disable):
 
 ```yaml
 methods:
-  - AIC
-  - AICc
   - BIC
   - GAP
   - ExactModeNorm

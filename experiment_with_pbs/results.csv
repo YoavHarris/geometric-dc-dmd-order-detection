@@ -1,6 +1,0 @@
-snr_db,freq_sep,eig_mag,eig_mag_spread,rho_mode,delays_over_timesteps,num_delays,temporal_dim,spatial_dim,num_modes,top_amplitude,max_rank,artificial_damping,n_iter,dt,noise_mode,random_seed,method,abs_diff_mean,abs_diff_std,bias_frac_over,bias_frac_under,bias_skewness,order_hit_prob,mean_time_sec,precision,recall,f1,accuracy,tp,fp,fn,tn
-20,0.05,0.98,,linspace,0.2,80,400,20,4,1.0,12,,1,1.0,gaussian,0,BIC,0.0,0.0,0.0,0.0,,1.0,13.597675561904907,,,,,,,,
-20,0.05,0.98,,linspace,0.2,80,400,20,4,1.0,12,,1,1.0,gaussian,0,EMN,4.0,0.0,1.0,0.0,,0.0,13.597675561904907,0.0,0.0,0.0,0.0,0.0,8.0,4.0,0.0
-20,0.05,0.98,,linspace,0.2,80,400,20,4,1.0,12,,1,1.0,gaussian,0,mnDMD,0.0,0.0,0.0,0.0,,1.0,13.597675561904907,1.0,1.0,1.0,1.0,4.0,0.0,0.0,8.0
-20,0.05,0.98,,linspace,0.2,80,400,20,4,1.0,12,,1,1.0,gaussian,0,ESL,0.0,0.0,0.0,0.0,,1.0,13.597675561904907,1.0,1.0,1.0,1.0,4.0,0.0,0.0,8.0
-20,0.05,0.98,,linspace,0.2,80,400,20,4,1.0,12,,1,1.0,gaussian,0,stc,0.0,0.0,0.0,0.0,,1.0,13.597675561904907,1.0,1.0,1.0,1.0,4.0,0.0,0.0,8.0
