@@ -64,7 +64,9 @@ def get_heteroscedastic_noise(
     ns, nt = shape
     t = np.linspace(0.0, 1.0, nt)
     sigma = sigma_min + (sigma_max - sigma_min) * t  # length-nt
-    noise = rng.standard_normal(size=shape).astype(np.float64) * sigma  # broadcast on rows
+    noise = (
+        rng.standard_normal(size=shape).astype(np.float64) * sigma
+    )  # broadcast on rows
     raw_var = np.mean(noise**2)
     return noise * np.sqrt(total_variance / raw_var)
 
@@ -117,24 +119,22 @@ def get_student_t_noise(
 
 def get_bi_gaussian_noise(
     shape: Tuple[int, int],
-    p: float,
-    total_variance: float,
-    q: float = 1.0,
-    rng: Union[np.random.Generator, None] = None,
+    p: float = 0.1,  # fraction of "high-mean" component
+    total_variance: float = 1.0,
+    q: float = 3.0,  # separation (Δμ in units of σ)
+    rng: Optional[np.random.Generator] = None,
 ) -> NDArray[np.floating]:
-    """
-    Zero-mean bi-Gaussian noise whose overall variance is `total_variance`.
-    """
     rng = rng or np.random.default_rng()
-    sigma = np.sqrt(
-        total_variance / (1 + p * q**2 + (1 - p) * (p**2 * q**2) / (1 - p) ** 2)
-    )
-    a = q * sigma
-    b = -(p / (1 - p)) * a
 
-    Y = rng.standard_normal(shape).astype(np.float64) * sigma
+    sigma = np.sqrt(total_variance / (1 + p * (1 - p) * q**2))
+    mu1 = +(1 - p) * q * sigma
+    mu2 = -p * q * sigma
+
+    # mixture draw
     choice = rng.random(shape) < p
-    return np.where(choice, Y + a, Y + b).astype(np.float64)
+    base = rng.standard_normal(shape) * sigma
+    noise = np.where(choice, base + mu1, base + mu2)
+    return noise
 
 
 class DMDDataGenerator:
@@ -158,7 +158,7 @@ class DMDDataGenerator:
         self.rho_spec = eigenvalue_magnitude  # scalar or sequence
         self.rho_spread = eigenvalue_magnitude_spread  # None → 0
         self.rho_mode = rho_mode.lower()
-        self.dtheta = frequency_separation
+        self.f_sep = frequency_separation
         self.snr_db = snr_db
         self.top_amplitude = top_amplitude
         self.dt = dt
@@ -219,25 +219,32 @@ class DMDDataGenerator:
             return self.rng.uniform(lo, hi, size=n_modes).astype(np.float64)
         raise ValueError("rho_mode must be 'random' or 'linspace'")
 
-    def _build_thetas(
-        self, n_modes: int, theta_max: float = 0.2 * np.pi, theta_min: float = 0.0
+    def build_omegas(
+        self,
+        n_modes: int,
+        f_min: float = 0.0,
+        f_max: float = 0.2,
     ) -> NDArray[np.floating]:
+        domega = 2 * np.pi * self.f_sep  # convert to radians
+        omega_min = 2 * np.pi * f_min
+        omega_max = 2 * np.pi * f_max
 
-        if (n_modes - 1) * self.dtheta > theta_max - theta_min:
+        if (n_modes - 1) * domega > omega_max - omega_min:
             raise ValueError(
-                f"Cannot fit {n_modes} frequencies with separation {self.dtheta} in given range."
+                f"Cannot fit {n_modes} frequencies with separation {self.f_sep} in given range."
             )
-        theta0_upper_bound = theta_max - (n_modes - 1) * self.dtheta
-        theta0 = self.rng.uniform(theta_min, theta0_upper_bound)
-        thetas = theta0 + np.arange(n_modes) * self.dtheta
-        return thetas
+
+        omega0_upper = omega_max - (n_modes - 1) * domega
+        omega0 = self.rng.uniform(omega_min, omega0_upper)
+        omegas = omega0 + np.arange(n_modes) * domega
+        return omegas
 
     def _build_eigenvalues(self, n_modes: int) -> NDArray[np.complexfloating]:
         rho_vec = self._build_rhos(n_modes)
-        theta_vec = self._build_thetas(
+        omega_vec = self.build_omegas(
             n_modes,
         )
-        eigenvalues = rho_vec * np.exp(1j * theta_vec)
+        eigenvalues = rho_vec * np.exp(1j * omega_vec)
         return eigenvalues
 
     def _build_unit_modes(
@@ -289,7 +296,6 @@ class DMDDataGenerator:
     ) -> NDArray[np.complexfloating]:
         power = np.mean(np.abs(X_clean) ** 2)
         var = power / (10 ** (self.snr_db / 10))
-        # TODO: Consider adding a fix term that accounts for num_modes.
         ns, nt = X_clean.shape
 
         if self.noise_mode == "gaussian":

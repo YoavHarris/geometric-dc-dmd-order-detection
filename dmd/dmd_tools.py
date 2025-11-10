@@ -1,17 +1,18 @@
-"""dmd_tools.py
-=================
-Minimal, transparent implementation of
-  • DelayEmbedding
-  • Dynamic Mode Decomposition (DMD)
+"""
+dmd_tools.py
+============
 
-MIT License · 2025‑05‑07 · OpenAI o3
+Minimal, transparent implementation of:
+  - DelayEmbedding
+  - Dynamic Mode Decomposition (DMD)
+
 """
 
 from __future__ import annotations
 
 import logging
 import warnings
-from typing import Sequence, Optional
+from typing import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -19,9 +20,9 @@ from numpy.typing import NDArray
 from utils.data_generation import DMDDataGenerator
 
 try:
-    import scipy.linalg as la  # preferred backend (fast & numerically robust)
+    import scipy.linalg as linalg
 except ModuleNotFoundError:  # pragma: no cover
-    import numpy.linalg as la  # type: ignore
+    import numpy.linalg as linalg  # type: ignore
 
 
 def fit_dmd(
@@ -37,14 +38,14 @@ def fit_dmd(
 
     Parameters
     ----------
-    data : ndarray, shape (D, N)
+    data : array (spatial_dim, num_snapshots)
         Snapshot matrix (real or complex).
     svd_rank : int
         Requested rank for the SVD truncation.
-    mode : {'exact', 'projected'}, default 'projected'
+    mode : {"exact", "projected"}, default "projected"
         Which DMD algorithm variant to use.
     num_delays : int, default 1
-        L = number of delays (1 ⇒ no delay embedding).
+        Number of delays for embedding (1 = no delay embedding).
     **kwargs
         Forwarded to the DMD class constructor
         (e.g. scale_mode_by_eigenvalue, phase_align).
@@ -52,30 +53,27 @@ def fit_dmd(
     Returns
     -------
     dmd : DMD
-        Fitted DMD object.  If ``num_delays > 1`` an attribute
-        ``dmd.delay_embedding`` is attached so you can invert the
+        Fitted DMD object. If num_delays > 1, an attribute
+        dmd.delay_embedding is attached so you can invert the
         reconstruction back to the original snapshot space:
 
-            H_hat = dmd.reconstructed_data()
-            X_hat = dmd.delay_embedding.inverse_transform(H_hat)
+            embedded_reconstruction = dmd.reconstructed_data()
+            reconstruction = dmd.delay_embedding.inverse_transform(embedded_reconstruction)
     """
-    assert mode in {"exact", "projected"}, "mode must be 'exact' or 'projected'"
+    if mode not in {"exact", "projected"}:
+        raise ValueError("mode must be 'exact' or 'projected'")
 
     dmd = DMD(variant=mode, svd_rank=svd_rank, **kwargs)
 
-    # ------------------------------------------------------------------
     # Optional delay embedding
-    # ------------------------------------------------------------------
     if num_delays > 1:
-        emb = DelayEmbedding(num_delays)
-        data_to_fit = emb.transform(data)
-        dmd.delay_embedding = emb  # stash for later use
+        embedding = DelayEmbedding(num_delays)
+        data_to_fit = embedding.transform(data)
+        dmd.delay_embedding = embedding  # Store for later use
     else:
         data_to_fit = data
 
-    # ------------------------------------------------------------------
-    # Suppress INFO chatter during fitting
-    # ------------------------------------------------------------------
+    # Suppress INFO logging during fitting
     logging.disable(logging.INFO)
     dmd.fit(data_to_fit)
     logging.disable(logging.NOTSET)
@@ -83,139 +81,197 @@ def fit_dmd(
     return dmd
 
 
-# ---------------------------------------------------------------------
-# Phase-alignment helper
-# ---------------------------------------------------------------------
 def align_modes_and_amplitudes_phases(
     modes: NDArray, amplitudes: NDArray
 ) -> tuple[NDArray, NDArray]:
     """
     Make amplitudes real/positive by pushing their phases into the modes.
 
-    Given Φ (modes) and b (amplitudes) we produce
-        Φ' = Φ · diag(e^{i·arg(b)})
-        b' = |b| ≥ 0
-    so that  Φ·b == Φ'·b'  element-wise.
+    Given modes and amplitudes, we produce:
+        modes_aligned = modes * diag(exp(i*angle(amplitudes)))
+        amplitudes_real = |amplitudes| >= 0
+    
+    so that modes @ amplitudes == modes_aligned @ amplitudes_real element-wise.
 
     Returns
     -------
-    modes_aligned : NDArray
-        Modes with embedded phase (same shape as `modes`).
-    amplitudes_fixed : NDArray
-        Real, non-negative amplitudes |b|.
+    modes_aligned : array
+        Modes with embedded phase (same shape as input modes).
+    amplitudes_real : array
+        Real, non-negative amplitudes.
     """
-    phase = np.exp(1j * np.angle(amplitudes))
-    modes_aligned = modes * phase  # broadcast rows × cols
-    amplitudes_fixed = np.abs(amplitudes)
+    phase_factors = np.exp(1j * np.angle(amplitudes))
+    modes_aligned = modes * phase_factors  # Broadcast across rows
+    amplitudes_real = np.abs(amplitudes)
 
-    # Sanity check (optional, could comment out for speed)
-    assert np.allclose(modes @ amplitudes, modes_aligned @ amplitudes_fixed)
+    # Sanity check (optional)
+    assert np.allclose(modes @ amplitudes, modes_aligned @ amplitudes_real)
 
-    return modes_aligned, amplitudes_fixed
-
-
-# ---------------------------------------------------------------------
-# Collapse Hankel back to snapshots (stand-alone utility)
-# ---------------------------------------------------------------------
+    return modes_aligned, amplitudes_real
 
 
 def collapse_hankel(
-    H: NDArray, D: int, L: int, N: int, *, agg: str = "mean"
+    hankel_matrix: NDArray,
+    spatial_dim: int,
+    num_delays: int,
+    num_snapshots: int,
+    *,
+    agg: str = "mean"
 ) -> NDArray:
-    K = N - L + 1
-    H3 = H.reshape(L, D, K)
-    X = np.zeros((D, N), dtype=H.dtype)
+    """
+    Collapse Hankel (delay-embedded) matrix back to original snapshot space.
+    
+    Parameters
+    ----------
+    hankel_matrix : array (num_delays * spatial_dim, num_embedded_snapshots)
+        Delay-embedded data matrix.
+    spatial_dim : int
+        Original spatial dimension.
+    num_delays : int
+        Number of delays used in embedding.
+    num_snapshots : int
+        Original number of snapshots (before embedding).
+    agg : {"mean", "sum", "first", "last"}, default "mean"
+        How to aggregate overlapping entries.
+        
+    Returns
+    -------
+    snapshots : array (spatial_dim, num_snapshots)
+        Reconstructed snapshot matrix.
+    """
+    num_embedded_snapshots = num_snapshots - num_delays + 1
+    
+    # Reshape to (num_delays, spatial_dim, num_embedded_snapshots)
+    reshaped = hankel_matrix.reshape(num_delays, spatial_dim, num_embedded_snapshots)
+    
+    snapshots = np.zeros((spatial_dim, num_snapshots), dtype=hankel_matrix.dtype)
 
     if agg in ("mean", "sum"):
-        counts = np.zeros(N, int)
-        for delay in range(L):
-            X[:, delay : delay + K] += H3[delay]
-            counts[delay : delay + K] += 1
+        counts = np.zeros(num_snapshots, int)
+        for delay_idx in range(num_delays):
+            end_idx = delay_idx + num_embedded_snapshots
+            snapshots[:, delay_idx:end_idx] += reshaped[delay_idx]
+            counts[delay_idx:end_idx] += 1
         if agg == "mean":
-            X /= counts
-        return X
+            snapshots /= counts
+        return snapshots
 
     if agg in ("first", "last"):
-        order = range(L) if agg == "first" else range(L - 1, -1, -1)
-        filled = np.zeros(N, bool)
-        for delay in order:
-            mask = ~filled[delay : delay + K]
-            if mask.any():
-                X[:, delay + np.where(mask)[0]] = H3[delay, :, mask]
-                filled[delay : delay + K][mask] = True
-        return X
+        order = range(num_delays) if agg == "first" else range(num_delays - 1, -1, -1)
+        filled = np.zeros(num_snapshots, bool)
+        for delay_idx in order:
+            end_idx = delay_idx + num_embedded_snapshots
+            unfilled_mask = ~filled[delay_idx:end_idx]
+            if unfilled_mask.any():
+                unfilled_indices = np.where(unfilled_mask)[0]
+                snapshots[:, delay_idx + unfilled_indices] = reshaped[delay_idx, :, unfilled_mask]
+                filled[delay_idx:end_idx][unfilled_mask] = True
+        return snapshots
 
     raise ValueError("agg must be 'mean', 'sum', 'first', or 'last'")
 
 
-# -------- DelayEmbedding class ---------------------------------------------
 class DelayEmbedding:
-    """Stacked delay-embedding with reversible inverse_transform."""
+    """
+    Delay-embedding (Hankel matrix) transformation with reversible inverse.
+    
+    Stacks consecutive time delays to create augmented state vectors.
+    """
 
-    def __init__(self, L: int):
-        if L < 1:
-            raise ValueError("L must be ≥ 1")
-        self.L = L
-        self._shape: tuple[int, int] | None = None  # (D, N)
+    def __init__(self, num_delays: int):
+        if num_delays < 1:
+            raise ValueError("num_delays must be >= 1")
+        self.num_delays = num_delays
+        self._original_shape: tuple[int, int] | None = None
 
-    # ---- forward ----------------------------------------------------------
-    def transform(self, X: NDArray, *, copy: bool = False) -> NDArray:
+    def transform(self, snapshots: NDArray, *, copy: bool = False) -> NDArray:
         """
-        Returns a zero-copy Hankel view matching pyDMD’s row order:
-            – outer axis 0 … L-1  → delay index
-            – inner axis 0 … D-1  → spatial index
-        Result shape: (L*D, K)  where K = N-L+1
+        Create delay-embedded matrix (Hankel structure).
+        
+        Parameters
+        ----------
+        snapshots : array (spatial_dim, num_snapshots)
+            Original snapshot matrix.
+        copy : bool
+            If True, return a copy instead of a view.
+            
+        Returns
+        -------
+        embedded : array (num_delays * spatial_dim, num_embedded_snapshots)
+            Delay-embedded matrix where num_embedded_snapshots = num_snapshots - num_delays + 1.
+            
+        Notes
+        -----
+        Returns a zero-copy view matching pyDMD's row ordering:
+            - Outer axis iterates over delays (0 to num_delays-1)
+            - Inner axis iterates over spatial dimensions
         """
-        D, N = X.shape
-        K = N - self.L + 1
-        if K < 1:
-            raise ValueError("L cannot exceed N")
+        spatial_dim, num_snapshots = snapshots.shape
+        num_embedded_snapshots = num_snapshots - self.num_delays + 1
+        
+        if num_embedded_snapshots < 1:
+            raise ValueError("num_delays cannot exceed num_snapshots")
 
-        H_view = np.lib.stride_tricks.as_strided(
-            X,
-            shape=(self.L, D, K),
+        # Create strided view for zero-copy Hankel matrix
+        embedded_view = np.lib.stride_tricks.as_strided(
+            snapshots,
+            shape=(self.num_delays, spatial_dim, num_embedded_snapshots),
             strides=(
-                X.strides[1],  # delay advances one time-step → stride in columns
-                X.strides[0],  # spatial axis uses row stride
-                X.strides[1],
-            ),  # time-advance inside each column
+                snapshots.strides[1],  # Delay advances one time-step
+                snapshots.strides[0],  # Spatial axis
+                snapshots.strides[1],  # Time advance within column
+            ),
             writeable=False,
-        ).reshape(self.L * D, K)
+        ).reshape(self.num_delays * spatial_dim, num_embedded_snapshots)
 
-        self._shape = (D, N)
-        return H_view.copy() if copy else H_view
+        self._original_shape = (spatial_dim, num_snapshots)
+        return embedded_view.copy() if copy else embedded_view
 
-    # ---- inverse ----------------------------------------------------------
-    def inverse_transform(self, H: NDArray, *, agg: str = "mean") -> NDArray:
+    def inverse_transform(
+        self, embedded_data: NDArray, *, agg: str = "mean"
+    ) -> NDArray:
         """
-        Collapse `H` back to snapshots using the stand-alone `collapse_hankel`.
+        Collapse delay-embedded data back to original snapshot space.
+        
+        Parameters
+        ----------
+        embedded_data : array (num_delays * spatial_dim, num_embedded_snapshots)
+            Delay-embedded matrix to collapse.
+        agg : {"mean", "sum", "first", "last"}, default "mean"
+            How to aggregate overlapping entries.
+            
+        Returns
+        -------
+        snapshots : array (spatial_dim, num_snapshots)
+            Reconstructed snapshot matrix.
         """
-        if self._shape is None:
-            raise RuntimeError("transform() must be called first")
-        D, N = self._shape
-        return collapse_hankel(H, D, self.L, N, agg=agg)
+        if self._original_shape is None:
+            raise RuntimeError("transform() must be called before inverse_transform()")
+        
+        spatial_dim, num_snapshots = self._original_shape
+        return collapse_hankel(
+            embedded_data, spatial_dim, self.num_delays, num_snapshots, agg=agg
+        )
 
 
 class DMD:
     """
-    Dynamic Mode Decomposition (Exact or Projected).
+    Dynamic Mode Decomposition (Exact or Projected variants).
 
     Parameters
     ----------
-    variant : {'projected', 'exact'}, default 'projected'
-        Algorithm 1 ('projected') or Algorithm 2 ('exact') from the DMD paper.
-    svd_rank : {None, int}, default None
-        None  → use numeric (effective) rank of X.
-        int   → keep min(svd_rank, numeric_rank); warn if svd_rank > numeric_rank.
+    variant : {"projected", "exact"}, default "projected"
+        - "projected": Modes lie in the left singular vector space
+        - "exact": Modes computed via pseudoinverse (higher-dimensional)
+    svd_rank : int or None, default None
+        - None: Use numeric rank of the data
+        - int: Keep this many singular values (capped at numeric rank)
     scale_mode_by_eigenvalue : bool, default False
-        (Exact variant only) multiply each mode by 1 / eigenvalue.
+        (Exact variant only) Divide each mode by its eigenvalue.
     phase_align : bool, default False
-        Make amplitudes real/positive and absorb phase into the modes.
+        Make amplitudes real/positive by absorbing phase into modes.
     """
 
-    # ------------------------------------------------------------------ #
-    # constructor
-    # ------------------------------------------------------------------ #
     def __init__(
         self,
         variant: str = "projected",
@@ -225,171 +281,210 @@ class DMD:
     ):
         if variant not in {"projected", "exact"}:
             raise ValueError("variant must be 'projected' or 'exact'")
+        
         self.variant = variant
         self.svd_rank = svd_rank
         self.scale = scale_mode_by_eigenvalue
         self.phase_align = phase_align
 
-        # learned quantities
-        self.eigs: NDArray | None = None  # eigenvalues λ_i
-        self.modes: NDArray | None = None  # modes Φ (D, r)
-        self.amplitudes: NDArray | None = None  # amplitudes b_i
-        self._n_snapshots: int = 0  # N
+        # Attributes set by fit()
+        self.eigs: NDArray | None = None
+        self.modes: NDArray | None = None
+        self.amplitudes: NDArray | None = None
+        self._num_snapshots: int = 0
+        
+        # SVD components (for inspection)
         self.U = None
         self.singular_values = None
         self.Vh = None
 
-    # ------------------------------------------------------------------ #
-    # core algorithm
-    # ------------------------------------------------------------------ #
-    def fit(self, X: NDArray):
+    def fit(self, data: NDArray):
         """
-        Learn DMD from snapshot matrix X (shape D × N).
+        Learn DMD from snapshot matrix.
 
-        After calling, attributes:
-            eigs, modes, amplitudes
+        Parameters
+        ----------
+        data : array (spatial_dim, num_snapshots)
+            Snapshot matrix (real or complex).
+
+        Returns
+        -------
+        self
         """
-        x_past, x_future = X[:, :-1], X[:, 1:]  # X0, X1
-        self._n_snapshots = X.shape[1]
+        past_snapshots = data[:, :-1]
+        future_snapshots = data[:, 1:]
+        self._num_snapshots = data.shape[1]
 
-        # economy SVD of X0
-        U, s, Vh = la.svd(x_past, full_matrices=False)
-        self.U = U
-        self.singular_values = s
-        self.Vh = Vh
+        # Economy SVD
+        left_vectors, singular_vals, right_vectors_conj_T = linalg.svd(
+            past_snapshots, full_matrices=False
+        )
+        self.U = left_vectors
+        self.singular_values = singular_vals
+        self.Vh = right_vectors_conj_T
 
-        # numeric rank m (same rule as la.matrix_rank)
-        eps = np.finfo(s.dtype).eps
-        tol = eps * max(x_past.shape) * s[0]
-        m = int(np.sum(s > tol))
+        # Determine numeric rank using same tolerance as np.linalg.matrix_rank
+        epsilon = np.finfo(singular_vals.dtype).eps
+        tolerance = epsilon * max(past_snapshots.shape) * singular_vals[0]
+        numeric_rank = int(np.sum(singular_vals > tolerance))
 
-        # choose r according to your rule
+        # Choose truncation rank
         if self.svd_rank is None:
-            r = m
+            truncation_rank = numeric_rank
         else:
-            if self.svd_rank > m:
+            if self.svd_rank > numeric_rank:
                 warnings.warn(
-                    f"Requested svd_rank={self.svd_rank} but numeric rank is {m}; "
+                    f"Requested svd_rank={self.svd_rank} exceeds numeric rank {numeric_rank}; "
                     "using numeric rank instead.",
                     RuntimeWarning,
                 )
-                r = m
+                truncation_rank = numeric_rank
             else:
-                r = self.svd_rank
+                truncation_rank = self.svd_rank
 
-        # truncate SVD
-        U_r = U[:, :r]
-        s_r = s[:r]
-        V_r = Vh.conj().T[:, :r]
-        sigma_inv = np.diag(1 / s_r)  # Σ⁻¹
+        # Truncate SVD components
+        left_trunc = left_vectors[:, :truncation_rank]
+        singular_trunc = singular_vals[:truncation_rank]
+        right_trunc = right_vectors_conj_T.conj().T[:, :truncation_rank]
+        singular_inv = np.diag(1 / singular_trunc)
 
-        # reduced operator Â (r × r)
-        A_tilde = U_r.conj().T @ x_future @ V_r @ sigma_inv
+        # Reduced operator (truncation_rank x truncation_rank)
+        reduced_operator = left_trunc.conj().T @ future_snapshots @ right_trunc @ singular_inv
 
-        # eigen-decomposition
-        eigvals, W = la.eig(A_tilde)  # λ_i, W
+        # Eigen-decomposition of reduced operator
+        eigenvalues, reduced_eigenvectors = linalg.eig(reduced_operator)
 
-        if self.variant == "projected":  # Algorithm 1
-            Phi = U_r @ W
-        else:
-            Phi = x_future @ V_r @ sigma_inv @ W
+        # Compute full-space modes
+        if self.variant == "projected":
+            modes = left_trunc @ reduced_eigenvectors
+        else:  # exact
+            modes = future_snapshots @ right_trunc @ singular_inv @ reduced_eigenvectors
             if self.scale:
-                Phi = Phi / eigvals
+                modes = modes / eigenvalues
 
-        amplitudes = la.lstsq(Phi, x_past[:, 0])[0]
+        # Compute amplitudes from initial condition
+        amplitudes = linalg.lstsq(modes, past_snapshots[:, 0])[0]
 
-        # optional phase alignment
+        # Optional phase alignment
         if self.phase_align:
-            phase = np.exp(1j * np.angle(amplitudes))
-            Phi *= phase
+            phase_factors = np.exp(1j * np.angle(amplitudes))
+            modes = modes * phase_factors
             amplitudes = np.abs(amplitudes)
 
-        # store results
-        self.eigs = eigvals
-        self.modes = Phi
+        # Store results
+        self.eigs = eigenvalues
+        self.modes = modes
         self.amplitudes = amplitudes
+        
         return self
 
-    # ------------------------------------------------------------------ #
-    # reconstruction helpers
-    # ------------------------------------------------------------------ #
     def reconstruct(self, timesteps: Sequence[int] | NDArray) -> NDArray:
         """
-        Reconstruct state(s) at integer timesteps (0-based).
+        Reconstruct state(s) at specified integer timesteps.
+        
+        Parameters
+        ----------
+        timesteps : sequence or array of int
+            Zero-based timestep indices to reconstruct.
+            
+        Returns
+        -------
+        reconstruction : array (spatial_dim, num_timesteps)
+            Reconstructed snapshots at requested timesteps.
         """
-        t = np.asarray(timesteps)
-        dynamics = self.amplitudes[:, None] * (self.eigs[:, None] ** t)
-        return self.modes @ dynamics
+        timesteps_array = np.asarray(timesteps)
+        # Dynamics: amplitudes * eigenvalues^t for each mode and time
+        time_evolution = self.amplitudes[:, None] * (self.eigs[:, None] ** timesteps_array)
+        return self.modes @ time_evolution
 
     def reconstructed_data(self) -> NDArray:
         """
-        Rebuild the full training sequence with the same shape as X.
+        Rebuild the full training sequence.
+        
+        Returns
+        -------
+        reconstruction : array (spatial_dim, num_snapshots)
+            Reconstructed snapshot matrix matching the training data shape.
         """
-        return self.reconstruct(np.arange(self._n_snapshots))
+        return self.reconstruct(np.arange(self._num_snapshots))
 
 
-# ----------------------------------------------------------------------
-# Demo: low-rank signal → delay-embed → DMD → reconstruct
-# ----------------------------------------------------------------------
 def demo_dmd_pipeline(
-    D: int = 6,  # spatial dim
-    N: int = 100,  # timesteps
-    r_true: int = 3,  # intrinsic (clean) rank / # modes
-    L: int = 5,  # delays
-    svd_rank: int = 5,  # what we *ask* DMD for
+    spatial_dim: int = 6,
+    num_snapshots: int = 100,
+    true_rank: int = 3,
+    num_delays: int = 5,
+    svd_rank: int = 5,
 ):
+    """
+    Demonstrate DMD pipeline: generate data -> embed -> fit -> reconstruct.
+    
+    Parameters
+    ----------
+    spatial_dim : int
+        Spatial dimension of snapshots.
+    num_snapshots : int
+        Number of time snapshots.
+    true_rank : int
+        Number of true modes in generated data.
+    num_delays : int
+        Number of delays for embedding.
+    svd_rank : int
+        Rank to request from DMD.
+    """
     print("\n==== Synthetic data generation ====")
-    gen = DMDDataGenerator(
+    generator = DMDDataGenerator(
         eigenvalue_magnitude=0.95,
         frequency_separation=0.4,
         snr_db=10.0,
         random_seed=0,
     )
-    X, X_clean, eigs, modes, amps = gen.generate(D, N, r_true)
+    data, data_clean, true_eigs, true_modes, true_amps = generator.generate(
+        spatial_dim, num_snapshots, true_rank
+    )
 
-    rank_X = np.linalg.matrix_rank(X)
-    print(f"X shape {X.shape},  numeric rank = {rank_X}")
+    data_rank = np.linalg.matrix_rank(data)
+    print(f"Data shape {data.shape}, numeric rank = {data_rank}")
 
-    # ------------------------------------------------------------------
-    emb = DelayEmbedding(L)
-    X_delayed = emb.transform(X)
-    rank_delayed = np.linalg.matrix_rank(X_delayed)
-    print(f"Delay-embedded shape {X_delayed.shape}, rank = {rank_delayed}")
+    # Delay embedding
+    embedding = DelayEmbedding(num_delays)
+    embedded_data = embedding.transform(data)
+    embedded_rank = np.linalg.matrix_rank(embedded_data)
+    print(f"Embedded shape {embedded_data.shape}, rank = {embedded_rank}")
 
-    # ------------------------------------------------------------------
+    # Fit DMD
     dmd = DMD(
         variant="exact",
         svd_rank=svd_rank,
         scale_mode_by_eigenvalue=True,
         phase_align=True,
-    ).fit(X_delayed)
+    ).fit(embedded_data)
 
     print("\nDMD learned:")
-    print(f"  eigs.shape        = {dmd.eigs.shape}")
-    print(f"  modes.shape       = {dmd.modes.shape}")
-    print(f"  amplitudes.shape  = {dmd.amplitudes.shape}")
+    print(f"  eigenvalues shape  = {dmd.eigs.shape}")
+    print(f"  modes shape        = {dmd.modes.shape}")
+    print(f"  amplitudes shape   = {dmd.amplitudes.shape}")
 
-    # ------------------------------------------------------------------
-    X_delayed_hat = dmd.reconstructed_data()
-    rank_delayed_hat = np.linalg.matrix_rank(X_delayed_hat)
+    # Reconstruct
+    embedded_reconstruction = dmd.reconstructed_data()
+    embedded_recon_rank = np.linalg.matrix_rank(embedded_reconstruction)
     print(
-        f"\nReconstructed delayed shape {X_delayed_hat.shape}, "
-        f"rank = {rank_delayed_hat}"
+        f"\nReconstructed embedded shape {embedded_reconstruction.shape}, "
+        f"rank = {embedded_recon_rank}"
     )
 
-    X_hat = emb.inverse_transform(X_delayed_hat, agg="mean")
-    rank_X_hat = np.linalg.matrix_rank(X_hat)
-    print(f"Reconstructed original shape {X_hat.shape},  rank = {rank_X_hat}")
+    reconstruction = embedding.inverse_transform(embedded_reconstruction, agg="mean")
+    recon_rank = np.linalg.matrix_rank(reconstruction)
+    print(f"Reconstructed original shape {reconstruction.shape}, rank = {recon_rank}")
 
-    delayed_mae = np.abs(X_delayed_hat - X_delayed).mean()
-    mae = np.abs(X_hat - X).mean()
-    print(f"Delayed MAE: {delayed_mae}, MAE: {mae}")
+    # Errors
+    embedded_mae = np.abs(embedded_reconstruction - embedded_data).mean()
+    mae = np.abs(reconstruction - data).mean()
+    print(f"\nEmbedded MAE: {embedded_mae:.6f}")
+    print(f"Original space MAE: {mae:.6f}")
 
-    return X, X_delayed, X_delayed_hat, X_hat
+    return data, embedded_data, embedded_reconstruction, reconstruction
 
 
-# ----------------------------------------------------------------------
-# Run the demo
-# ----------------------------------------------------------------------
 if __name__ == "__main__":
     demo_dmd_pipeline()
