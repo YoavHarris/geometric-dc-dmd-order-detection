@@ -212,6 +212,9 @@ class ExperimentRunner:
 
         for job_id in final_ids:
             job_config_path = job_configs_dir / f"job{job_id}.yaml"
+            
+            job_output_dir = output_dir / "job_outputs" / f"job{job_id}"
+            job_output_dir.mkdir(parents=True, exist_ok=True)
 
             # Build PBS script
             script_content = build_pbs_script(
