@@ -34,7 +34,11 @@ from algorithms.info_criteria import (
 from dmd.dmd_tools import DelayEmbedding
 from utils.data_generation import DMDDataGenerator
 from utils.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
-from utils.visualizations import imshow_complex, plot_mode_table
+from utils.visualizations import (
+    imshow_complex,
+    plot_mode_table,
+    scatter_scores_1d,
+)
 from analysis.subspace_analysis import compute_subspace_principal_angles
 
 
@@ -264,6 +268,11 @@ class MethodEvaluator:
             labels, order = cluster_scores(scores, self.clustering_config)
             order_estimates["ExactModeNorm"] = order
             pred_masks["ExactModeNorm"] = labels
+
+            if plot:
+                scatter_scores_1d(
+                    exact_mode_norms, "Exact-Mode-Norms", "ExactModeNorm", show_id=True
+                )
 
         if "ESL-Norm" in self.enabled_methods:
             esl = EstimatedSubspaceLeakage()

@@ -27,6 +27,7 @@ class ScanPlotterCLI:
         working_point: dict,
         title: str = None,
         show: bool = False,
+        methods: list[str] | None = None,
     ):
         """
         Create a single scan plot.
@@ -45,6 +46,11 @@ class ScanPlotterCLI:
         if len(filtered) == 0:
             raise ValueError("No data matches working point")
 
+        if methods:
+            filtered = filtered[filtered["method"].isin(methods)]
+            if len(filtered) == 0:
+                raise ValueError("No data matches specified methods")
+
         # Use composer with single panel
         panels = [
             {
@@ -52,6 +58,7 @@ class ScanPlotterCLI:
                 "x_param": x_param,
                 "metric": metric,
                 "working_point": working_point,
+                "methods": methods,
                 "title": title,
             }
         ]
@@ -71,6 +78,7 @@ class ScanPlotterCLI:
         panel_values: list,
         title: str = None,
         show: bool = False,
+        methods: list[str] | None = None,
     ):
         """
         Create multi-panel plot varying panel_param.
@@ -93,6 +101,11 @@ class ScanPlotterCLI:
         if len(filtered) == 0:
             raise ValueError("No data matches working point")
 
+        if methods:
+            filtered = filtered[filtered["method"].isin(methods)]
+            if len(filtered) == 0:
+                raise ValueError("No data matches specified methods")
+
         # Create panel for each panel_value
         panels = []
         for pval in panel_values:
@@ -104,6 +117,7 @@ class ScanPlotterCLI:
                         "x_param": x_param,
                         "metric": metric,
                         "working_point": working_point,
+                        "methods": methods,
                         "title": f"{panel_param.replace('_', ' ').title()} = {pval}",
                     }
                 )
@@ -168,6 +182,7 @@ class ScanPlotterCLI:
                         panel_values=merged["panel_values"],
                         title=merged.get("title"),
                         show=merged.get("show", False),
+                        methods=merged["methods"],
                     )
                 else:
                     self.single(
@@ -178,6 +193,7 @@ class ScanPlotterCLI:
                         working_point=merged["working_point"],
                         title=merged.get("title"),
                         show=merged.get("show", False),
+                        methods=merged.get("methods"),
                     )
 
                 print("  [OK]")

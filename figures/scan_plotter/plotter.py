@@ -27,6 +27,7 @@ class SingleScanPlotter:
         x_param: str,
         metric: str,
         working_point: dict[str, Any] | None = None,
+        methods: list[str] | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
         title: str | None = None,
@@ -40,11 +41,13 @@ class SingleScanPlotter:
             x_param: Parameter on x-axis
             metric: Metric on y-axis
             working_point: Working point dict (for vertical line)
+            methods: List of methods to plot (if None, plot all)
             show_legend: Show legend?
             show_ylabel: Show y-axis label?
             title: Axis title
         """
-        methods = sorted(df["method"].unique())
+        if methods is None:
+            methods = sorted(df["method"].unique())
 
         # Get styling config
         line_cfg = self.config.get("lines", {})
@@ -189,6 +192,7 @@ class PanelComposer:
                 x_param=panel_spec["x_param"],
                 metric=panel_spec["metric"],
                 working_point=panel_spec.get("working_point"),
+                methods=panel_spec.get("methods"),
                 show_legend=show_legend,
                 show_ylabel=show_ylabel,
                 title=panel_spec.get("title"),
