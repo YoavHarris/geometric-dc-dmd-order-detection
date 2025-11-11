@@ -131,7 +131,18 @@ def generate_parameter_combinations(
             merged = {**w, **c}
             all_combinations.append(merged)
 
-    return all_combinations
+    # Ensure strict uniqueness over the FULL parameter dict before returning.
+    deduped = _deduplicate_jobs(all_combinations)
+
+    # (Optional) sanity check: fail fast if duplicates were generated.
+    if len(deduped) != len(all_combinations):
+        dup_count = len(all_combinations) - len(deduped)
+        raise RuntimeError(
+            f"Parameter generator produced {dup_count} duplicate point(s). "
+            "This indicates overlap between working-point variants and the cartesian grid."
+        )
+
+    return deduped
 
 
 def generate_job_parameters(config: Dict[str, Any]) -> List[Dict[str, Any]]:
