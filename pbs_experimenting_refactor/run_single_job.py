@@ -515,6 +515,10 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
     base_random_seed = job_config["base_random_seed"]
     job_id = job_config["job_id"]
 
+    output_path_obj = Path(output_path)
+    output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Job {job_id} started - output directory: {output_path_obj.parent}")
+
     # Extract parameters
     snr_db = params["snr_db"]
     freq_sep = params["freq_sep"]
