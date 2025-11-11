@@ -182,7 +182,7 @@ class ScanPlotterCLI:
                         panel_values=merged["panel_values"],
                         title=merged.get("title"),
                         show=merged.get("show", False),
-                        methods=merged["methods"],
+                        methods=merged.get("methods"),
                     )
                 else:
                     self.single(
