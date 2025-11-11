@@ -26,9 +26,9 @@ class SingleScanPlotter:
         Detect axis spacing type from parameter values.
 
         Aligns with param_generator.py output:
-        - 'linear': scale="lin" → constant differences
-        - 'log': scale="log" → constant log-differences
-        - 'categorical': type="list" → neither
+        - 'linear': scale="lin" - constant differences
+        - 'log': scale="log" - constant log-differences
+        - 'categorical': type="list" - neither
 
         Uses absolute tolerance based on param_generator rounding errors
         (~1e-3 for log spacing) + CSV round-trip precision.
@@ -59,7 +59,7 @@ class SingleScanPlotter:
             if np.std(log_diffs) < abs_tol:
                 return "log"
 
-        # Neither linear nor log → categorical
+        # Neither linear nor log: categorical
         return "categorical"
 
     def plot(
@@ -70,6 +70,7 @@ class SingleScanPlotter:
         metric: str,
         working_point: dict[str, Any] | None = None,
         methods: list[str] | None = None,
+        xscale: str | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
         title: str | None = None,
@@ -84,6 +85,7 @@ class SingleScanPlotter:
             metric: Metric on y-axis
             working_point: Working point dict (for vertical line)
             methods: List of methods to plot (if None, plot all)
+            xscale: Force axis scale ('linear', 'log', 'categorical', or None for auto)
             show_legend: Show legend?
             show_ylabel: Show y-axis label?
             title: Axis title
@@ -91,8 +93,11 @@ class SingleScanPlotter:
         if methods is None:
             methods = sorted(df["method"].unique())
 
-        # Detect axis type from x_param values
-        axis_type = self._detect_axis_type(df[x_param].values)
+        # Detect or override axis type
+        if xscale is not None:
+            axis_type = xscale
+        else:
+            axis_type = self._detect_axis_type(df[x_param].values)
 
         # Get styling config
         line_cfg = self.config.get("lines", {})
@@ -246,6 +251,7 @@ class PanelComposer:
                 metric=panel_spec["metric"],
                 working_point=panel_spec.get("working_point"),
                 methods=panel_spec.get("methods"),
+                xscale=panel_spec.get("xscale"),
                 show_legend=show_legend,
                 show_ylabel=show_ylabel,
                 title=panel_spec.get("title"),
