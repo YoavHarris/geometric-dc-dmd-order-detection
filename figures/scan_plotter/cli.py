@@ -7,6 +7,7 @@ from plotter import (
 )
 
 
+
 class ScanPlotterCLI:
     """CLI for creating parameter scan plots."""
     

@@ -7,7 +7,7 @@ Two core classes:
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any
 import yaml
 import pandas as pd
 import numpy as np
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 class SingleScanPlotter:
     """Draws a single parameter scan on a given axis."""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
     
     def plot(
@@ -26,10 +26,10 @@ class SingleScanPlotter:
         df: pd.DataFrame,
         x_param: str,
         metric: str,
-        working_point: Optional[Dict[str, Any]] = None,
+        working_point: dict[str, Any] | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
-        title: Optional[str] = None
+        title: str | None = None
     ):
         """
         Plot one parameter scan on the given axis.
@@ -95,7 +95,7 @@ class SingleScanPlotter:
             ax.legend(fontsize=legend_cfg.get('fontsize', 9),
                      framealpha=legend_cfg.get('framealpha', 0.9))
     
-    def _get_style(self, method: str) -> Dict[str, str]:
+    def _get_style(self, method: str) -> dict[str, str]:
         """Get color and linestyle for method."""
         methods_cfg = self.config.get('methods', {})
         if method in methods_cfg:
@@ -115,16 +115,16 @@ class SingleScanPlotter:
 class PanelComposer:
     """Composes multiple SingleScanPlotters into a panel figure."""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.plotter = SingleScanPlotter(config)
     
     def compose(
         self,
-        panels: List[Dict[str, Any]],
+        panels: list[dict[str, Any]],
         layout: str = 'horizontal',
-        overall_title: Optional[str] = None,
-        output_path: Optional[str] = None,
+        overall_title: str | None = None,
+        output_path: str | None = None,
         show: bool = False
     ):
         """
@@ -202,7 +202,7 @@ class PanelComposer:
         plt.close()
 
 
-def load_config(path: str = None) -> Dict[str, Any]:
+def load_config(path: str | None = None) -> dict[str, Any]:
     """Load configuration."""
     if path is None:
         path = Path(__file__).parent / 'config.yaml'
@@ -217,8 +217,8 @@ def load_data(csv_path: str) -> pd.DataFrame:
 
 def filter_data(
     df: pd.DataFrame,
-    working_point: Dict[str, Any],
-    exclude_params: Optional[List[str]] = None
+    working_point: dict[str, Any],
+    exclude_params: list[str] | None = None
 ) -> pd.DataFrame:
     """
     Filter data to working point.
