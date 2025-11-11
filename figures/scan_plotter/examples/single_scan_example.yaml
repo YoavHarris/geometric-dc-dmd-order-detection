@@ -1,0 +1,31 @@
+# Single scan example - direct specification
+
+base:
+  csv_path: ../../examples/combined_results_cleaned.csv
+  metric: order_hit_prob
+  show: false
+
+plots:
+  # Working point: Defines slice of parameter space to visualize
+  - working_point:
+      # Complete specification - filters data to this exact parameter combination
+      snr_db: 8.0           # x_param: Reference value (varies in plot, this marks nominal)
+      freq_sep: 0.01        # Fixed: Only rows with this value
+      eig_mag: 0.98         # Fixed
+      eig_mag_spread: 0.0   # Fixed
+      rho_mode: random      # Fixed
+      delays_over_timesteps: 0.32  # Fixed
+      temporal_dim: 200     # Fixed
+      spatial_dim: 45       # Fixed
+      num_modes: 2          # Fixed
+      top_amplitude: 1.0    # Fixed
+      max_rank: 10          # Fixed
+      artificial_damping: 1.0  # Fixed
+      noise_mode: gaussian  # Fixed: Single scan requires all params specified
+    
+    # What varies (x-axis)
+    x_param: snr_db
+    
+    output_path: output/single_scan_example.png
+    title: "Order Hit Probability vs. SNR (num_modes=2, Gaussian Noise)"
+
