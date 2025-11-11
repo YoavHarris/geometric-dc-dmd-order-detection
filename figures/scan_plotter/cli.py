@@ -28,6 +28,7 @@ class ScanPlotterCLI:
         title: str = None,
         show: bool = False,
         methods: list[str] | None = None,
+        xscale: str | None = None,
     ):
         """
         Create a single scan plot.
@@ -59,6 +60,7 @@ class ScanPlotterCLI:
                 "metric": metric,
                 "working_point": working_point,
                 "methods": methods,
+                "xscale": xscale,
                 "title": title,
             }
         ]
@@ -79,6 +81,7 @@ class ScanPlotterCLI:
         title: str = None,
         show: bool = False,
         methods: list[str] | None = None,
+        xscale: str | None = None,
     ):
         """
         Create multi-panel plot varying panel_param.
@@ -182,7 +185,8 @@ class ScanPlotterCLI:
                         panel_values=merged["panel_values"],
                         title=merged.get("title"),
                         show=merged.get("show", False),
-                        methods=merged["methods"],
+                        methods=merged.get("methods"),
+                        xscale=merged.get("xscale"),
                     )
                 else:
                     self.single(
@@ -194,6 +198,7 @@ class ScanPlotterCLI:
                         title=merged.get("title"),
                         show=merged.get("show", False),
                         methods=merged.get("methods"),
+                        xscale=merged.get("xscale"),
                     )
 
                 print("  [OK]")

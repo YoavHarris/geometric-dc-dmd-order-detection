@@ -20,6 +20,48 @@ class SingleScanPlotter:
     def __init__(self, config: dict[str, Any]):
         self.config = config
 
+    @staticmethod
+    def _detect_axis_type(values: np.ndarray, abs_tol: float = 0.01) -> str:
+        """
+        Detect axis spacing type from parameter values.
+
+        Aligns with param_generator.py output:
+        - 'linear': scale="lin" - constant differences
+        - 'log': scale="log" - constant log-differences
+        - 'categorical': type="list" - neither
+
+        Uses absolute tolerance based on param_generator rounding errors
+        (~1e-3 for log spacing) + CSV round-trip precision.
+
+        Args:
+            values: Array of parameter values from filtered data
+            abs_tol: Absolute std tolerance (default 0.01, 10x generator error)
+
+        Returns:
+            'linear', 'log', or 'categorical'
+        """
+        unique_vals = np.unique(values)
+        n = len(unique_vals)
+
+        if n < 3:
+            return "linear"  # Too few points to distinguish
+
+        sorted_vals = np.sort(unique_vals)
+
+        # Test 1: Are differences constant? (linear spacing)
+        diffs = np.diff(sorted_vals)
+        if np.std(diffs) < abs_tol:
+            return "linear"
+
+        # Test 2: Are log-differences constant? (log spacing)
+        if np.all(sorted_vals > 0):
+            log_diffs = np.diff(np.log(sorted_vals))
+            if np.std(log_diffs) < abs_tol:
+                return "log"
+
+        # Neither linear nor log: categorical
+        return "categorical"
+
     def plot(
         self,
         ax: plt.Axes,
@@ -28,6 +70,7 @@ class SingleScanPlotter:
         metric: str,
         working_point: dict[str, Any] | None = None,
         methods: list[str] | None = None,
+        xscale: str | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
         title: str | None = None,
@@ -42,12 +85,19 @@ class SingleScanPlotter:
             metric: Metric on y-axis
             working_point: Working point dict (for vertical line)
             methods: List of methods to plot (if None, plot all)
+            xscale: Force axis scale ('linear', 'log', 'categorical', or None for auto)
             show_legend: Show legend?
             show_ylabel: Show y-axis label?
             title: Axis title
         """
         if methods is None:
             methods = sorted(df["method"].unique())
+
+        # Detect or override axis type
+        if xscale is not None:
+            axis_type = xscale
+        else:
+            axis_type = self._detect_axis_type(df[x_param].values)
 
         # Get styling config
         line_cfg = self.config.get("lines", {})
@@ -77,6 +127,14 @@ class SingleScanPlotter:
                 markersize=markersize,
                 label=method,
             )
+
+        # Apply axis scaling based on detected type
+        if axis_type == "log":
+            ax.set_xscale("log")
+        elif axis_type == "categorical":
+            # Set explicit tick positions for categorical data
+            unique_vals = sorted(df[x_param].unique())
+            ax.set_xticks(unique_vals)
 
         # Add vertical line at working point value (if provided)
         if working_point and x_param in working_point:
@@ -193,6 +251,7 @@ class PanelComposer:
                 metric=panel_spec["metric"],
                 working_point=panel_spec.get("working_point"),
                 methods=panel_spec.get("methods"),
+                xscale=panel_spec.get("xscale"),
                 show_legend=show_legend,
                 show_ylabel=show_ylabel,
                 title=panel_spec.get("title"),

@@ -33,7 +33,7 @@ generator:
   working_point:
     snr_db: 8.0
     freq_sep: 0.01
-    eig_mag: 0.98
+    eig_mag: 0.97
     eig_mag_spread: 0.0
     delays_over_timesteps: 0.32
     spatial_dim: 45
@@ -45,23 +45,23 @@ parameters:
   snr_db:
     type: range
     role: wp
-    start: -4
+    start: -10
     end: 20
-    num_steps: 13
+    num_steps: 16
     scale: lin
 
   freq_sep:
     type: range
     role: wp
-    start: 0.0025
+    start: 0.0005
     end: 0.025
-    num_steps: 10
+    num_steps: 15
     scale: lin
 
   eig_mag:
     type: range
     role: wp
-    start: 0.8
+    start: 0.85
     end: 1.0
     num_steps: 11
     scale: lin
