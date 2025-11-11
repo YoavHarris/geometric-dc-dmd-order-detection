@@ -5,8 +5,7 @@ Validates all configuration parameters before job generation.
 """
 
 import os
-from pathlib import Path
-from typing import Dict, Any, List, Set
+from typing import Any
 import numpy as np
 
 
@@ -38,7 +37,7 @@ VALID_SCALES = {"lin", "log"}
 VALID_ROLES = {"wp", "cartesian"}
 
 
-def validate_config(config: Dict[str, Any]) -> None:
+def validate_config(config: dict[str, Any]) -> None:
     """
     Validate entire configuration.
 
@@ -57,7 +56,7 @@ def validate_config(config: Dict[str, Any]) -> None:
     _validate_parameter_compatibility(config)
 
 
-def _validate_experiment_section(config: Dict[str, Any]) -> None:
+def _validate_experiment_section(config: dict[str, Any]) -> None:
     """Validate experiment section."""
     if "experiment" not in config:
         raise ConfigValidationError("Missing 'experiment' section")
@@ -74,7 +73,7 @@ def _validate_experiment_section(config: Dict[str, Any]) -> None:
         )
 
 
-def _validate_methods_section(config: Dict[str, Any]) -> None:
+def _validate_methods_section(config: dict[str, Any]) -> None:
     """Validate methods section."""
     if "methods" not in config:
         raise ConfigValidationError("Missing 'methods' section")
@@ -94,7 +93,7 @@ def _validate_methods_section(config: Dict[str, Any]) -> None:
         )
 
 
-def _validate_clustering_section(config: Dict[str, Any]) -> None:
+def _validate_clustering_section(config: dict[str, Any]) -> None:
     """Validate clustering configuration."""
     if "clustering" not in config:
         raise ConfigValidationError("Missing 'clustering' section")
@@ -123,7 +122,7 @@ def _validate_clustering_section(config: Dict[str, Any]) -> None:
         )
 
 
-def _validate_generator_section(config: Dict[str, Any]) -> None:
+def _validate_generator_section(config: dict[str, Any]) -> None:
     """Validate generator section."""
     if "generator" not in config:
         raise ConfigValidationError("Missing 'generator' section")
@@ -140,7 +139,7 @@ def _validate_generator_section(config: Dict[str, Any]) -> None:
         )
 
 
-def _validate_parameters_section(config: Dict[str, Any]) -> None:
+def _validate_parameters_section(config: dict[str, Any]) -> None:
     """Validate parameters section."""
     if "parameters" not in config:
         raise ConfigValidationError("Missing 'parameters' section")
@@ -154,7 +153,7 @@ def _validate_parameters_section(config: Dict[str, Any]) -> None:
         _validate_parameter_spec(name, spec)
 
 
-def _validate_parameter_spec(name: str, spec: Dict[str, Any]) -> None:
+def _validate_parameter_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate a single parameter specification."""
     if "type" not in spec:
         raise ConfigValidationError(f"Parameter '{name}' missing 'type'")
@@ -180,7 +179,7 @@ def _validate_parameter_spec(name: str, spec: Dict[str, Any]) -> None:
         _validate_const_spec(name, spec)
 
 
-def _validate_range_spec(name: str, spec: Dict[str, Any]) -> None:
+def _validate_range_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate range-type parameter."""
     required = ["start", "end", "num_steps"]
     for field in required:
@@ -212,7 +211,7 @@ def _validate_range_spec(name: str, spec: Dict[str, Any]) -> None:
         )
 
 
-def _validate_list_spec(name: str, spec: Dict[str, Any]) -> None:
+def _validate_list_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate list-type parameter."""
     if "values" not in spec:
         raise ConfigValidationError(f"Parameter '{name}' missing 'values'")
@@ -232,13 +231,13 @@ def _validate_list_spec(name: str, spec: Dict[str, Any]) -> None:
             )
 
 
-def _validate_const_spec(name: str, spec: Dict[str, Any]) -> None:
+def _validate_const_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate const-type parameter."""
     if "value" not in spec:
         raise ConfigValidationError(f"Parameter '{name}' missing 'value'")
 
 
-def _validate_static_args_section(config: Dict[str, Any]) -> None:
+def _validate_static_args_section(config: dict[str, Any]) -> None:
     """Validate static_args section."""
     if "static_args" not in config:
         raise ConfigValidationError("Missing 'static_args' section")
@@ -273,7 +272,7 @@ def _validate_static_args_section(config: Dict[str, Any]) -> None:
             )
 
 
-def _validate_pbs_section(config: Dict[str, Any]) -> None:
+def _validate_pbs_section(config: dict[str, Any]) -> None:
     """Validate PBS configuration."""
     if "pbs" not in config:
         raise ConfigValidationError("Missing 'pbs' section")
@@ -294,7 +293,7 @@ def _validate_pbs_section(config: Dict[str, Any]) -> None:
             )
 
 
-def _validate_paths_section(config: Dict[str, Any]) -> None:
+def _validate_paths_section(config: dict[str, Any]) -> None:
     """Validate paths section."""
     if "paths" not in config:
         raise ConfigValidationError("Missing 'paths' section")
@@ -321,7 +320,7 @@ def _validate_paths_section(config: Dict[str, Any]) -> None:
         )
 
 
-def _validate_output_section(config: Dict[str, Any]) -> None:
+def _validate_output_section(config: dict[str, Any]) -> None:
     """Validate output section."""
     if "output" not in config:
         raise ConfigValidationError("Missing 'output' section")
@@ -332,7 +331,7 @@ def _validate_output_section(config: Dict[str, Any]) -> None:
         raise ConfigValidationError("Missing 'output.output_dir'")
 
 
-def _validate_parameter_compatibility(config: Dict[str, Any]) -> None:
+def _validate_parameter_compatibility(config: dict[str, Any]) -> None:
     """
     Validate that parameter combinations are compatible.
     Specifically: N * (1 - tau) >= M for all configurations.
@@ -399,7 +398,7 @@ def _validate_parameter_compatibility(config: Dict[str, Any]) -> None:
         )
 
 
-def validate_config_file(config_path: str) -> Dict[str, Any]:
+def validate_config_file(config_path: str) -> dict[str, Any]:
     """
     Load and validate a configuration file.
 

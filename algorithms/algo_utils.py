@@ -5,7 +5,6 @@ algo_utils.py
 Utility functions for DMD algorithms.
 """
 
-from typing import Dict
 import numpy as np
 from numpy.typing import NDArray
 
@@ -15,7 +14,7 @@ def subspace_stats(
     estimated_basis: NDArray,
     num_components: int,
     eps: float = 1e-12,
-) -> Dict[str, np.ndarray | float]:
+) -> dict[str, np.ndarray | float]:
     """
     Compute subspace similarity statistics using principal angles.
 
