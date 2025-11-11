@@ -35,8 +35,8 @@ generator:
     freq_sep: 0.01
     eig_mag: 0.98
     eig_mag_spread: 0.0
-    delays_over_timesteps: 0.3
-    spatial_dim: 50
+    delays_over_timesteps: 0.32
+    spatial_dim: 45
     temporal_dim: 200
     top_amplitude: 1.0
     max_rank: 10
@@ -45,9 +45,9 @@ parameters:
   snr_db:
     type: range
     role: wp
-    start: -5
+    start: -4
     end: 20
-    num_steps: 26
+    num_steps: 13
     scale: lin
 
   freq_sep:
@@ -140,5 +140,5 @@ paths:
 # Output Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 output:
-  output_dir: experiment_101125
+  output_dir: experiment_111125
 
