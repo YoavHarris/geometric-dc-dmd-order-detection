@@ -9,7 +9,6 @@ strategies for deciding which cluster represents "true" modes.
 """
 
 from __future__ import annotations
-from typing import Dict, Literal
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -17,9 +16,9 @@ from sklearn.mixture import GaussianMixture
 
 
 def normalize_features(
-    features: Dict[str, np.ndarray],
+    features: dict[str, np.ndarray],
     mode: str | None,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
     Normalize features per-column.
 
@@ -56,12 +55,12 @@ def normalize_features(
 
 
 def choose_true_cluster(
-    features: Dict[str, np.ndarray],
+    features: dict[str, np.ndarray],
     feature_matrix: np.ndarray,
     base_labels: np.ndarray,
     strategy: str,
     pilot_feature: str,
-    weights: Dict[str, float],
+    weights: dict[str, float],
 ) -> np.ndarray:
     """
     Decide which cluster (0 or 1) represents "true" modes.
@@ -151,7 +150,7 @@ class ModeClustering:
         normalization: str | None = "min_max",
         strategy: str = "vote",
         pilot_feature: str = "",
-        weights: Dict[str, float] | None = None,
+        weights: dict[str, float] | None = None,
         algorithm: str = "kmeans",
         gmm_covariance: str = "full",
         random_state: int | None = None,
@@ -169,7 +168,7 @@ class ModeClustering:
         self.model_ = None
         self.feature_names_ = None
 
-    def fit(self, features: Dict[str, np.ndarray]) -> "ModeClustering":
+    def fit(self, features: dict[str, np.ndarray]) -> "ModeClustering":
         """
         Fit clustering and assign labels.
 
@@ -226,7 +225,7 @@ class ModeClustering:
 
         return self
 
-    def __call__(self, features: Dict[str, np.ndarray]) -> np.ndarray:
+    def __call__(self, features: dict[str, np.ndarray]) -> np.ndarray:
         """Convenience: fit and return labels in one call."""
         return self.fit(features).labels_
 

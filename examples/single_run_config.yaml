@@ -9,26 +9,26 @@ random_seed: 1235
 # ---- Parameters for this single job ----
 parameters:
   # Signal/noise
-  snr_db: 10                # signal-to-noise ratio in decibels
+  snr_db: 8                # signal-to-noise ratio in decibels
   noise_mode: gaussian       # noise type used by data generator
 
   # Spectrum
-  freq_sep: 0.025            # minimum normalized frequency separation
+  freq_sep: 0.01            # minimum normalized frequency separation
   eig_mag: 0.98               # eigenvalue magnitude (1.0 = undamped)
   eig_mag_spread: 0.0        # optional variability in eigenvalue magnitude
   artificial_damping: 1.0    # <1.0 adds extra decay to the data
 
   # Dimensions
   temporal_dim: 200          # number of time steps
-  spatial_dim: 50           # spatial dimension (D)
-  num_modes: 3               # true number of modes
+  spatial_dim: 45           # spatial dimension (D)
+  num_modes: 5              # true number of modes
   top_amplitude: 1.0         # amplitude of the strongest mode
 
   # Delay embedding
-  delays_over_timesteps: 0.33   # ratio of delays to time steps (L/N)
+  delays_over_timesteps: 0.2   # ratio of delays to time steps (L/N)
 
   # DMD truncation
-  max_rank: 10               # rank used for DMD (>= num_modes)
+  max_rank: 12              # rank used for DMD (>= num_modes)
 
 # ---- Static arguments ----
 static_args:

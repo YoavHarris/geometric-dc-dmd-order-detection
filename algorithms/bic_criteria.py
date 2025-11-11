@@ -128,4 +128,3 @@ class BICOrderEstimator:
         plt.ylabel("BIC (lower is better)")
         plt.grid(True, alpha=0.3)
         plt.show()
-

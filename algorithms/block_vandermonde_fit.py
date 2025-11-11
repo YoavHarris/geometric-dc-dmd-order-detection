@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 from numpy.typing import NDArray
-from typing import Dict
 from abc import ABC, abstractmethod
 from utils.visualizations import (
     plot_matrices_list,
@@ -88,7 +87,7 @@ class BlockVandermondeFit(ABC):
         plot: bool = False,
         return_raw: bool = False,
         **kwargs,
-    ) -> Dict[str, NDArray[np.floating]]:
+    ) -> dict[str, NDArray[np.floating]]:
         """
         Compute per-mode BV-fit features.
 
@@ -154,12 +153,12 @@ class BlockVandermondeFit(ABC):
         mode_matrices: NDArray[np.complexfloating],  # (M, D, L)
         eigenvalues: NDArray[np.complexfloating],  # (M,)
         **kwargs,
-    ) -> Dict[str, NDArray[np.floating]]:
+    ) -> dict[str, NDArray[np.floating]]:
         """Strategy-specific computation. Must be implemented by subclasses."""
         pass
 
     @abstractmethod
-    def _plot_features(self, features: Dict[str, NDArray]):
+    def _plot_features(self, features: dict[str, NDArray]):
         """Strategy-specific plotting. Must be implemented by subclasses."""
         pass
 
@@ -205,7 +204,7 @@ class NestedDMD(BlockVandermondeFit):
         mode_matrices: NDArray[np.complexfloating],  # (M, D, L)
         eigenvalues: NDArray[np.complexfloating],  # (M,)
         **fit_dmd_kwargs,
-    ) -> Dict[str, NDArray[np.floating]]:
+    ) -> dict[str, NDArray[np.floating]]:
         """Fit rank-1 DMD to each mode matrix and extract features."""
         # Fit DMD to each mode
         fits = [fit_dmd(mat, svd_rank=1, **fit_dmd_kwargs) for mat in mode_matrices]
@@ -251,7 +250,7 @@ class NestedDMD(BlockVandermondeFit):
             "Eigenvalue-Consistency_raw": consistency_errors.astype(np.float32),
         }
 
-    def _plot_features(self, features: Dict[str, NDArray]):
+    def _plot_features(self, features: dict[str, NDArray]):
         """Plot 2D scatter of nested DMD scores."""
         scores = np.stack(
             [features["Reconstruction"], features["Eigenvalue-Consistency"]], axis=1
@@ -284,7 +283,7 @@ class FixedEigenvalueBVFit(BlockVandermondeFit):
         mode_matrices: NDArray[np.complexfloating],  # (M, D, L)
         eigenvalues: NDArray[np.complexfloating],  # (M,)
         **kwargs,
-    ) -> Dict[str, NDArray[np.floating]]:
+    ) -> dict[str, NDArray[np.floating]]:
         """Closed-form BV fit using external eigenvalues."""
         num_modes, spatial_dim, num_delays = mode_matrices.shape
         eigenvalues = eigenvalues.astype(np.complex128)
@@ -319,7 +318,7 @@ class FixedEigenvalueBVFit(BlockVandermondeFit):
             "BV-Fit_raw": residuals.astype(np.float32),
         }
 
-    def _plot_features(self, features: Dict[str, NDArray]):
+    def _plot_features(self, features: dict[str, NDArray]):
         """Plot 1D scatter of FEBVF scores."""
         scatter_scores_1d(
             features["BV-Fit"],
