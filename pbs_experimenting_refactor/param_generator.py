@@ -11,19 +11,60 @@ from typing import Any, Dict, List, Union
 import numpy as np
 
 
+# Maximum decimal places to prevent over-rounding
+MAX_DECIMAL_PLACES = 15
+
+
+def _compute_decimal_places(step_size: float, margin: int = 2) -> int:
+    """
+    Compute decimal places needed to distinguish adjacent grid points.
+    Uses step size to adaptively determine precision: smaller steps need more decimals.
+    Adds margin for safety and caps at MAX_DECIMAL_PLACES.
+    """
+    if step_size == 0 or not np.isfinite(step_size):
+        return 0
+    
+    decimals = max(0, int(np.ceil(-np.log10(abs(step_size)))) + margin)
+    return min(decimals, MAX_DECIMAL_PLACES)
+
+
 def _gen_range(spec: Dict[str, Any]) -> List[Union[int, float]]:
     """Generate values for range-type parameter."""
     start, end, steps = spec["start"], spec["end"], spec["num_steps"]
     scale = spec.get("scale", "lin")
-
+    
+    if steps == 1:
+        val = start
+        if spec.get("as_int", False):
+            return [int(round(val))]
+        return [float(val)]
+    
     if scale == "log":
-        vals = np.logspace(np.log10(start), np.log10(end), steps)
+        # Generate in log space and round there for proper scaling
+        log_start, log_end = np.log10(start), np.log10(end)
+        log_step = (log_end - log_start) / (steps - 1)
+        decimals = _compute_decimal_places(log_step)
+        
+        log_vals = np.linspace(log_start, log_end, steps)
+        log_vals = np.round(log_vals, decimals=decimals)
+        vals = np.power(10.0, log_vals)
+        
+        # Snap endpoints to exact values
+        vals[0], vals[-1] = start, end
     else:
+        # Linear spacing with adaptive precision
+        step = (end - start) / (steps - 1)
+        decimals = _compute_decimal_places(step)
+        
         vals = np.linspace(start, end, steps)
-
+        vals = np.round(vals, decimals=decimals)
+        
+        # Snap endpoints to exact values
+        vals[0], vals[-1] = start, end
+    
     if spec.get("as_int", False):
         return [int(round(v)) for v in vals]
-
+    
     return vals.tolist()
 
 
