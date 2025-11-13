@@ -33,7 +33,7 @@ methods:
 
 # Figure dimensions
 figure:
-  panel_width: 5
+  panel_width: 8
   panel_height: 4
   dpi: 150
 

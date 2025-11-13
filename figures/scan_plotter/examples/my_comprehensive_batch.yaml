@@ -1,0 +1,150 @@
+# Comprehensive scan generation
+# Uses baseline_working_point to avoid repetition
+
+base:
+  csv_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\combined_results.csv
+  metric: order_hit_prob
+  methods:
+    - AIC
+    - BIC
+    - GAP
+#    - ExactModeNorm
+    - STC
+    - ESL-Norm
+    - NestedDMD
+    - FixedEigenvalueBVFit
+    -
+  panel_param: noise_mode
+  panel_values: [gaussian, student_t, hetero, bi_gaussian]
+
+  show: false
+
+
+# Baseline working point - shared across all plots
+# Individual plots only override what differs
+baseline_working_point:
+  snr_db: 8.0
+  freq_sep: 0.01
+  eig_mag: 0.98
+  eig_mag_spread: 0.0
+  rho_mode: random
+  delays_over_timesteps: 0.32
+  temporal_dim: 200
+  spatial_dim: 45
+  top_amplitude: 1.0
+  max_rank: 10
+  artificial_damping: 1.0
+
+plots:
+  # ===== SNR scans (snr_db varies on x-axis) =====
+  - working_point: {num_modes: 2}
+    x_param: snr_db
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\snr_db_num_modes_2.png
+#    title: "Order Hit Probability vs. SNR (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: snr_db
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\snr_db_num_modes_3.png
+    title: "Order Hit Probability vs. SNR (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: snr_db
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\snr_db_num_modes_5.png
+    title: "Order Hit Probability vs. SNR (num_modes=5)"
+
+  # ===== Frequency separation scans =====
+  - working_point: {num_modes: 2}
+    x_param: freq_sep
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\freq_sep_num_modes_2.png
+    title: "Order Hit Probability vs. Frequency Separation (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: freq_sep
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\freq_sep_num_modes_3.png
+    title: "Order Hit Probability vs. Frequency Separation (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: freq_sep
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\freq_sep_num_modes_5.png
+    title: "Order Hit Probability vs. Frequency Separation (num_modes=5)"
+
+  # ===== Eigenvalue magnitude scans =====
+  - working_point: {num_modes: 2}
+    x_param: eig_mag
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\eig_mag_num_modes_2.png
+    title: "Order Hit Probability vs. Eigenvalue Magnitude (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: eig_mag
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\eig_mag_num_modes_3.png
+    title: "Order Hit Probability vs. Eigenvalue Magnitude (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: eig_mag
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\eig_mag_num_modes_5.png
+    title: "Order Hit Probability vs. Eigenvalue Magnitude (num_modes=5)"
+
+  # ===== Spatial dimension scans =====
+  - working_point: {num_modes: 2}
+    x_param: spatial_dim
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\spatial_dim_num_modes_2.png
+    title: "Order Hit Probability vs. Spatial Dimension (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: spatial_dim
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\spatial_dim_num_modes_3.png
+    title: "Order Hit Probability vs. Spatial Dimension (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: spatial_dim
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\spatial_dim_num_modes_5.png
+    title: "Order Hit Probability vs. Spatial Dimension (num_modes=5)"
+
+  # ===== Delays/timesteps scans =====
+  - working_point: {num_modes: 2}
+    x_param: delays_over_timesteps
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\delays_over_timesteps_num_modes_2.png
+    title: "Order Hit Probability vs. Delays/Timesteps (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: delays_over_timesteps
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\delays_over_timesteps_num_modes_3.png
+    title: "Order Hit Probability vs. Delays/Timesteps (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: delays_over_timesteps
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\delays_over_timesteps_num_modes_5.png
+    title: "Order Hit Probability vs. Delays/Timesteps (num_modes=5)"
+
+
+  # ===== Top amplitude scans =====
+  - working_point: {num_modes: 2}
+    x_param: top_amplitude
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\top_amplitude_num_modes_2.png
+    title: "Order Hit Probability vs. Top Amplitude (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: top_amplitude
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\top_amplitude_num_modes_3.png
+    title: "Order Hit Probability vs. Top Amplitude (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: top_amplitude
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\top_amplitude_num_modes_5.png
+    title: "Order Hit Probability vs. Top Amplitude (num_modes=5)"
+
+  # ===== Max rank scans =====
+  - working_point: {num_modes: 2}
+    x_param: max_rank
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\max_rank_num_modes_2.png
+    title: "Order Hit Probability vs. Max Rank (num_modes=2)"
+
+  - working_point: {num_modes: 3}
+    x_param: max_rank
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\max_rank_num_modes_3.png
+    title: "Order Hit Probability vs. Max Rank (num_modes=3)"
+
+  - working_point: {num_modes: 5}
+    x_param: max_rank
+    output_path: C:\Users\Yoav\dcdmd_experiments\111125_fixed\scan_plots\max_rank_num_modes_5.png
+    title: "Order Hit Probability vs. Max Rank (num_modes=5)"
