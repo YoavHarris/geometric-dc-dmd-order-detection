@@ -30,6 +30,18 @@ python cli.py single \
   --title="SNR Scan"
 ```
 
+Optional: control x-axis limits (e.g., zoom into [0.85, 0.95] of available data):
+
+```bash
+python cli.py single \
+  --csv_path=data.csv \
+  --x_param=snr_db \
+  --metric=order_hit_prob \
+  --working_point="{'num_modes': 2, 'noise_mode': 'gaussian'}" \
+  --output_path=output.png \
+  --xlim="(0.85, 0.95)"
+```
+
 ### Multi-Panel (Parameter Variation)
 
 ```bash
@@ -70,6 +82,7 @@ plots:
     x_param: freq_sep
     output_path: output/freq_sep_nm2.png
     title: "Frequency Separation (num_modes=2)"
+    xlim: [0.85, 0.95]  # Optional: limit x-axis range
 ```
 
 ## Working Points
@@ -100,6 +113,23 @@ This gives you: "order_hit_prob vs SNR for num_modes=2, noise_mode=gaussian, fre
 - **Single scan**: Specify ALL parameters except `x_param`
 - **Multi-panel**: Specify ALL parameters except `x_param` and `panel_param`
 - Each (x_value, panel_value, method) should map to exactly ONE row in your CSV
+
+## X-Axis Range Control
+
+You can control the displayed x-axis range using the `xlim` parameter. This works across all modes (single, multi, batch):
+
+```bash
+--xlim="(0.85, 0.95)"
+```
+
+or in YAML config:
+
+```yaml
+xlim: [0.85, 0.95]
+```
+
+The limits are passed directly to matplotlib - no validation is performed.
+If you specify a range outside your data, you'll see an empty or partial plot, which makes it easy to adjust naturally.
 
 ## Design Configuration
 

@@ -29,6 +29,7 @@ class ScanPlotterCLI:
         show: bool = False,
         methods: list[str] | None = None,
         xscale: str | None = None,
+        xlim: tuple[float, float] | None = None,
     ):
         """
         Create a single scan plot.
@@ -39,7 +40,8 @@ class ScanPlotterCLI:
                 --x_param=snr_db \\
                 --metric=order_hit_prob \\
                 --output_path=output.png \\
-                --working_point="{'num_modes': 2, 'noise_mode': 'gaussian'}"
+                --working_point="{'num_modes': 2, 'noise_mode': 'gaussian'}" \\
+                --xlim="(0.85, 0.95)"
         """
         df = load_data(csv_path)
         filtered = filter_data(df, working_point, exclude_params=[x_param])
@@ -61,6 +63,7 @@ class ScanPlotterCLI:
                 "working_point": working_point,
                 "methods": methods,
                 "xscale": xscale,
+                "xlim": xlim,
                 "title": title,
             }
         ]
@@ -82,6 +85,7 @@ class ScanPlotterCLI:
         show: bool = False,
         methods: list[str] | None = None,
         xscale: str | None = None,
+        xlim: tuple[float, float] | None = None,
     ):
         """
         Create multi-panel plot varying panel_param.
@@ -94,7 +98,8 @@ class ScanPlotterCLI:
                 --panel_param=noise_mode \\
                 --panel_values="['gaussian', 'student_t']" \\
                 --output_path=output.png \\
-                --working_point="{'num_modes': 2}"
+                --working_point="{'num_modes': 2}" \\
+                --xlim="(0.85, 0.95)"
         """
         df = load_data(csv_path)
 
@@ -121,6 +126,8 @@ class ScanPlotterCLI:
                         "metric": metric,
                         "working_point": working_point,
                         "methods": methods,
+                        "xscale": xscale,
+                        "xlim": xlim,
                         "title": f"{panel_param.replace('_', ' ').title()} = {pval}",
                     }
                 )
@@ -187,6 +194,7 @@ class ScanPlotterCLI:
                         show=merged.get("show", False),
                         methods=merged.get("methods"),
                         xscale=merged.get("xscale"),
+                        xlim=merged.get("xlim"),
                     )
                 else:
                     self.single(
@@ -199,6 +207,7 @@ class ScanPlotterCLI:
                         show=merged.get("show", False),
                         methods=merged.get("methods"),
                         xscale=merged.get("xscale"),
+                        xlim=merged.get("xlim"),
                     )
 
                 print("  [OK]")

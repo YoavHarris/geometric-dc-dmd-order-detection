@@ -71,6 +71,7 @@ class SingleScanPlotter:
         working_point: dict[str, Any] | None = None,
         methods: list[str] | None = None,
         xscale: str | None = None,
+        xlim: tuple[float, float] | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
         title: str | None = None,
@@ -86,6 +87,7 @@ class SingleScanPlotter:
             working_point: Working point dict (for vertical line)
             methods: List of methods to plot (if None, plot all)
             xscale: Force axis scale ('linear', 'log', 'categorical', or None for auto)
+            xlim: X-axis limits as (min, max) tuple (if None, use automatic)
             show_legend: Show legend?
             show_ylabel: Show y-axis label?
             title: Axis title
@@ -147,6 +149,10 @@ class SingleScanPlotter:
                 alpha=0.7,
                 zorder=0,
             )
+
+        # Apply x-axis limits (if provided)
+        if xlim is not None:
+            ax.set_xlim(xlim)
 
         # Format
         if show_ylabel:
@@ -252,6 +258,7 @@ class PanelComposer:
                 working_point=panel_spec.get("working_point"),
                 methods=panel_spec.get("methods"),
                 xscale=panel_spec.get("xscale"),
+                xlim=panel_spec.get("xlim"),
                 show_legend=show_legend,
                 show_ylabel=show_ylabel,
                 title=panel_spec.get("title"),

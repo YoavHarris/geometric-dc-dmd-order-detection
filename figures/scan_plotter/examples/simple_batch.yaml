@@ -38,4 +38,13 @@ plots:
     x_param: snr_db
     output_path: output/snr_num_modes_3.png
     title: "Order Hit Probability vs. SNR (num_modes=3)"
+  
+  # SNR scan for num_modes=2 with x-axis zoom
+  # xlim limits the displayed range (must be subset of available data)
+  - working_point:
+      num_modes: 2
+    x_param: snr_db
+    xlim: [6.0, 10.0]  # Zoom to SNR range [6, 10] dB
+    output_path: output/snr_num_modes_2_zoomed.png
+    title: "Order Hit Probability vs. SNR (num_modes=2, zoomed)"
 
