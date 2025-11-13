@@ -131,7 +131,7 @@ class SingleScanPlotter:
                 color=style["color"],
                 linestyle=style["linestyle"],
                 linewidth=linewidth,
-                marker="o",
+                marker=style.get("marker", "o"),
                 markersize=markersize,
                 label=method,
             )
@@ -187,7 +187,7 @@ class SingleScanPlotter:
             )
 
     def _get_style(self, method: str) -> dict[str, str]:
-        """Get color and linestyle for method."""
+        """Get color, linestyle, and marker for method."""
         methods_cfg = self.config.get("methods", {})
         if method in methods_cfg:
             return methods_cfg[method]
@@ -196,6 +196,7 @@ class SingleScanPlotter:
             return {
                 "color": defaults.get("color", "#999999"),
                 "linestyle": defaults.get("linestyle", ":"),
+                "marker": defaults.get("marker", "o"),
             }
 
     def _format_label(self, text: str) -> str:

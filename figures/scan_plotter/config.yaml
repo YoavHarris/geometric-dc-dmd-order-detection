@@ -1,35 +1,45 @@
 # Design Configuration - Static styling choices
 # This file is rarely touched
 
-# Method styling (fixed colors and linestyles)
+# Method styling (fixed colors, linestyles, and markers)
+# Convention: Our methods use circles (o), comparison methods use triangles (^)
 methods:
   ESL-Norm:
     color: '#00008B'
     linestyle: '-'
+    marker: 'o'
   FixedEigenvalueBVFit:
     color: '#5DADE2'
     linestyle: '-'
+    marker: 'o'
   NestedDMD:
     color: '#4682B4'
     linestyle: '-'
+    marker: 'o'
   AIC:
     color: '#8B0000'
     linestyle: '--'
+    marker: '^'
   BIC:
     color: '#CD5C5C'
     linestyle: '--'
+    marker: '^'
   ExactModeNorm:
     color: '#FF6347'
     linestyle: '--'
+    marker: '^'
   GAP:
     color: '#FF8C00'
     linestyle: '--'
+    marker: '^'
   STC:
     color: '#FFD700'
     linestyle: '--'
+    marker: '^'
   AICc:
     color: '#FFA500'
     linestyle: '--'
+    marker: '^'
 
 # Figure dimensions
 figure:
@@ -56,6 +66,7 @@ legend:
 defaults:
   color: '#999999'
   linestyle: ':'
+  marker: 'o'
 
 # Parameter label mappings (overrides auto-formatting)
 # Define consistent, proper labels for your parameters globally
