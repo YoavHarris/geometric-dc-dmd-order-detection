@@ -30,6 +30,8 @@ class ScanPlotterCLI:
         methods: list[str] | None = None,
         xscale: str | None = None,
         xlim: tuple[float, float] | None = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
     ):
         """
         Create a single scan plot.
@@ -65,6 +67,8 @@ class ScanPlotterCLI:
                 "xscale": xscale,
                 "xlim": xlim,
                 "title": title,
+                "xlabel": xlabel,
+                "ylabel": ylabel,
             }
         ]
 
@@ -86,6 +90,8 @@ class ScanPlotterCLI:
         methods: list[str] | None = None,
         xscale: str | None = None,
         xlim: tuple[float, float] | None = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
     ):
         """
         Create multi-panel plot varying panel_param.
@@ -129,6 +135,8 @@ class ScanPlotterCLI:
                         "xscale": xscale,
                         "xlim": xlim,
                         "title": f"{panel_param.replace('_', ' ').title()} = {pval}",
+                        "xlabel": xlabel,
+                        "ylabel": ylabel,
                     }
                 )
 
@@ -195,6 +203,8 @@ class ScanPlotterCLI:
                         methods=merged.get("methods"),
                         xscale=merged.get("xscale"),
                         xlim=merged.get("xlim"),
+                        xlabel=merged.get("xlabel"),
+                        ylabel=merged.get("ylabel"),
                     )
                 else:
                     self.single(
@@ -208,6 +218,8 @@ class ScanPlotterCLI:
                         methods=merged.get("methods"),
                         xscale=merged.get("xscale"),
                         xlim=merged.get("xlim"),
+                        xlabel=merged.get("xlabel"),
+                        ylabel=merged.get("ylabel"),
                     )
 
                 print("  [OK]")

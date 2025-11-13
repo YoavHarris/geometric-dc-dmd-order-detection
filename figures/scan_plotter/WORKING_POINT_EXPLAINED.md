@@ -37,9 +37,9 @@ x_param = 'snr_db'
 ```
 
 **What `filter_data()` does**:
-1. Keep only rows where `freq_sep == 0.01` ✓
-2. Keep only rows where `num_modes == 2` ✓
-3. Keep only rows where `noise_mode == 'gaussian'` ✓
+1. Keep only rows where `freq_sep == 0.01`
+2. Keep only rows where `num_modes == 2`
+3. Keep only rows where `noise_mode == 'gaussian'`
 4. **Don't filter** `snr_db` (it's in `exclude_params`)
 
 **Result**: You get these rows:
@@ -72,8 +72,8 @@ panel_values = ['gaussian', 'student_t', 'hetero', 'bi_gaussian']
 **What happens**:
 1. Filter by working_point (excludes both `snr_db` and `noise_mode`)
 2. For each panel value:
-   - Filter further: `noise_mode == 'gaussian'` → Panel 1
-   - Filter further: `noise_mode == 'student_t'` → Panel 2
+   - Filter further: `noise_mode == 'gaussian'` for Panel 1
+   - Filter further: `noise_mode == 'student_t'` for Panel 2
    - etc.
 
 **Result**: 4 side-by-side plots, each showing snr_db vs order_hit_prob for a different noise mode

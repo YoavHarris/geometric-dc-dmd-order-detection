@@ -77,6 +77,8 @@ class SingleScanPlotter:
         show_legend: bool = True,
         show_ylabel: bool = True,
         title: str | None = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
     ):
         """
         Plot one parameter scan on the given axis.
@@ -93,6 +95,8 @@ class SingleScanPlotter:
             show_legend: Show legend?
             show_ylabel: Show y-axis label?
             title: Axis title
+            xlabel: Custom x-axis label (overrides auto-formatting, supports LaTeX)
+            ylabel: Custom y-axis label (overrides auto-formatting, supports LaTeX)
         """
         if methods is None:
             methods = sorted(df["method"].unique())
@@ -158,12 +162,14 @@ class SingleScanPlotter:
 
         # Format
         if show_ylabel:
+            ylabel_text = ylabel if ylabel is not None else self._format_label(metric)
             ax.set_ylabel(
-                self._format_label(metric),
+                ylabel_text,
                 fontsize=self.config.get("labels", {}).get("fontsize", 10),
             )
+        xlabel_text = xlabel if xlabel is not None else self._format_label(x_param)
         ax.set_xlabel(
-            self._format_label(x_param),
+            xlabel_text,
             fontsize=self.config.get("labels", {}).get("fontsize", 10),
         )
         ax.grid(True, alpha=0.3)
@@ -193,7 +199,19 @@ class SingleScanPlotter:
             }
 
     def _format_label(self, text: str) -> str:
-        """Format parameter/metric name."""
+        """
+        Format parameter/metric name.
+        
+        Priority:
+        1. Check global parameter_labels mapping in config
+        2. Fall back to auto-formatting (replace _ with space, title case)
+        """
+        # Check if there's a global mapping for this parameter
+        param_labels = self.config.get("parameter_labels", {})
+        if text in param_labels:
+            return param_labels[text]
+        
+        # Fall back to auto-formatting
         return text.replace("_", " ").title()
 
 
@@ -264,6 +282,8 @@ class PanelComposer:
                 show_legend=show_legend,
                 show_ylabel=show_ylabel,
                 title=panel_spec.get("title"),
+                xlabel=panel_spec.get("xlabel"),
+                ylabel=panel_spec.get("ylabel"),
             )
 
             # Adjust legend for rightmost panel

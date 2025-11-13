@@ -102,7 +102,7 @@ working_point:
   noise_mode: gaussian # Fixed
   # ... all other params fixed
 
-x_param: snr_db       # This varies → becomes the X-axis
+x_param: snr_db       # This varies and becomes the X-axis
 ```
 
 This gives you: "order_hit_prob vs SNR for num_modes=2, noise_mode=gaussian, freq_sep=0.01"
@@ -131,6 +131,98 @@ xlim: [0.85, 0.95]
 The limits are passed directly to matplotlib - no validation is performed.
 If you specify a range outside your data, you'll see an empty or partial plot, which makes it easy to adjust naturally.
 
+## Axis Labels: Global Mappings + Manual Override
+
+The plotter uses a **three-tier priority system** for labels:
+
+1. **Manual override** (xlabel/ylabel in plot config) - Highest priority
+2. **Global mapping** (parameter_labels in config.yaml) - Automatic
+3. **Auto-formatting** (replace _ with space) - Fallback
+
+### Global Mappings (Recommended)
+
+Define labels once in `config.yaml`, use everywhere:
+
+```yaml
+# config.yaml
+parameter_labels:
+  snr_db: "SNR (dB)"
+  eig_mag: "$|\\lambda|$"
+  freq_sep: "$\\Delta f$"
+  order_hit_prob: "$P_{\\mathrm{hit}}$"
+```
+
+Now all plots automatically use these labels:
+
+```yaml
+plots:
+  - x_param: snr_db           # Automatically uses "SNR (dB)"
+    metric: order_hit_prob    # Automatically uses "$P_{\mathrm{hit}}$"
+```
+
+**Consistent, clean, maintainable** - Define once, use everywhere.
+
+### Manual Override (When Needed)
+
+Override global labels for specific plots:
+
+```yaml
+plots:
+  - x_param: snr_db
+    ylabel: "Custom Label for This Plot Only"
+```
+
+### Command-Line Usage
+
+```bash
+python cli.py single \
+  --csv_path=data.csv \
+  --x_param=snr_db \
+  --metric=order_hit_prob \
+  --xlabel='$\mathrm{SNR}$ (dB)' \
+  --ylabel='$P_{\mathrm{hit}}$' \
+  --working_point="{'num_modes': 2}" \
+  --output_path=output.png
+```
+
+### YAML Config Usage
+
+```yaml
+plots:
+  - working_point: {num_modes: 2}
+    x_param: snr_db
+    xlabel: "$\\mathrm{SNR}$ (dB)"      # Note: double backslash in YAML
+    ylabel: "$P_{\\mathrm{hit}}$"       # LaTeX for P_hit
+    output_path: output/plot.png
+```
+
+### LaTeX Examples
+
+**Greek letters and subscripts:**
+```yaml
+xlabel: "$\\Delta f$ (normalized)"     # Delta f
+ylabel: "$\\sigma^2$ (variance)"       # sigma squared
+```
+
+**Complex notation:**
+```yaml
+ylabel: "$\\mathbb{P}(\\hat{r} = r)$"  # Probability that estimate equals true value
+xlabel: "$|\\lambda|$ (magnitude)"      # absolute value of lambda
+```
+
+**Simple text overrides (no LaTeX):**
+```yaml
+xlabel: "Signal-to-Noise Ratio (dB)"
+ylabel: "Hit Probability"
+```
+
+**Notes:**
+- Use double backslashes (`\\`) in YAML strings for LaTeX commands
+- Priority: manual override > global mapping > auto-format
+- Labels apply to all panels in multi-panel plots
+- See `LABEL_SYSTEM.md` for complete documentation
+- See `examples/global_labels_demo.yaml` for examples of all priority levels
+
 ## Design Configuration
 
 Edit `config.yaml` to change:
@@ -146,10 +238,10 @@ This file is rarely touched - it's your design system.
 
 All use cases use the same two building blocks:
 
-- **Single scan** → 1 panel
-- **Multi-panel by parameter** → N panels, vary parameter
-- **Multi-metric** → N panels, vary metric (same pattern)
-- **Grid layout** → 2D arrangement (horizontal + vertical)
+- **Single scan** - 1 panel
+- **Multi-panel by parameter** - N panels, vary parameter
+- **Multi-metric** - N panels, vary metric (same pattern)
+- **Grid layout** - 2D arrangement (horizontal + vertical)
 
 No special-case code needed - just compose panels differently.
 
