@@ -74,9 +74,9 @@ defaults:
 # These are used automatically unless overridden in individual plots
 parameter_labels:
   snr_db: "SNR (dB)"
-  eig_mag: "$|\\lambda|$"
+  eig_mag: "Damping parameter $r$"
   freq_sep: "$\\Delta f$"
-  max_amplitude: "$b_{\\mathrm{max}} / b_{\\mathrm{min}}$"
+  top_amplitude: "$b_{\\mathrm{max}} / b_{\\mathrm{min}}$"
   order_hit_prob: "$P_{\\mathrm{hit}}$"
   num_modes: "Number of Modes"
   noise_mode: "Noise Type"

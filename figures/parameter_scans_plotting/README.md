@@ -144,7 +144,7 @@ The plotter uses a **three-tier priority system** for labels:
 Define labels once in `config.yaml`, use everywhere:
 
 ```yaml
-# config.yaml
+# design_config.yaml
 parameter_labels:
   snr_db: "SNR (dB)"
   eig_mag: "$|\\lambda|$"

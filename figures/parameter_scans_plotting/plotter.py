@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-plt.style.use("chaos_single.mplstyle")
+plt.style.use("mplstyle_files/chaos_single.mplstyle")
 
 
 class SingleScanPlotter:
@@ -202,7 +202,7 @@ class SingleScanPlotter:
     def _format_label(self, text: str) -> str:
         """
         Format parameter/metric name.
-        
+
         Priority:
         1. Check global parameter_labels mapping in config
         2. Fall back to auto-formatting (replace _ with space, title case)
@@ -211,7 +211,7 @@ class SingleScanPlotter:
         param_labels = self.config.get("parameter_labels", {})
         if text in param_labels:
             return param_labels[text]
-        
+
         # Fall back to auto-formatting
         return text.replace("_", " ").title()
 
@@ -324,7 +324,7 @@ class PanelComposer:
 def load_config(path: str | None = None) -> dict[str, Any]:
     """Load configuration."""
     if path is None:
-        path = Path(__file__).parent / "config.yaml"
+        path = Path(__file__).parent / "design_config.yaml"
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
