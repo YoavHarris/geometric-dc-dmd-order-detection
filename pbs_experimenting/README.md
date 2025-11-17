@@ -76,8 +76,12 @@ methods:
   - GAP
   - ExactModeNorm
   - STC                      # Spatiotemporal Coupling
+  - ESL-Norm                 # Estimated Subspace Leakage
   - NestedDMD                # Nested rank-1 DMD strategy
   - FixedEigenvalueBVFit     # Fixed-eigenvalue BV fit
+  # Combination methods (merge features before clustering):
+  - NestedDMD+ESL            # Combines NestedDMD with ESL-Norm
+  - FixedEigenvalueBVFit+ESL # Combines FixedEigenvalueBVFit with ESL-Norm
 ```
 
 ### Clustering

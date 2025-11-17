@@ -16,6 +16,14 @@ methods:
     color: '#4682B4'
     linestyle: '-'
     marker: 'o'
+  NestedDMD+ESL:
+    color: '#006400'
+    linestyle: '-'
+    marker: 'o'
+  FixedEigenvalueBVFit+ESL:
+    color: '#228B22'
+    linestyle: '-'
+    marker: 'o'
   AIC:
     color: '#8B0000'
     linestyle: '--'

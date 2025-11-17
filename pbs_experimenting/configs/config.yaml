@@ -17,6 +17,9 @@ methods:
   - ESL-Norm
   - NestedDMD
   - FixedEigenvalueBVFit
+  # Combination methods (merge features before clustering):
+  - NestedDMD+ESL            # Combines NestedDMD features with ESL-Norm
+  - FixedEigenvalueBVFit+ESL # Combines FixedEigenvalueBVFit features with ESL-Norm
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clustering configuration (shared by all clustering-based methods)

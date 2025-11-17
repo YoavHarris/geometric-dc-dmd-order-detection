@@ -47,6 +47,8 @@ DELAY_EMBEDDING_METHODS = {
     "STC",
     "NestedDMD",
     "FixedEigenvalueBVFit",
+    "NestedDMD+ESL",
+    "FixedEigenvalueBVFit+ESL",
 }
 
 # Information criteria methods
@@ -239,6 +241,7 @@ class MethodEvaluator:
         """
         order_estimates = {}
         pred_masks = {}
+        scores_cache = {}  # Cache for feature scores
 
         # Align modes
         aligned_proj_modes, _ = align_modes_and_amplitudes_phases(
@@ -281,6 +284,7 @@ class MethodEvaluator:
                 eigenvalues=exact_dmd.eigs,  # match exact modes
                 plot=plot,
             )
+            scores_cache["ESL"] = scores  # Save to cache
             labels, order = cluster_scores(scores, self.clustering_config)
             order_estimates["ESL-Norm"] = order
             pred_masks["ESL-Norm"] = labels
@@ -296,6 +300,7 @@ class MethodEvaluator:
                     proj_dmd.eigs,
                     aligned_proj_modes,
                     aligned_ex_modes,
+                    scores_cache,
                     order_estimates,
                     pred_masks,
                     plot,
@@ -315,57 +320,97 @@ class MethodEvaluator:
         eigenvalues: np.ndarray,
         aligned_proj_modes: np.ndarray,
         aligned_ex_modes: np.ndarray,
+        scores_cache: dict,
         order_estimates: dict,
         pred_masks: dict,
         plot: bool,
     ):
         """Evaluate delay-embedding-based methods."""
 
-        # STC
-        if "STC" in methods:
+        # --- Determine what features need to be computed ---
+        features_to_compute = set()
+        for method in methods:
+            if "+" in method:
+                # Combination method: add all components
+                features_to_compute.update(method.split("+"))
+            else:
+                # Individual method
+                features_to_compute.add(method)
+
+        # --- Compute all needed features and save to cache ---
+
+        if "STC" in features_to_compute:
             stc = STC(
                 num_delays=self.num_delays,
                 dt=self.dt,
                 use_nyquist_cap=self.options_config.get("use_nyquist_cap", True),
             )
-            scores = stc.compute_features(
+            scores_cache["STC"] = stc.compute_features(
                 eigenvalues=eigenvalues,
                 modes=aligned_proj_modes,
-                plot=plot,
+                plot=plot and "STC" in methods,
             )
-            labels, order = cluster_scores(scores, self.clustering_config)
-            order_estimates["STC"] = order
-            pred_masks["STC"] = labels
 
-        # NestedDMD
-        if "NestedDMD" in methods:
+        if "NestedDMD" in features_to_compute:
             nested_dmd = NestedDMD(
                 num_delays=self.num_delays,
                 spatial_dim=self.spatial_dim,
             )
-            scores = nested_dmd.compute_features(
+            scores_cache["NestedDMD"] = nested_dmd.compute_features(
                 modes=aligned_proj_modes,
                 eigenvalues=eigenvalues,
-                plot=plot,
+                plot=plot and "NestedDMD" in methods,
             )
-            labels, order = cluster_scores(scores, self.clustering_config)
-            order_estimates["NestedDMD"] = order
-            pred_masks["NestedDMD"] = labels
 
-        # FixedEigenvalueBVFit
-        if "FixedEigenvalueBVFit" in methods:
+        if "FixedEigenvalueBVFit" in features_to_compute:
             febvf = FixedEigenvalueBVFit(
                 num_delays=self.num_delays,
                 spatial_dim=self.spatial_dim,
             )
-            scores = febvf.compute_features(
+            scores_cache["FixedEigenvalueBVFit"] = febvf.compute_features(
                 modes=aligned_proj_modes,
                 eigenvalues=eigenvalues,
-                plot=plot,
+                plot=plot and "FixedEigenvalueBVFit" in methods,
             )
-            labels, order = cluster_scores(scores, self.clustering_config)
+
+        if "ESL" in features_to_compute and "ESL" not in scores_cache:
+            esl = EstimatedSubspaceLeakage()
+            scores_cache["ESL"] = esl.compute_features(
+                exact_modes=aligned_ex_modes,
+                eigenvalues=eigenvalues,
+                plot=False,
+            )
+
+        # --- Cluster individual methods ---
+
+        if "STC" in methods:
+            labels, order = cluster_scores(scores_cache["STC"], self.clustering_config)
+            order_estimates["STC"] = order
+            pred_masks["STC"] = labels
+
+        if "NestedDMD" in methods:
+            labels, order = cluster_scores(scores_cache["NestedDMD"], self.clustering_config)
+            order_estimates["NestedDMD"] = order
+            pred_masks["NestedDMD"] = labels
+
+        if "FixedEigenvalueBVFit" in methods:
+            labels, order = cluster_scores(scores_cache["FixedEigenvalueBVFit"], self.clustering_config)
             order_estimates["FixedEigenvalueBVFit"] = order
             pred_masks["FixedEigenvalueBVFit"] = labels
+
+        # --- Cluster combinations (features guaranteed in cache) ---
+
+        if "NestedDMD+ESL" in methods:
+            combined_scores = {**scores_cache["NestedDMD"], **scores_cache["ESL"]}
+            labels, order = cluster_scores(combined_scores, self.clustering_config)
+            order_estimates["NestedDMD+ESL"] = order
+            pred_masks["NestedDMD+ESL"] = labels
+
+        if "FixedEigenvalueBVFit+ESL" in methods:
+            combined_scores = {**scores_cache["FixedEigenvalueBVFit"], **scores_cache["ESL"]}
+            labels, order = cluster_scores(combined_scores, self.clustering_config)
+            order_estimates["FixedEigenvalueBVFit+ESL"] = order
+            pred_masks["FixedEigenvalueBVFit+ESL"] = labels
 
 
 class MetricsTracker:
