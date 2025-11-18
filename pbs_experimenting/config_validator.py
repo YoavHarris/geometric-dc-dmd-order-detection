@@ -25,6 +25,8 @@ VALID_METHODS = {
     "STC",
     "NestedDMD",
     "FixedEigenvalueBVFit",
+    "NestedDMD+ESL",
+    "FixedEigenvalueBVFit+ESL",
 }
 
 VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}
