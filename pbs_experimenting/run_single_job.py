@@ -343,7 +343,6 @@ class MethodEvaluator:
             stc = STC(
                 num_delays=self.num_delays,
                 dt=self.dt,
-                use_nyquist_cap=self.options_config.get("use_nyquist_cap", True),
             )
             scores_cache["STC"] = stc.compute_features(
                 eigenvalues=eigenvalues,

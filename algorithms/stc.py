@@ -25,13 +25,12 @@ class STC:
         dt: float = 1.0,
         epsilon: float = 1e-12,
         numerical_inf: float = 1e12,
-        use_nyquist_cap: bool = False,
     ) -> None:
         self.num_delays = num_delays
         self.dt = dt
         self.epsilon = epsilon
         self.numerical_inf = numerical_inf
-        self.use_nyquist_cap = use_nyquist_cap
+        self.use_nyquist_cap = True
 
     def compute_features(
         self,

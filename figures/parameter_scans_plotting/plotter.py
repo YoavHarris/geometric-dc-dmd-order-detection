@@ -154,6 +154,7 @@ class SingleScanPlotter:
                 linewidth=1.5,
                 alpha=0.7,
                 zorder=0,
+                label="Working Point",
             )
 
         # Apply x-axis limits (if provided)
