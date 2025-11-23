@@ -655,7 +655,7 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
             sig, max_rank, num_delays, gt_eigs
         )
 
-        # Subspace proximity analysis
+        # Subspace proximity results
         proximity_stats = compute_subspace_proximity_analysis(
             sig, sig_clean, modes, gt_eigs, num_modes, num_delays
         )

@@ -1,30 +1,32 @@
-# Configuration for spurious eigenvalue magnitude vs L experiment
+  # Configuration for spurious eigenvalue magnitude vs L experiment
 # This experiment collects spurious eigenvalue magnitudes for different embedding lengths L
-
 # System parameters (fixed)
 system:
-  spatial_dim: 45          # D: spatial dimension
+  spatial_dim: 100          # D: spatial dimension
   num_timesteps: 200       # N: number of timesteps
   num_modes: 3             # m: number of true modes
-  max_rank: 15             # M: DMD truncation rank (will get m true + M-m spurious)
+  max_rank: 5             # M: DMD truncation rank (will get m true + M-m spurious)
 
 # Signal parameters (fixed)
 signal:
-  eigenvalue_magnitude: 0.98    # Base magnitude of eigenvalues (< 1 for stability)
-  frequency_separation: 0.01    # Frequency separation between modes
-  snr_db: 10.0                  # Signal-to-noise ratio in dB
+  eigenvalue_magnitude: 0.99    # Base magnitude of eigenvalues (< 1 for stability)
+  frequency_separation: 0.02    # Frequency separation between modes
+  snr_db: 40.0                  # Signal-to-noise ratio in dB
   top_amplitude: 1.0            # Amplitude of the strongest mode
   noise_mode: gaussian          # Noise type: 'gaussian', 'uniform', 'student_t'
+  force_mode_orthogonality: true  # Whether to force modes to be orthogonal
+
 
 # Experiment parameters
 experiment:
-  L_values: [5, 10, 15, 20, 25, 30, 40, 50, 65, 80, 100]  # Embedding lengths to test
-  n_mc_iterations: 10          # Number of Monte Carlo iterations per L
+#  L_values: [  2,  12,  22,  32,  42,  52,  62,  72,  82,  92, 102, 112, 122]  # Embedding lengths to test
+  L_values: [  5,  28,  51,  74,  97, 120]  # Embedding lengths to test
+  n_mc_iterations: 200          # Number of Monte Carlo iterations per L
   base_random_seed: 196          # Base seed (actual seed = base + L*1000 + mc_iter)
 
 # Output settings
 output:
   save_csv: true
-  output_dir: "analysis"
+  output_dir: "spurious_eigenvalues_L"
   csv_filename: "spurious_eigs_L_results.csv"
 

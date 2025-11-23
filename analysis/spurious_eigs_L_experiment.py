@@ -400,7 +400,7 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default="analysis/spurious_eigs_L_results.csv",
+        default="results/spurious_eigs_L_results.csv",
         help="Output CSV file path",
     )
 
