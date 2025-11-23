@@ -125,6 +125,9 @@ class ScanPlotterCLI:
         for pval in panel_values:
             panel_df = filtered[filtered[panel_param] == pval]
             if len(panel_df) > 0:
+                # Format parameter name and value using the plotter's methods
+                param_label = self.plotter._format_label(panel_param)
+                value_label = self.plotter.format_value(panel_param, pval)
                 panels.append(
                     {
                         "df": panel_df,
@@ -134,7 +137,7 @@ class ScanPlotterCLI:
                         "methods": methods,
                         "xscale": xscale,
                         "xlim": xlim,
-                        "title": f"{panel_param.replace('_', ' ').title()} = {pval}",
+                        "title": f"{param_label} = {value_label}",
                         "xlabel": xlabel,
                         "ylabel": ylabel,
                     }

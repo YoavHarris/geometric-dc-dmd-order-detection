@@ -30,7 +30,7 @@ VALID_METHODS = {
 }
 
 VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}
-VALID_CLUSTERING_DECIDERS = {"mean", "distance"}
+VALID_CLUSTERING_STRATEGIES = {"mean", "distance"}
 VALID_CLUSTERING_NORMALIZATIONS = {"min_max", "standard", "null", None}
 VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "uniform", "student_t", "hetero", "ar1"}
 VALID_RHO_MODES = {"random", "linspace"}
@@ -109,11 +109,11 @@ def _validate_clustering_section(config: dict[str, Any]) -> None:
             f"Invalid clustering.algorithm: {algo}. Valid: {VALID_CLUSTERING_ALGORITHMS}"
         )
 
-    # Validate decider
-    decider = clustering.get("decider")
-    if decider not in VALID_CLUSTERING_DECIDERS:
+    # Validate strategy
+    strategy = clustering.get("strategy")
+    if strategy not in VALID_CLUSTERING_STRATEGIES:
         raise ConfigValidationError(
-            f"Invalid clustering.decider: {decider}. Valid: {VALID_CLUSTERING_DECIDERS}"
+            f"Invalid clustering.strategy: {strategy}. Valid: {VALID_CLUSTERING_STRATEGIES}"
         )
 
     # Validate normalization

@@ -216,6 +216,28 @@ class SingleScanPlotter:
         # Fall back to auto-formatting
         return text.replace("_", " ").title()
 
+    def format_value(self, param_name: str, value: Any) -> str:
+        """
+        Format parameter value for display.
+
+        Priority:
+        1. Check parameter_value_labels mapping in config
+        2. Fall back to string representation of value
+
+        Args:
+            param_name: Name of the parameter
+            value: Value to format
+
+        Returns:
+            Formatted string representation of value
+        """
+        value_labels = self.config.get("parameter_value_labels", {})
+        if param_name in value_labels and value in value_labels[param_name]:
+            return value_labels[param_name][value]
+
+        # Fall back to string representation
+        return str(value)
+
 
 class PanelComposer:
     """Composes multiple SingleScanPlotters into a panel figure."""

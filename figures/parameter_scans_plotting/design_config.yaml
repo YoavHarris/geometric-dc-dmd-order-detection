@@ -92,3 +92,14 @@ parameter_labels:
   spatial_dim: "Spatial Dimension"
   # Add more parameter mappings as needed
 
+# Parameter value mappings (for displaying specific parameter values)
+# Maps raw data values to display-friendly names
+# Useful for categorical parameters in panel titles
+parameter_value_labels:
+  noise_mode:
+    gaussian: "Gaussian"
+    student_t: "Student-T"
+    hetero: "Heteroscedastic"
+    bi_gaussian: "Bi-Gaussian"
+  # Add more value mappings as needed
+

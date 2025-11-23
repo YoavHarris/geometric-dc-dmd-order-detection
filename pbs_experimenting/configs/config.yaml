@@ -26,7 +26,7 @@ methods:
 # ──────────────────────────────────────────────────────────────────────────────
 clustering:
   algorithm: gmm        # Options: gmm, kmeans
-  decider: mean         # Options: mean, distance
+  strategy: mean        # Options: mean, distance
   normalization: min_max  # Options: min_max, standard, null
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -34,9 +34,9 @@ clustering:
 # ──────────────────────────────────────────────────────────────────────────────
 generator:
   working_point:
-    snr_db: 8.0
+    snr_db: 10.0
     freq_sep: 0.01
-    eig_mag: 0.97
+    eig_mag: 0.98
     eig_mag_spread: 0.0
     delays_over_timesteps: 0.32
     spatial_dim: 45
