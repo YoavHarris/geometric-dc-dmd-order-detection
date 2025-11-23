@@ -96,6 +96,7 @@ def compute_practical_basis(
 ) -> NDArray[np.complex128]:
     """
     Compute practical BV basis following the paper's formula (equations 31-36).
+    Absorbs noise that's aligned with the exponential temporal structures of the signal into the modes.
     """
     LD, T = embedded_noise.shape
 

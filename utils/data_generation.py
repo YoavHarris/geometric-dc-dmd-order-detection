@@ -325,16 +325,28 @@ class DMDDataGenerator:
             return (real + 1j * imag).astype(np.complex128)
 
         if self.noise_mode == "ar1":
-            real_noise = get_ar1_noise((ns, nt), total_variance=var / 2, phi=0.8)
-            imag_noise = get_ar1_noise((ns, nt), total_variance=var / 2, phi=0.8)
+            real_noise = get_ar1_noise(
+                (ns, nt), total_variance=var / 2, phi=0.8, rng=self.rng
+            )
+            imag_noise = get_ar1_noise(
+                (ns, nt), total_variance=var / 2, phi=0.8, rng=self.rng
+            )
             return (real_noise + 1j * imag_noise).astype(np.complex128)
 
         if self.noise_mode == "hetero":
             real_noise = get_heteroscedastic_noise(
-                (ns, nt), total_variance=var / 2, sigma_min=0.5, sigma_max=1.5
+                (ns, nt),
+                total_variance=var / 2,
+                sigma_min=0.5,
+                sigma_max=1.5,
+                rng=self.rng,
             )
             imag_noise = get_heteroscedastic_noise(
-                (ns, nt), total_variance=var / 2, sigma_min=0.5, sigma_max=1.5
+                (ns, nt),
+                total_variance=var / 2,
+                sigma_min=0.5,
+                sigma_max=1.5,
+                rng=self.rng,
             )
             return (real_noise + 1j * imag_noise).astype(np.complex128)
 

@@ -388,12 +388,16 @@ class MethodEvaluator:
             pred_masks["STC"] = labels
 
         if "NestedDMD" in methods:
-            labels, order = cluster_scores(scores_cache["NestedDMD"], self.clustering_config)
+            labels, order = cluster_scores(
+                scores_cache["NestedDMD"], self.clustering_config
+            )
             order_estimates["NestedDMD"] = order
             pred_masks["NestedDMD"] = labels
 
         if "FixedEigenvalueBVFit" in methods:
-            labels, order = cluster_scores(scores_cache["FixedEigenvalueBVFit"], self.clustering_config)
+            labels, order = cluster_scores(
+                scores_cache["FixedEigenvalueBVFit"], self.clustering_config
+            )
             order_estimates["FixedEigenvalueBVFit"] = order
             pred_masks["FixedEigenvalueBVFit"] = labels
 
@@ -406,7 +410,10 @@ class MethodEvaluator:
             pred_masks["NestedDMD+ESL"] = labels
 
         if "FixedEigenvalueBVFit+ESL" in methods:
-            combined_scores = {**scores_cache["FixedEigenvalueBVFit"], **scores_cache["ESL"]}
+            combined_scores = {
+                **scores_cache["FixedEigenvalueBVFit"],
+                **scores_cache["ESL"],
+            }
             labels, order = cluster_scores(combined_scores, self.clustering_config)
             order_estimates["FixedEigenvalueBVFit+ESL"] = order
             pred_masks["FixedEigenvalueBVFit+ESL"] = labels
