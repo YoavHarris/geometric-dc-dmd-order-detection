@@ -151,6 +151,81 @@ class ScanPlotterCLI:
             show=show,
         )
 
+    def multi_xparam(
+        self,
+        csv_path: str,
+        x_params: list[str],
+        metric: str,
+        output_path: str,
+        working_point: dict,
+        title: str = None,
+        show: bool = False,
+        methods: list[str] | None = None,
+        xlim: tuple[float, float] | None = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
+    ):
+        """
+        Create multi-panel plot with different x-axis parameter per panel.
+
+        Each panel shows the same metric, but scanned against a different parameter.
+        This is useful for comparing sensitivity across multiple parameters.
+
+        Example:
+            python cli.py multi_xparam \\
+                --csv_path=data.csv \\
+                --x_params="['snr_db', 'freq_sep', 'eig_mag']" \\
+                --metric=order_hit_prob \\
+                --output_path=output.png \\
+                --working_point="{'num_modes': 3, 'noise_mode': 'gaussian'}"
+        """
+        df = load_data(csv_path)
+
+        panels = []
+        for x_param in x_params:
+            # Filter excluding current x_param
+            filtered = filter_data(df, working_point, exclude_params=[x_param])
+
+            if len(filtered) == 0:
+                print(f"Warning: No data for x_param={x_param}, skipping")
+                continue
+
+            if methods:
+                filtered = filtered[filtered["method"].isin(methods)]
+                if len(filtered) == 0:
+                    print(f"Warning: No data for x_param={x_param} with specified methods, skipping")
+                    continue
+
+            # Create panel title from x_param label
+            param_label = self.plotter._format_label(x_param)
+
+            panels.append(
+                {
+                    "df": filtered,
+                    "x_param": x_param,
+                    "metric": metric,
+                    "working_point": working_point,
+                    "methods": methods,
+                    "xscale": None,  # Auto-detect per panel
+                    "xlim": xlim,
+                    "title": param_label,
+                    "xlabel": None,  # Auto from x_param
+                    "ylabel": ylabel,
+                    "show_xlabel": True,  # Always show xlabel (different per panel)
+                }
+            )
+
+        if not panels:
+            raise ValueError("No valid panels created - check data availability")
+
+        self.composer.compose(
+            panels=panels,
+            layout="horizontal",
+            overall_title=title,
+            output_path=output_path,
+            show=show,
+        )
+
     def batch(self, config_path: str):
         """
         Run batch of plots from YAML config.
@@ -192,7 +267,23 @@ class ScanPlotterCLI:
                 df = data_cache[csv_path]
 
                 # Route to appropriate method
-                if "panel_param" in merged:
+                if "x_params" in merged:
+                    # Multi x-param mode (different x-axis per panel)
+                    self.multi_xparam(
+                        csv_path=csv_path,
+                        x_params=merged["x_params"],
+                        metric=merged["metric"],
+                        output_path=merged["output_path"],
+                        working_point=merged["working_point"],
+                        title=merged.get("title"),
+                        show=merged.get("show", False),
+                        methods=merged.get("methods"),
+                        xlim=merged.get("xlim"),
+                        xlabel=merged.get("xlabel"),
+                        ylabel=merged.get("ylabel"),
+                    )
+                elif "panel_param" in merged:
+                    # Multi-panel mode (same x-axis, varying panel_param)
                     self.multi(
                         csv_path=csv_path,
                         x_param=merged["x_param"],

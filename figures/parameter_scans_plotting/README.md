@@ -56,6 +56,26 @@ python cli.py multi \
   --title="SNR Scan by Noise Type"
 ```
 
+### Multi-Panel (Different X-Parameters)
+
+Create panels where each varies a **different** x-axis parameter. Useful for comparing sensitivity across multiple parameters:
+
+```bash
+python cli.py multi_xparam \
+  --csv_path=data.csv \
+  --x_params="['snr_db', 'freq_sep', 'eig_mag']" \
+  --metric=order_hit_prob \
+  --working_point="{'num_modes': 3, 'noise_mode': 'gaussian'}" \
+  --output_path=output.png \
+  --title="Parameter Sensitivity Analysis"
+```
+
+This creates 3 panels:
+- Panel 1: `order_hit_prob` vs `snr_db`
+- Panel 2: `order_hit_prob` vs `freq_sep`
+- Panel 3: `order_hit_prob` vs `eig_mag`
+
+
 ### Batch Processing
 
 ```bash
@@ -63,6 +83,8 @@ python cli.py batch --config_path=examples/simple_batch.yaml
 ```
 
 ## Batch Config Format
+
+**Standard multi-panel (same x-param, varying panel_param):**
 
 ```yaml
 base:
@@ -84,6 +106,26 @@ plots:
     title: "Frequency Separation (num_modes=2)"
     xlim: [0.85, 0.95]  # Optional: limit x-axis range
 ```
+
+**Multi-parameter x-axis (different x-param per panel):**
+
+```yaml
+base:
+  csv_path: data.csv
+  metric: order_hit_prob
+
+baseline_working_point:
+  num_modes: 3
+  noise_mode: gaussian
+  temporal_dim: 200
+
+plots:
+  - working_point: {snr_db: 10.0, freq_sep: 0.01, eig_mag: 0.98}
+    x_params: [snr_db, freq_sep, eig_mag]
+    output_path: output/three_params.png
+    title: "Parameter Sensitivity Analysis"
+```
+
 
 ## Working Points
 
@@ -239,7 +281,8 @@ This file is rarely touched - it's your design system.
 All use cases use the same two building blocks:
 
 - **Single scan** - 1 panel
-- **Multi-panel by parameter** - N panels, vary parameter
+- **Multi-panel by parameter value** - N panels, vary parameter value (same x-param)
+- **Multi-panel by x-parameter** - N panels, vary x-parameter (different parameter per panel)
 - **Multi-metric** - N panels, vary metric (same pattern)
 - **Grid layout** - 2D arrangement (horizontal + vertical)
 

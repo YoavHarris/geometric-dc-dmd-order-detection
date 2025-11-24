@@ -288,8 +288,9 @@ class PanelComposer:
         for i, panel_spec in enumerate(panels):
             show_ylabel = (i == 0) if layout == "horizontal" else True
             show_legend = (i == n_panels - 1) if layout == "horizontal" else True
-            # Show xlabel only on middle panel for horizontal layouts
-            show_xlabel = (i == n_panels // 2) if layout == "horizontal" else True
+            # Show xlabel only on middle panel for horizontal layouts (unless overridden)
+            default_show_xlabel = (i == n_panels // 2) if layout == "horizontal" else True
+            show_xlabel = panel_spec.get("show_xlabel", default_show_xlabel)
 
             self.plotter.plot(
                 ax=axes[i],
