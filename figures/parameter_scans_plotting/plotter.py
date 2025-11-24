@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-plt.style.use("mplstyle_files/chaos_double.mplstyle")
+plt.style.use("../mplstyle_files/chaos_double.mplstyle")
 
 
 class SingleScanPlotter:
@@ -109,8 +109,6 @@ class SingleScanPlotter:
         else:
             axis_type = self._detect_axis_type(df[x_param].values)
 
-
-
         # Plot each method
         for method in methods:
             method_data = df[df["method"] == method]
@@ -142,10 +140,11 @@ class SingleScanPlotter:
             # Set explicit tick positions for categorical data
             unique_vals = sorted(df[x_param].unique())
             ax.set_xticks(unique_vals)
-        
+
         # Apply tick number limit (for non-categorical axes)
         if axis_type != "categorical":
             from matplotlib.ticker import MaxNLocator
+
             tick_cfg = self.config.get("ticks", {})
             max_ticks = tick_cfg.get("max_ticks", 6)
             ax.xaxis.set_major_locator(MaxNLocator(nbins=max_ticks, integer=False))
@@ -276,18 +275,13 @@ class PanelComposer:
         total_width = fig_cfg.get("total_width", 7.0)
         panel_height = fig_cfg.get("panel_height", 3.0)
 
-
         if layout == "horizontal":
             figsize = (total_width, panel_height)
-            fig, axes = plt.subplots(
-                1, n_panels, figsize=figsize, squeeze=False
-            )
+            fig, axes = plt.subplots(1, n_panels, figsize=figsize, squeeze=False)
             axes = axes[0]
         else:  # vertical
             figsize = (total_width, panel_height * n_panels)
-            fig, axes = plt.subplots(
-                n_panels, 1, figsize=figsize, squeeze=False
-            )
+            fig, axes = plt.subplots(n_panels, 1, figsize=figsize, squeeze=False)
             axes = axes[:, 0]
 
         # Plot each panel
@@ -321,7 +315,7 @@ class PanelComposer:
                     bbox_to_anchor=(1.02, 0.5),
                 )
 
-        # Overall title
+            # Overall title
             fig.suptitle(
                 overall_title,
                 fontweight="bold",

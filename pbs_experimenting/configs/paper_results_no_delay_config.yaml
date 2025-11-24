@@ -38,7 +38,7 @@ generator:
     freq_sep: 0.01
     eig_mag: 0.98
     eig_mag_spread: 0.0
-    delays_over_timesteps: 0.32
+    delays_over_timesteps: 0.05
     spatial_dim: 45
     temporal_dim: 200
     top_amplitude: 1.0
@@ -68,13 +68,6 @@ parameters:
     end: 1.0
     num_steps: 11
     scale: lin
-
-  delays_over_timesteps:
-    type: range
-    role: wp
-    start: 0.02
-    end: 0.52
-    num_steps: 11
 
   spatial_dim:
     type: range
@@ -120,6 +113,7 @@ static_args:
   rho_mode: random
   eig_mag_spread: 0.0
   artificial_damping: 1.0
+  delays_over_timesteps: 0.05
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -144,5 +138,5 @@ paths:
 # Output Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 output:
-  output_dir: exp_181125
+  output_dir: exp_241125_no_delay
 
