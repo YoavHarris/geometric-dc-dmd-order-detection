@@ -1,5 +1,5 @@
 # ===============================
-#  Chaos-style: two-column
+#  Chaos-style: two-column (balanced)
 # ===============================
 
 # Figure size and DPI (approx. full text width)
@@ -10,15 +10,15 @@ figure.dpi: 300
 figure.facecolor: white
 axes.facecolor: white
 
-# Fonts (same as single-column to keep consistency)
+# Fonts (balanced)
 font.family: serif
 font.serif: Times New Roman, Times, DejaVu Serif
-font.size: 9
-axes.labelsize: 9
-axes.titlesize: 9
-xtick.labelsize: 8
-ytick.labelsize: 8
-legend.fontsize: 8
+font.size: 9          # base
+axes.labelsize: 10    # axis labels a bit larger than base
+axes.titlesize: 10
+xtick.labelsize: 7
+ytick.labelsize: 7
+legend.fontsize: 7
 mathtext.fontset: stix
 
 # Axes
@@ -36,9 +36,9 @@ ytick.major.width: 0.6
 xtick.direction: in
 ytick.direction: in
 
-# Lines
-lines.linewidth: 1.2
-lines.markersize: 4
+# Lines (a bit lighter so curves don't crowd)
+lines.linewidth: 0.9
+lines.markersize: 2.0
 
 # Legend
 legend.frameon: False
@@ -48,5 +48,5 @@ savefig.transparent: False
 savefig.bbox: tight
 savefig.facecolor: white
 
-# Color cycle (must be one line, valid cycler syntax)
+# Color cycle (must be a single valid cycler expression on one line)
 axes.prop_cycle: cycler('color', ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"])

@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-plt.style.use("mplstyle_files/chaos_single.mplstyle")
+plt.style.use("mplstyle_files/chaos_double.mplstyle")
 
 
 class SingleScanPlotter:
@@ -76,6 +76,7 @@ class SingleScanPlotter:
         xlim: tuple[float, float] | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
+        show_xlabel: bool = True,
         title: str | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
@@ -92,8 +93,9 @@ class SingleScanPlotter:
             methods: List of methods to plot (if None, plot all)
             xscale: Force axis scale ('linear', 'log', 'categorical', or None for auto)
             xlim: X-axis limits as (min, max) tuple (if None, use automatic)
-            show_legend: Show legend?
-            show_ylabel: Show y-axis label?
+            show_legend: Show legend
+            show_ylabel: Show y-axis label
+            show_xlabel: Show x-axis label
             title: Axis title
             xlabel: Custom x-axis label (overrides auto-formatting, supports LaTeX)
             ylabel: Custom y-axis label (overrides auto-formatting, supports LaTeX)
@@ -107,10 +109,7 @@ class SingleScanPlotter:
         else:
             axis_type = self._detect_axis_type(df[x_param].values)
 
-        # Get styling config
-        line_cfg = self.config.get("lines", {})
-        linewidth = line_cfg.get("linewidth", 2)
-        markersize = line_cfg.get("markersize", 5)
+
 
         # Plot each method
         for method in methods:
@@ -130,9 +129,9 @@ class SingleScanPlotter:
                 y,
                 color=style["color"],
                 linestyle=style["linestyle"],
-                linewidth=linewidth,
+                linewidth=None,
                 marker=style.get("marker", "o"),
-                markersize=markersize,
+                markersize=None,
                 label=method,
             )
 
@@ -143,16 +142,25 @@ class SingleScanPlotter:
             # Set explicit tick positions for categorical data
             unique_vals = sorted(df[x_param].unique())
             ax.set_xticks(unique_vals)
+        
+        # Apply tick number limit (for non-categorical axes)
+        if axis_type != "categorical":
+            from matplotlib.ticker import MaxNLocator
+            tick_cfg = self.config.get("ticks", {})
+            max_ticks = tick_cfg.get("max_ticks", 6)
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=max_ticks, integer=False))
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=max_ticks, integer=False))
 
         # Add vertical line at working point value (if provided)
         if working_point and x_param in working_point:
             wp_value = working_point[x_param]
+            wp_line_cfg = self.config.get("working_point_line", {})
             ax.axvline(
                 wp_value,
-                color="black",
-                linestyle="--",
-                linewidth=1.5,
-                alpha=0.7,
+                color=wp_line_cfg.get("color", "black"),
+                linestyle=wp_line_cfg.get("linestyle", "--"),
+                linewidth=wp_line_cfg.get("linewidth", 0.8),
+                alpha=wp_line_cfg.get("alpha", 0.7),
                 zorder=0,
                 label="Working Point",
             )
@@ -166,26 +174,19 @@ class SingleScanPlotter:
             ylabel_text = ylabel if ylabel is not None else self._format_label(metric)
             ax.set_ylabel(
                 ylabel_text,
-                fontsize=self.config.get("labels", {}).get("fontsize", 10),
             )
-        xlabel_text = xlabel if xlabel is not None else self._format_label(x_param)
-        ax.set_xlabel(
-            xlabel_text,
-            fontsize=self.config.get("labels", {}).get("fontsize", 10),
-        )
+        if show_xlabel:
+            xlabel_text = xlabel if xlabel is not None else self._format_label(x_param)
+            ax.set_xlabel(
+                xlabel_text,
+            )
         ax.grid(True, alpha=0.3)
 
         if title:
-            ax.set_title(
-                title, fontsize=self.config.get("labels", {}).get("title_fontsize", 14)
-            )
+            ax.set_title(title)
 
         if show_legend:
-            legend_cfg = self.config.get("legend", {})
-            ax.legend(
-                fontsize=legend_cfg.get("fontsize", 9),
-                framealpha=legend_cfg.get("framealpha", 0.9),
-            )
+            ax.legend()
 
     def _get_style(self, method: str) -> dict[str, str]:
         """Get color, linestyle, and marker for method."""
@@ -272,20 +273,20 @@ class PanelComposer:
 
         # Create figure
         fig_cfg = self.config.get("figure", {})
-        panel_width = fig_cfg.get("panel_width", 5)
-        panel_height = fig_cfg.get("panel_height", 4)
-        dpi = fig_cfg.get("dpi", 150)
+        total_width = fig_cfg.get("total_width", 7.0)
+        panel_height = fig_cfg.get("panel_height", 3.0)
+
 
         if layout == "horizontal":
-            figsize = (panel_width * n_panels, panel_height)
+            figsize = (total_width, panel_height)
             fig, axes = plt.subplots(
-                1, n_panels, figsize=figsize, dpi=dpi, squeeze=False
+                1, n_panels, figsize=figsize, squeeze=False
             )
             axes = axes[0]
         else:  # vertical
-            figsize = (panel_width, panel_height * n_panels)
+            figsize = (total_width, panel_height * n_panels)
             fig, axes = plt.subplots(
-                n_panels, 1, figsize=figsize, dpi=dpi, squeeze=False
+                n_panels, 1, figsize=figsize, squeeze=False
             )
             axes = axes[:, 0]
 
@@ -293,6 +294,8 @@ class PanelComposer:
         for i, panel_spec in enumerate(panels):
             show_ylabel = (i == 0) if layout == "horizontal" else True
             show_legend = (i == n_panels - 1) if layout == "horizontal" else True
+            # Show xlabel only on middle panel for horizontal layouts
+            show_xlabel = (i == n_panels // 2) if layout == "horizontal" else True
 
             self.plotter.plot(
                 ax=axes[i],
@@ -305,6 +308,7 @@ class PanelComposer:
                 xlim=panel_spec.get("xlim"),
                 show_legend=show_legend,
                 show_ylabel=show_ylabel,
+                show_xlabel=show_xlabel,
                 title=panel_spec.get("title"),
                 xlabel=panel_spec.get("xlabel"),
                 ylabel=panel_spec.get("ylabel"),
@@ -312,20 +316,14 @@ class PanelComposer:
 
             # Adjust legend for rightmost panel
             if show_legend and layout == "horizontal":
-                legend_cfg = self.config.get("legend", {})
                 axes[i].legend(
                     loc="center left",
                     bbox_to_anchor=(1.02, 0.5),
-                    fontsize=legend_cfg.get("fontsize", 9),
-                    framealpha=legend_cfg.get("framealpha", 0.9),
                 )
 
         # Overall title
-        if overall_title:
-            label_cfg = self.config.get("labels", {})
             fig.suptitle(
                 overall_title,
-                fontsize=label_cfg.get("title_fontsize", 14),
                 fontweight="bold",
                 y=1.02,
             )
@@ -335,7 +333,7 @@ class PanelComposer:
         # Save
         if output_path:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-            plt.savefig(output_path, dpi=dpi, bbox_inches="tight")
+            plt.savefig(output_path, bbox_inches="tight")
             print(f"Saved: {output_path}")
 
         if show:

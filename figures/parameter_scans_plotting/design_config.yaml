@@ -51,24 +51,19 @@ methods:
 
 # Figure dimensions
 figure:
-  panel_width: 8
-  panel_height: 4
-  dpi: 150
+  total_width: 7.0
+  panel_height: 3.0
 
-# Line styling
-lines:
-  linewidth: 2
-  markersize: 5
+# Working point vertical line styling
+working_point_line:
+  color: black
+  linestyle: '--'
+  linewidth: 0.6
+  alpha: 0.7
 
-# Labels
-labels:
-  fontsize: 10
-  title_fontsize: 14
-
-# Legend
-legend:
-  fontsize: 9
-  framealpha: 0.9
+# Tick settings
+ticks:
+  max_ticks: 5  # Maximum number of ticks on axes (approximate)
 
 # Defaults for unknown methods
 defaults:
@@ -83,7 +78,7 @@ defaults:
 parameter_labels:
   snr_db: "SNR (dB)"
   eig_mag: "Damping parameter $r$"
-  freq_sep: "$\\Delta f$"
+  freq_sep: "$\\Delta \\theta$"
   top_amplitude: "$b_{\\mathrm{max}} / b_{\\mathrm{min}}$"
   order_hit_prob: "$P_{\\mathrm{hit}}$"
   num_modes: "Number of Modes"

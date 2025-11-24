@@ -3,9 +3,15 @@
 # System parameters (fixed)
 system:
   spatial_dim: 100          # D: spatial dimension
-  num_timesteps: 200       # N: number of timesteps
+  num_timesteps: 200       # N: number of timesteps (baseline for L_min)
   num_modes: 3             # m: number of true modes
   max_rank: 5             # M: DMD truncation rank (will get m true + M-m spurious)
+  
+  # Sample size control mode (how N changes with L)
+  # - 'fixed_N': Keep total timesteps N constant (default, current behavior)
+  # - 'fixed_N_cols': Keep effective samples N_cols = N - L constant
+  # - 'fixed_N_cols_over_DL': Keep oversampling ratio N_cols/(D·L) constant
+  sample_size_mode: 'fixed_N'
 
 # Signal parameters (fixed)
 signal:

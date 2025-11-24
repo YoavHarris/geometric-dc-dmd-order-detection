@@ -130,11 +130,19 @@ class SpuriousEigenvalueExperiment:
         self.m = self.sys_cfg["num_modes"]  # true number of modes
         self.M = self.sys_cfg["max_rank"]  # DMD truncation rank
         self.D = self.sys_cfg["spatial_dim"]  # spatial dimension
-        self.N = self.sys_cfg["num_timesteps"]  # number of timesteps
 
         self.L_values = self.exp_cfg["L_values"]  # embedding lengths to test
         self.n_mc = self.exp_cfg["n_mc_iterations"]  # MC iterations per L
         self.base_seed = self.exp_cfg.get("base_random_seed", 42)
+
+        # Sample size control mode
+        self.sample_size_mode = self.sys_cfg.get("sample_size_mode", "fixed_N")
+        self.N_base = self.sys_cfg["num_timesteps"]  # Baseline N (for L_min)
+
+        # Compute baseline values from lowest L
+        self.L_min = min(self.L_values)
+        self.N_cols_base = self.N_base - self.L_min  # Effective samples at L_min
+        self.oversampling_base = self.N_cols_base / (self.D * self.L_min)
 
     def _create_bv_embedded_modes(
         self,
@@ -169,6 +177,39 @@ class SpuriousEigenvalueExperiment:
 
         return true_modes_embedded
 
+    def _compute_num_timesteps(self, L: int) -> int:
+        """
+        Compute number of timesteps N for given L based on sample size mode.
+
+        Preserves the value at L_min for all other L values:
+        - 'fixed_N': N stays constant (current behavior)
+        - 'fixed_N_cols': N_cols = N - L stays constant
+        - 'fixed_N_cols_over_DL': N_cols/(D·L) stays constant
+
+        Args:
+            L: Embedding length.
+
+        Returns:
+            Number of timesteps N to use for this L.
+        """
+        if self.sample_size_mode == "fixed_N":
+            return self.N_base
+
+        elif self.sample_size_mode == "fixed_N_cols":
+            # N_cols = N - L constant → N = N_cols_base + L
+            return self.N_cols_base + L
+
+        elif self.sample_size_mode == "fixed_N_cols_over_DL":
+            # N_cols/(D·L) constant → N_cols = oversampling_base * D * L
+            # N = N_cols + L = oversampling_base * D * L + L
+            return int(self.oversampling_base * self.D * L + L)
+
+        else:
+            raise ValueError(
+                f"Unknown sample_size_mode: '{self.sample_size_mode}'. "
+                f"Valid options: 'fixed_N', 'fixed_N_cols', 'fixed_N_cols_over_DL'"
+            )
+
     def _generate_data_and_run_dmd(
         self,
         L: int,
@@ -188,6 +229,9 @@ class SpuriousEigenvalueExperiment:
             - true_eigenvalues: Ground truth eigenvalues, shape (m,).
             - true_modes_embedded: Delay-embedded true modes, shape (DL, m).
         """
+        # Compute N based on sample size mode
+        N = self._compute_num_timesteps(L)
+
         # Generate data
         generator = DMDDataGenerator(
             eigenvalue_magnitude=self.sig_cfg["eigenvalue_magnitude"],
@@ -202,7 +246,7 @@ class SpuriousEigenvalueExperiment:
         X_noisy, X_clean, true_eigenvalues, true_modes, true_amplitudes = (
             generator.generate(
                 n_spatial=self.D,
-                n_timesteps=self.N,
+                n_timesteps=N,  # Use computed N instead of fixed self.N
                 n_modes=self.m,
             )
         )
@@ -240,6 +284,11 @@ class SpuriousEigenvalueExperiment:
         """
         # Deterministic random seed
         seed = self.base_seed + L * 1000 + mc_iter
+        
+        # Compute N for this L
+        N_used = self._compute_num_timesteps(L)
+        N_cols = N_used - L
+        
         # Generate data and run DMD
         (
             recovered_eigenvalues,
@@ -275,7 +324,8 @@ class SpuriousEigenvalueExperiment:
                 "mode_type": "spurious",
                 # System parameters (for identifiability)
                 "spatial_dim": self.D,
-                "num_timesteps": self.N,
+                "num_timesteps": N_used,  # Actual N used for this L
+                "N_cols": N_cols,  # Effective samples (N - L)
                 "num_modes": self.m,
                 "max_rank": self.M,
                 # Signal parameters
@@ -322,10 +372,12 @@ class SpuriousEigenvalueExperiment:
         print("=" * 70)
         print("SPURIOUS EIGENVALUE MAGNITUDE vs L EXPERIMENT")
         print("=" * 70)
+        print(f"Sample size mode: {self.sample_size_mode}")
+        print(f"Baseline: N={self.N_base} at L_min={self.L_min} (N_cols={self.N_cols_base})")
         print(f"L values: {self.L_values}")
         print(f"MC iterations per L: {self.n_mc}")
         print(f"Base random seed: {self.base_seed}")
-        print(f"System: D={self.D}, N={self.N}, m={self.m}, M={self.M}")
+        print(f"System: D={self.D}, m={self.m}, M={self.M}")
         print(
             f"Signal: eig_mag={self.sig_cfg['eigenvalue_magnitude']}, "
             f"freq_sep={self.sig_cfg['frequency_separation']}, "
