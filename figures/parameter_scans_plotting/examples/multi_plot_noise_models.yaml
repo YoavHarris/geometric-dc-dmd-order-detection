@@ -13,8 +13,7 @@ base:
     - ESL-Norm
     - NestedDMD
     - FixedEigenvalueBVFit
-    - NestedDMD+ESL
-    - FixedEigenvalueBVFit+ESL
+
   panel_param: noise_mode
   panel_values: [gaussian, student_t, bi_gaussian, hetero]
   
