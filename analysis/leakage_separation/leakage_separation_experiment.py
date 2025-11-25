@@ -362,7 +362,7 @@ def load_config(config_path: str) -> dict[str, Any]:
 
 
 def run_experiment(
-    config: str = "analysis/leakage_separation_config.yaml",
+    config: str,
     output: str | None = None,
 ):
     """
