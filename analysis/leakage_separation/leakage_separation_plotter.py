@@ -511,23 +511,13 @@ def _plot_boxplot_panel(
             item.set_color("black")
             item.set_linewidth(0.8)
 
-    # Calculate Coefficient of Variation (CV) for each distribution
-    cvs = []
-    for data in data_list:
-        if len(data) > 1 and np.mean(data) != 0:
-            cv = np.std(data) / np.abs(np.mean(data))
-            cv_str = f"{cv:.2f}"
-        else:
-            cv_str = "0.00"
-        cvs.append(cv_str)
-
     # Set x-axis with individual labels for each box (rotated diagonally)
     ax.set_xticks([0, 1, 3, 4])
     labels = [
-        f"True-SELN\n(CV={cvs[0]})",
-        f"Spur-SELN\n(CV={cvs[1]})",
-        f"True-RELN\n(CV={cvs[2]})",
-        f"Spur-RELN\n(CV={cvs[3]})",
+        "True-SELN",
+        "Spur-SELN",
+        "True-RELN",
+        "Spur-RELN",
     ]
     # Remove fontsize=5 to let mplstyle control it (likely 7pt or 9pt)
     ax.set_xticklabels(labels, rotation=45, ha="right")

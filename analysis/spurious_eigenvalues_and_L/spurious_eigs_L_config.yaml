@@ -33,7 +33,7 @@ output:
 
 plotting:
   data_csv_path: 'C:/Users/Yoav/dcdmd_experiments/spur_eigs_L/fixed_Ncol_results.csv'
-  mplstyle_path: 'figures/parameter_scans_plotting/mplstyle_files/chaos_single.mplstyle'
+  mplstyle_path: '../figures/mplstyle_files/chaos_single.mplstyle'
 
   xlim: [0.85, 1.02]
 
