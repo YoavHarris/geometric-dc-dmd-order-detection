@@ -2,7 +2,7 @@
 # Uses baseline_working_point to avoid repetition
 
 base:
-  csv_path: C:\Users\Yoav\dcdmd_experiments\161125\combined_results.csv
+  csv_path: C:\Users\Yoav\dcdmd_experiments\exp_181125\combined_results.csv
   metric: order_hit_prob
   methods:
 #    - AIC

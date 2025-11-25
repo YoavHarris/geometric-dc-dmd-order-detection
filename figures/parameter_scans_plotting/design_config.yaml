@@ -51,7 +51,7 @@ methods:
 
 # Figure dimensions
 figure:
-  total_width: 7.0
+  total_width: 7.0  # Full text width from chaos_double.mplstyle
   panel_height: 3.0
 
 # Working point vertical line styling

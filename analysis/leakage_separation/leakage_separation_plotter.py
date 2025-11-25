@@ -185,7 +185,7 @@ def _plot_single_cdf(
 
     # Only show y-label and ticks for the left panel (SELN)
     if "SELN" in title:
-        ax.set_ylabel("CDF")
+        ax.set_ylabel("Cumulative Probability")
     else:
         # Remove y-label and y-tick labels for right panel
         ax.set_ylabel("")
@@ -336,7 +336,9 @@ def _plot_single_scatter(
     )
 
     # Formatting
-    ax.set_ylabel(f"Leakage (log scale)")
+    # Only set ylabel for left panel (SELN) since y-axis is shared
+    if "SELN" in title:
+        ax.set_ylabel("Relative Norm (log-scale)")
     ax.set_title(title)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["True", "Spurious"])

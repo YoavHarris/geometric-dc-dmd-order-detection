@@ -271,9 +271,9 @@ class PanelComposer:
         n_panels = len(panels)
 
         # Create figure
-        fig_cfg = self.config.get("figure", {})
-        total_width = fig_cfg.get("total_width", 7.0)
-        panel_height = fig_cfg.get("panel_height", 3.0)
+        fig_cfg = self.config["figure"]
+        total_width = fig_cfg["total_width"]
+        panel_height = fig_cfg["panel_height"]
 
         if layout == "horizontal":
             figsize = (total_width, panel_height)
@@ -287,9 +287,10 @@ class PanelComposer:
         # Plot each panel
         for i, panel_spec in enumerate(panels):
             show_ylabel = (i == 0) if layout == "horizontal" else True
-            show_legend = (i == n_panels - 1) if layout == "horizontal" else True
             # Show xlabel only on middle panel for horizontal layouts (unless overridden)
-            default_show_xlabel = (i == n_panels // 2) if layout == "horizontal" else True
+            default_show_xlabel = (
+                (i == n_panels // 2) if layout == "horizontal" else True
+            )
             show_xlabel = panel_spec.get("show_xlabel", default_show_xlabel)
 
             self.plotter.plot(
@@ -301,26 +302,54 @@ class PanelComposer:
                 methods=panel_spec.get("methods"),
                 xscale=panel_spec.get("xscale"),
                 xlim=panel_spec.get("xlim"),
-                show_legend=show_legend,
-                show_ylabel=show_ylabel,
+                show_legend=False,
                 show_xlabel=show_xlabel,
                 title=panel_spec.get("title"),
                 xlabel=panel_spec.get("xlabel"),
                 ylabel=panel_spec.get("ylabel"),
             )
 
-            # Adjust legend for rightmost panel
-            if show_legend and layout == "horizontal":
-                axes[i].legend(
-                    loc="center left",
-                    bbox_to_anchor=(1.02, 0.5),
-                )
-
-            # Overall title
+        # Overall title
+        if overall_title:
             fig.suptitle(
                 overall_title,
                 fontweight="bold",
-                y=1.02,
+                y=1.00,
+            )
+
+        # Add shared legend based on layout
+        # Get handles and labels from any axis (they should all have the same)
+        handles, labels = axes[0].get_legend_handles_labels()
+
+        if layout == "horizontal":
+            # Horizontal layout: shared legend at the bottom
+            # Estimate legend width: ~0.1" per character + 0.5" per entry for marker/spacing
+            estimated_width = sum(len(label) * 0.1 + 0.5 for label in labels)
+
+            # Decide number of columns based on estimated width
+            # Use single row if it fits in 95% of figure width, otherwise use 2 rows
+            if estimated_width < total_width * 0.95:
+                ncol = len(labels)  # Single row
+            else:
+                ncol = max(1, (len(labels) + 1) // 2)  # Two rows
+
+            # Create a centered legend below the subplots
+            fig.legend(
+                handles,
+                labels,
+                loc="lower center",
+                bbox_to_anchor=(0.5, -0.1),  # Position below xlabel
+                ncol=ncol,
+                frameon=True,
+            )
+        else:
+            # Vertical layout: shared legend on the right
+            fig.legend(
+                handles,
+                labels,
+                loc="center left",
+                bbox_to_anchor=(1.02, 0.5),  # Position to the right of panels
+                frameon=True,
             )
 
         plt.tight_layout()
