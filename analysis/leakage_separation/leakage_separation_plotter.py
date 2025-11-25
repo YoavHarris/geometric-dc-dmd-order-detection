@@ -31,11 +31,11 @@ def _load_plot_style():
         plt.rcParams.update(
             {
                 "font.family": "serif",
-                "font.size": 8,
-                "axes.labelsize": 8,
-                "axes.titlesize": 8,
-                "xtick.labelsize": 7,
-                "ytick.labelsize": 7,
+                "font.size": 6,
+                "axes.labelsize": 6,
+                "axes.titlesize": 6,
+                "xtick.labelsize": 6,
+                "ytick.labelsize": 6,
                 "legend.fontsize": 6,
                 "lines.linewidth": 1.0,
             }
@@ -58,7 +58,7 @@ def plot_two_panel_cdfs(
     Create two-panel CDF plot: SELN (left) and RELN (right).
 
     Designed for AIP single-column width (3.375 inches).
-    
+
     Args:
         df: DataFrame with leakage measurements
         output_path: Path to save the figure
@@ -66,10 +66,12 @@ def plot_two_panel_cdfs(
     """
     # Validate seln_version
     if seln_version not in ["clean", "perturbed"]:
-        raise ValueError(f"seln_version must be 'clean' or 'perturbed', got {seln_version}")
-    
+        raise ValueError(
+            f"seln_version must be 'clean' or 'perturbed', got {seln_version}"
+        )
+
     seln_col = f"seln_{seln_version}"
-    
+
     # AIP single column width is 3.375 inches
     # We'll use a slightly taller aspect ratio to fit two panels vertically or
     # side-by-side with small fonts.
@@ -195,9 +197,6 @@ def _plot_single_cdf(
     ax.set_xscale("log")
     ax.set_ylim([-0.05, 1.05])
 
-    # Set x-ticks to be cleaner (powers of 10)
-    # ax.xaxis.set_major_locator(plt.LogLocator(base=10.0, numticks=5))
-
 
 def plot_two_panel_scatter(
     df: pd.DataFrame,
@@ -209,7 +208,7 @@ def plot_two_panel_scatter(
 
     Shows distribution of leakage values for true (x=0) and spurious (x=1) components
     with logarithmic y-axis to handle the wide range of values.
-    
+
     Args:
         df: DataFrame with leakage measurements
         output_path: Path to save the figure
@@ -217,10 +216,12 @@ def plot_two_panel_scatter(
     """
     # Validate seln_version
     if seln_version not in ["clean", "perturbed"]:
-        raise ValueError(f"seln_version must be 'clean' or 'perturbed', got {seln_version}")
-    
+        raise ValueError(
+            f"seln_version must be 'clean' or 'perturbed', got {seln_version}"
+        )
+
     seln_col = f"seln_{seln_version}"
-    
+
     _load_plot_style()
 
     # Split data by true/spurious
@@ -349,10 +350,246 @@ def _plot_single_scatter(
     ax.set_xlim([-0.3, 1.3])
 
 
+def plot_multi_scenario_boxplot(
+    csv_paths: list[str],
+    panel_labels: list[str],
+    output_path: str,
+    seln_version: str = "perturbed",
+    annotate_gap_panel: int = 0,
+    style_file: str = "double",
+):
+    """
+    Create multi-panel box plot comparing SELN and RELN distributions across scenarios.
+
+    Each panel shows 4 box plots:
+    - True SELN (blue, no hatch)
+    - Spurious SELN (red, no hatch)
+    - True RELN (blue, diagonal hatch)
+    - Spurious RELN (red, diagonal hatch)
+
+    One panel can optionally show gap annotation with tau_spur, tau_true, and gamma.
+
+    Args:
+        csv_paths: List of paths to CSV files with leakage measurements
+        panel_labels: List of labels for each panel (same length as csv_paths)
+        output_path: Path to save the figure
+        seln_version: Version of SELN to plot, either "clean" or "perturbed"
+        annotate_gap_panel: Which panel (0-indexed) to annotate with gap markers (default: 0)
+        style_file: 'single', 'double', or path to mplstyle file (default: 'double')
+    """
+    if len(csv_paths) != len(panel_labels):
+        raise ValueError("csv_paths and panel_labels must have the same length")
+
+    if seln_version not in ["clean", "perturbed"]:
+        raise ValueError(
+            f"seln_version must be 'clean' or 'perturbed', got {seln_version}"
+        )
+
+    # Load plot style
+    project_root = Path(__file__).parents[2]
+
+    if style_file == "double":
+        style_path = (
+            project_root / "figures" / "mplstyle_files" / "chaos_double.mplstyle"
+        )
+        total_width = 7.0
+    elif style_file == "single":
+        style_path = (
+            project_root / "figures" / "mplstyle_files" / "chaos_single.mplstyle"
+        )
+        total_width = 3.375
+    else:
+        style_path = Path(style_file)
+        # Default to double width if custom style is provided, user can override via mplstyle
+        total_width = 7.0
+    if style_path.exists():
+        plt.style.use(str(style_path))
+    else:
+        print(f"Warning: Style file {style_path} not found.")
+
+    n_panels = len(csv_paths)
+    panel_height = 3.0  # Match parameter_scans_plotting height
+
+    # Create horizontal panels
+    # Use squeeze=False to always get an array of axes
+    # Don't use sharey=True to match parameter_scans_plotting behavior exactly
+    fig, axes = plt.subplots(
+        1, n_panels, figsize=(total_width, panel_height), squeeze=False
+    )
+    axes = axes[0]  # Flatten the 2D array (1, n) to 1D
+
+    # Plot each scenario
+    for i, (csv_path, label) in enumerate(zip(csv_paths, panel_labels)):
+        df = pd.read_csv(csv_path)
+        show_gap_annotation = i == annotate_gap_panel
+
+        # Only show ylabel on the first panel
+        show_ylabel = i == 0
+
+        _plot_boxplot_panel(
+            axes[i],
+            df,
+            title=label,
+            show_ylabel=show_ylabel,
+            seln_version=seln_version,
+            show_gap_annotation=show_gap_annotation,
+        )
+
+        # If not the first panel, remove y-tick labels manually since we aren't using sharey=True
+        if i > 0:
+            axes[i].set_yticklabels([])
+
+    plt.tight_layout()
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Multi-scenario box plot saved to: {output_path}")
+
+
+def _plot_boxplot_panel(
+    ax: plt.Axes,
+    df: pd.DataFrame,
+    title: str,
+    show_ylabel: bool,
+    seln_version: str,
+    show_gap_annotation: bool,
+):
+    """
+    Plot a single panel with box plots for SELN and RELN.
+
+    Layout:
+    - Position 0: True SELN
+    - Position 1: Spurious SELN
+    - Gap at position 2
+    - Position 3: True RELN
+    - Position 4: Spurious RELN
+    """
+    # Split data
+    true_df, spurious_df = _split_data(df)
+
+    seln_col = f"seln_{seln_version}"
+
+    # Extract values
+    data_dict = {
+        "true_seln": true_df[seln_col].values,
+        "spurious_seln": spurious_df[seln_col].values,
+        "true_reln": true_df["reln"].values,
+        "spurious_reln": spurious_df["reln"].values,
+    }
+
+    # Box plot positions with gap
+    positions = [0, 1, 3, 4]
+    data_list = [
+        data_dict["true_seln"],
+        data_dict["spurious_seln"],
+        data_dict["true_reln"],
+        data_dict["spurious_reln"],
+    ]
+
+    # Create box plots
+    bp = ax.boxplot(
+        data_list,
+        positions=positions,
+        widths=0.45,  # Narrower boxes to give room for annotations
+        patch_artist=True,
+        showfliers=True,
+        flierprops=dict(marker="o", markersize=2, alpha=0.3),
+    )
+
+    # Colors: blue for true, red for spurious
+    colors = ["#1f77b4", "#d62728", "#1f77b4", "#d62728"]
+
+    # Color boxes
+    for i, (patch, color) in enumerate(zip(bp["boxes"], colors)):
+        patch.set_facecolor(color)
+        patch.set_edgecolor("black")
+        patch.set_linewidth(0.8)
+        patch.set_alpha(0.7)
+
+    # Color other box plot elements
+    for element in ["whiskers", "caps", "medians"]:
+        for item in bp[element]:
+            item.set_color("black")
+            item.set_linewidth(0.8)
+
+    # Calculate Coefficient of Variation (CV) for each distribution
+    cvs = []
+    for data in data_list:
+        if len(data) > 1 and np.mean(data) != 0:
+            cv = np.std(data) / np.abs(np.mean(data))
+            cv_str = f"{cv:.2f}"
+        else:
+            cv_str = "0.00"
+        cvs.append(cv_str)
+
+    # Set x-axis with individual labels for each box (rotated diagonally)
+    ax.set_xticks([0, 1, 3, 4])
+    labels = [
+        f"True-SELN\n(CV={cvs[0]})",
+        f"Spur-SELN\n(CV={cvs[1]})",
+        f"True-RELN\n(CV={cvs[2]})",
+        f"Spur-RELN\n(CV={cvs[3]})",
+    ]
+    # Remove fontsize=5 to let mplstyle control it (likely 7pt or 9pt)
+    ax.set_xticklabels(labels, rotation=45, ha="right")
+
+    # Set consistent x-limits for all panels including reserved space for arrow at position 5
+    ax.set_xlim([-0.5, 5.5])
+
+    # Set y-axis
+    ax.set_yscale("log")
+    if show_ylabel:
+        ax.set_ylabel("Relative Leakage Norm")
+
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3, linestyle=":", axis="y", linewidth=0.5)
+
+    # Add gap annotation if requested
+    if show_gap_annotation:
+        # tau_spur: minimum spurious SELN
+        tau_spur = np.min(data_dict["spurious_seln"])
+        # tau_true: maximum true SELN
+        tau_true = np.max(data_dict["true_seln"])
+
+        # Draw horizontal lines spanning full panel
+        ax.axhline(
+            tau_spur, color="red", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
+        )
+        ax.axhline(
+            tau_true, color="blue", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
+        )
+
+        # Add labels for the horizontal lines at the right edge
+        # Remove manual fontsize
+        ax.text(5.2, tau_spur, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
+        ax.text(5.2, tau_true, r"$\tau_{\mathrm{true}}$", va="top", ha="left")
+
+        # Add bidirectional arrow at reserved position 5
+        from matplotlib.patches import FancyArrowPatch
+
+        arrow = FancyArrowPatch(
+            (5.0, tau_spur),
+            (5.0, tau_true),
+            arrowstyle="<->",
+            mutation_scale=15,  # Increased scale for larger arrow
+            linewidth=1.2,
+            color="black",
+            zorder=10,
+        )
+        ax.add_patch(arrow)
+
+        # Add gamma label next to arrow
+        gamma_y = np.sqrt(tau_spur * tau_true)  # Geometric mean for log scale
+        # Remove manual fontsize, keep bold
+        ax.text(5.15, gamma_y, r"$\gamma$", va="center", ha="left", weight="bold")
+
+    # Don't create per-panel legend - explicit tick labels are sufficient
+
+
 def main(
     csv_path: str,
     output_dir: str = "results",
     seln_version: str = "perturbed",
+    style_file: str = "double",
 ):
     """
     Plot leakage separation visualizations from experiment results.
@@ -361,6 +598,7 @@ def main(
         csv_path: Path to CSV file with leakage measurements
         output_dir: Directory where output plots will be saved
         seln_version: Version of SELN to plot, either "clean" or "perturbed" (default: "perturbed")
+        style_file: 'single', 'double', or path to mplstyle file (default: 'double')
     """
     # Load data
     print(f"Loading data from: {csv_path}")
@@ -379,16 +617,26 @@ def main(
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Define output file paths
-    cdf_output = output_path / f"leakage_separation_cdfs_{seln_version}.png"
-    scatter_output = output_path / f"leakage_separation_scatter_{seln_version}.png"
+    # Use specific name for double column plot as requested
+    if style_file == "double":
+        cdf_output = output_path / "seln_reln_scatters.png"
+    else:
+        cdf_output = (
+            output_path / f"leakage_separation_cdfs_{seln_version}_{style_file}.png"
+        )
 
-    # Generate CDF plot
-    print(f"\nGenerating CDF plot (SELN version: {seln_version})...")
-    plot_two_panel_cdfs(df, str(cdf_output), seln_version)
+    # Assuming the user wants to run the box plot on the single CSV input:
+    print(f"\nGenerating box plot (SELN version: {seln_version})...")
 
-    # Generate scatter plot
-    print(f"\nGenerating scatter plot (SELN version: {seln_version})...")
-    plot_two_panel_scatter(df, str(scatter_output), seln_version)
+    # Wrap single CSV in list
+    plot_multi_scenario_boxplot(
+        csv_paths=[csv_path],
+        panel_labels=["Data"],  # Default label
+        output_path=str(cdf_output),
+        seln_version=seln_version,
+        annotate_gap_panel=0,
+        style_file=style_file,
+    )
 
     print()
     print("Done!")

@@ -26,4 +26,4 @@ experiment:
 
 # Output settings
 output:
-  csv_path: 'C:\Users\Yoav\dcdmd_experiments\leakage_separation\results.csv'
+  csv_path: 'results/leakage_results_easy.csv'

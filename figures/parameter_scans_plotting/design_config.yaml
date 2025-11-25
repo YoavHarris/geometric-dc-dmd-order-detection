@@ -60,6 +60,7 @@ working_point_line:
   linestyle: '--'
   linewidth: 0.6
   alpha: 0.7
+  show: false
 
 # Tick settings
 ticks:

@@ -121,6 +121,10 @@ class SingleScanPlotter:
             # Get style
             style = self._get_style(method)
 
+            label = method
+            if method in ["ESL-Norm", "NestedDMD", "FixedEigenvalueBVFit"]:
+                label += " (Ours)"
+
             # Plot
             ax.plot(
                 x,
@@ -130,7 +134,7 @@ class SingleScanPlotter:
                 linewidth=None,
                 marker=style.get("marker", "o"),
                 markersize=None,
-                label=method,
+                label=label,
             )
 
         # Apply axis scaling based on detected type
@@ -151,9 +155,9 @@ class SingleScanPlotter:
             ax.yaxis.set_major_locator(MaxNLocator(nbins=max_ticks, integer=False))
 
         # Add vertical line at working point value (if provided)
-        if working_point and x_param in working_point:
+        wp_line_cfg = self.config.get("working_point_line", {})
+        if working_point and x_param in working_point and wp_line_cfg.get("show", True):
             wp_value = working_point[x_param]
-            wp_line_cfg = self.config.get("working_point_line", {})
             ax.axvline(
                 wp_value,
                 color=wp_line_cfg.get("color", "black"),
@@ -309,13 +313,7 @@ class PanelComposer:
                 ylabel=panel_spec.get("ylabel"),
             )
 
-        # Overall title
-        if overall_title:
-            fig.suptitle(
-                overall_title,
-                fontweight="bold",
-                y=1.00,
-            )
+
 
         # Add shared legend based on layout
         # Get handles and labels from any axis (they should all have the same)

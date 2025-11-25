@@ -153,7 +153,7 @@ def plot_cdf(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) -> Non
 
     ax.set_xlabel("Eigenvalue magnitude |λ|")
     ax.set_ylabel("Cumulative probability")
-    ax.set_title("CDF: Spurious eigenvalues → unit circle as L ↑")
+
     ax.grid(True, alpha=0.3, linestyle=":")
 
     ax.set_xlim([xmin, xmax])
@@ -201,7 +201,7 @@ def plot_pdf(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) -> Non
 
     ax.set_xlabel("Eigenvalue magnitude |λ|")
     ax.set_ylabel("Probability density")
-    ax.set_title("PDF: Spurious eigenvalues → unit circle as L ↑")
+
     ax.grid(True, alpha=0.3, linestyle=":")
 
     ax.set_xlim([xmin, xmax])
@@ -251,7 +251,7 @@ def plot_min_stats(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) 
         stats_df["median"],
         marker="o",
         linestyle="-",
-        label="Median min |λ|",
+        label="Median($r_{min}$)",
     )
 
     ax.fill_between(
@@ -268,12 +268,11 @@ def plot_min_stats(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) 
             stats_df["mean"],
             linestyle="--",
             linewidth=1.0,
-            label="Mean min |λ|",
+            label="Mean($r_{min}$)",
         )
 
     ax.set_xlabel("Embedding length L")
-    ax.set_ylabel("Minimal spurious eigenvalue magnitude |λ|")
-    ax.set_title("Minimal spurious |λ| vs L")
+    ax.set_ylabel("Spurious Eigenvalue Magnitude $r$")
     ax.grid(True, alpha=0.3, linestyle=":")
     ax.legend()
 
