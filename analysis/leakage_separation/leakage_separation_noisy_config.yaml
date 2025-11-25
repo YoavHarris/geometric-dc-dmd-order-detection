@@ -1,0 +1,29 @@
+# Configuration for leakage separation experiment
+# This experiment validates theoretical separation of leakage norms between
+# true and spurious DMD components using SELN and RELN metrics
+
+# System parameters (fixed working point)
+system:
+  spatial_dim: 45           # D: spatial dimension
+  num_timesteps: 200        # N: number of timesteps
+  num_modes: 5              # m: number of true modes
+  max_rank: 15              # M: DMD truncation rank (will get m true + M-m spurious)
+  num_delays: 64            # L: embedding length (number of delays)
+
+# Signal parameters (fixed working point)
+signal:
+  eigenvalue_magnitude: 0.98    # r_j = 0.98 for all j
+  frequency_separation: 0.01    # Δθ = 0.01 (minimal separation between phases)
+  snr_db: 0                  # SNR: middle value from typical sweep
+  top_amplitude: 1.0            # b_j all equal to 1
+  noise_mode: gaussian          # Noise model: Gaussian
+  force_mode_orthogonality: false  # Do not force mode orthogonality
+
+# Experiment parameters
+experiment:
+  num_trials: 500               # Number of Monte Carlo trials
+  base_random_seed: 42          # Base seed (actual seed = base + trial_id)
+
+# Output settings
+output:
+  csv_path: 'C:\Users\Yoav\dcdmd_experiments\leakage_separation\results.csv'
