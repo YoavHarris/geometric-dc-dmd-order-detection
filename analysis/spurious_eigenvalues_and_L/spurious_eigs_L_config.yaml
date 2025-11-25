@@ -23,17 +23,17 @@ signal:
 
 experiment:
   L_values: [2, 12, 22, 32, 42, 52, 62, 72, 82, 92, 102, 112, 122]
-  n_mc_iterations: 100
+  n_mc_iterations: 500
   base_random_seed: 196
 
 output:
   save_csv: true
-  output_dir: 'C:/Users/Yoav/dcdmd_experiments/spur_eigs_L'
+  output_dir: 'C:\Users\Yoav\dcdmd_experiments\spurious_eigenvalues_L_251125'
   csv_filename: 'fixed_N_cols_results.csv'
 
 plotting:
-  data_csv_path: 'C:/Users/Yoav/dcdmd_experiments/spur_eigs_L/fixed_Ncol_results.csv'
-  mplstyle_path: '../figures/mplstyle_files/chaos_single.mplstyle'
+  data_csv_path: 'C:\Users\Yoav\dcdmd_experiments\spurious_eigenvalues_L_251125\spurious_eigs_L_results.csv'
+  mplstyle_path: '..\figures\mplstyle_files\chaos_single.mplstyle'
 
   xlim: [0.85, 1.02]
 

@@ -576,38 +576,51 @@ def _plot_boxplot_panel(
 
 
 def main(
-    csv_path: str,
+    csv_paths: str | list[str],
+    panel_labels: str | list[str] | None = None,
     output_dir: str = "results",
     seln_version: str = "perturbed",
     style_file: str = "double",
+    annotate_gap_panel: int = 0,
 ):
     """
     Plot leakage separation visualizations from experiment results.
 
     Args:
-        csv_path: Path to CSV file with leakage measurements
+        csv_paths: Path or list of paths to CSV files with leakage measurements
+        panel_labels: Label or list of labels for each panel (optional)
         output_dir: Directory where output plots will be saved
         seln_version: Version of SELN to plot, either "clean" or "perturbed" (default: "perturbed")
         style_file: 'single', 'double', or path to mplstyle file (default: 'double')
+        annotate_gap_panel: Index of the panel to annotate with gap markers (default: 0)
     """
-    # Load data
-    print(f"Loading data from: {csv_path}")
-    df = pd.read_csv(csv_path)
-    print(f"Loaded {len(df)} component measurements")
+    # Handle inputs
+    if isinstance(csv_paths, str):
+        # Fire might pass a string like "[path1,path2]" or just "path1"
+        if csv_paths.startswith("[") and csv_paths.endswith("]"):
+            # Simple parsing for list string
+            csv_paths = [p.strip() for p in csv_paths[1:-1].split(",")]
+        else:
+            csv_paths = [csv_paths]
 
-    # Check required columns
-    seln_col = f"seln_{seln_version}"
-    required_cols = ["is_true", seln_col, "reln"]
-    missing = [col for col in required_cols if col not in df.columns]
-    if missing:
-        raise ValueError(f"Missing required columns: {missing}")
+    if panel_labels is None:
+        panel_labels = [f"Scenario {i+1}" for i in range(len(csv_paths))]
+    elif isinstance(panel_labels, str):
+        if panel_labels.startswith("[") and panel_labels.endswith("]"):
+            panel_labels = [l.strip() for l in panel_labels[1:-1].split(",")]
+        else:
+            panel_labels = [panel_labels]
+
+    if len(csv_paths) != len(panel_labels):
+        # If single label provided for multiple CSVs, repeat it? No, better to error or auto-generate
+        print(f"Warning: Number of labels ({len(panel_labels)}) does not match number of CSVs ({len(csv_paths)}). Using defaults.")
+        panel_labels = [f"Scenario {i+1}" for i in range(len(csv_paths))]
 
     # Create output directory
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Define output file paths
-    # Use specific name for double column plot as requested
     if style_file == "double":
         cdf_output = output_path / "seln_reln_scatters.png"
     else:
@@ -615,16 +628,16 @@ def main(
             output_path / f"leakage_separation_cdfs_{seln_version}_{style_file}.png"
         )
 
-    # Assuming the user wants to run the box plot on the single CSV input:
     print(f"\nGenerating box plot (SELN version: {seln_version})...")
+    print(f"CSVs: {csv_paths}")
+    print(f"Labels: {panel_labels}")
 
-    # Wrap single CSV in list
     plot_multi_scenario_boxplot(
-        csv_paths=[csv_path],
-        panel_labels=["Data"],  # Default label
+        csv_paths=csv_paths,
+        panel_labels=panel_labels,
         output_path=str(cdf_output),
         seln_version=seln_version,
-        annotate_gap_panel=0,
+        annotate_gap_panel=annotate_gap_panel,
         style_file=style_file,
     )
 
