@@ -23,14 +23,15 @@ from tqdm import tqdm
 
 from utils.data_generation import DMDDataGenerator
 from utils.dmd_utils import fit_dmd
-from analysis.leakage_separation_tools import (
+from analysis.leakage_separation.leakage_separation_utils import (
     compute_ssl,
     compute_esl,
     compute_exact_mode_norm,
+    compute_estimated_basis,
+    compute_practical_basis,
 )
 from analysis.subspace_analysis import (
     build_block_vandermonde_modes,
-    compute_estimated_basis,
 )
 
 
@@ -200,20 +201,33 @@ class LeakageSeparationExperiment:
             X_noisy,
         ) = self._generate_data_and_run_dmd(seed)
 
-        # Create true signal subspace (for SSL computation)
+        # Create true signal subspace - CLEAN version (for SSL_clean computation)
         # This is the delay-embedded true modes with Block-Vandermonde structure
-        true_bv_modes = self._create_bv_embedded_modes(true_modes, true_eigenvalues)
+        true_bv_modes_clean = self._create_bv_embedded_modes(
+            true_modes, true_eigenvalues
+        )
 
-        # Create estimated subspace (for ESL computation)
-        # This comes from SVD of the noisy delay-embedded data
+        # Create embedded data for perturbed signal subspace computation
         from dmd.dmd_tools import DelayEmbedding
 
         embedder = DelayEmbedding(self.L)
         X_noisy_embedded = embedder.transform(X_noisy)
+        X_clean_embedded = embedder.transform(X_clean)
+
+        # Derive embedded noise
+        X_noise_embedded = X_noisy_embedded - X_clean_embedded
+
+        # Create perturbed signal subspace (with aligned noise absorption)
+        # This uses the practical basis formula: clean modes + aligned noise perturbation
+        signal_basis_perturbed = compute_practical_basis(
+            X_noise_embedded, true_bv_modes_clean, true_eigenvalues, self.m
+        )
+
+        # Create estimated subspace for RELN (uses rank M, includes spurious components)
         estimated_basis = compute_estimated_basis(X_noisy_embedded, self.M)
 
-        # Classify modes as true or spurious
-        is_true = self._classify_modes_by_ssl(recovered_modes, true_bv_modes)
+        # Classify modes as true or spurious (using clean signal subspace)
+        is_true = self._classify_modes_by_ssl(recovered_modes, true_bv_modes_clean)
 
         # Compute leakage metrics for each component
         results = []
@@ -223,12 +237,18 @@ class LeakageSeparationExperiment:
             # Compute exact mode norm
             exact_mode_norm = compute_exact_mode_norm(mode)
 
-            # Compute SSL and ESL
-            ssl = compute_ssl(mode, true_bv_modes)
+            # Compute SSL using both clean and perturbed signal subspaces
+            ssl_clean = compute_ssl(mode, true_bv_modes_clean)
+            ssl_perturbed = compute_ssl(mode, signal_basis_perturbed)
+
+            # Compute ESL (for RELN - this is unaffected)
             esl = compute_esl(mode, estimated_basis)
 
             # Compute relative norms
-            seln = ssl / exact_mode_norm if exact_mode_norm > 0 else 0.0
+            seln_clean = ssl_clean / exact_mode_norm if exact_mode_norm > 0 else 0.0
+            seln_perturbed = (
+                ssl_perturbed / exact_mode_norm if exact_mode_norm > 0 else 0.0
+            )
             reln = esl / exact_mode_norm if exact_mode_norm > 0 else 0.0
 
             result = {
@@ -236,9 +256,11 @@ class LeakageSeparationExperiment:
                 "component_id": component_id,
                 "is_true": int(is_true[component_id]),
                 "exact_mode_norm": float(exact_mode_norm),
-                "ssl": float(ssl),
+                "ssl_clean": float(ssl_clean),
+                "ssl_perturbed": float(ssl_perturbed),
                 "esl": float(esl),
-                "seln": float(seln),
+                "seln_clean": float(seln_clean),
+                "seln_perturbed": float(seln_perturbed),
                 "reln": float(reln),
                 "snr_db": self.sig_cfg["snr_db"],
                 "noise_model": self.sig_cfg.get("noise_mode", "gaussian"),
