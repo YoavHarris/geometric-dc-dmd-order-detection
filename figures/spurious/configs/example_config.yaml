@@ -1,0 +1,27 @@
+project_root: "../../.."
+
+plotting:
+  mplstyle_path: "figures/mplstyle_files/chaos_double.mplstyle"
+
+  data:
+    csv_path: "figures/spurious/data/spurious_eigenvalues_results.csv"
+
+  xlim: [0.0, 1.02]
+
+  colors:
+    colormap: "viridis"
+
+  kde:
+    x_eval_points: 500
+    bandwidth: "scott"
+
+  min_stats:
+    interval_percentiles: [5, 95]
+    show_mean: true
+
+output:
+  output_dir: 'figures/spurious/outputs'
+  cdf_filename: "spurious_eigs_L_cdf.png"
+  pdf_filename: "spurious_eigs_L_pdf.png"
+  min_stats_filename: "spurious_eigs_L_min_stats.png"
+

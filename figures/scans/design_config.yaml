@@ -1,6 +1,15 @@
 # Design Configuration - Static styling choices
 # This file is rarely touched
 
+# Project root for path resolution
+project_root: "../.."
+
+# Plotting configuration
+plotting:
+  mplstyle:
+    style_mode: "double"  # "single" | "double" | "custom"
+    custom_style_path: null  # used only if style_mode == "custom"
+
 # Method styling (fixed colors, linestyles, and markers)
 # Convention: Our methods use circles (o), comparison methods use triangles (^)
 methods:

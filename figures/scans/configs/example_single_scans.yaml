@@ -1,0 +1,54 @@
+# Self-contained scan plot example (delay-embedded signals)
+# Uses relative paths to data/ and outputs/
+
+base:
+  csv_path: figures/scans/data/delay_embedded_combined_results.csv
+  metric: order_hit_prob
+  methods:
+    - BIC
+    - GAP
+    - STC
+    - ESL-Norm
+    - NestedDMD
+    - FixedEigenvalueBVFit
+
+  show: false
+
+# Working point for delay-embedded experiments
+baseline_working_point:
+  snr_db: 10.0
+  freq_sep: 0.01
+  eig_mag: 0.98
+  eig_mag_spread: 0.0
+  delays_over_timesteps: 0.32
+  spatial_dim: 45
+  temporal_dim: 200
+  rho_mode: random
+  top_amplitude: 1.0
+  max_rank: 15
+  artificial_damping: 1.0
+  num_modes: 3
+  noise_mode: gaussian
+
+plots:
+  - x_param: snr_db
+    output_path: figures/scans/outputs/delay_embedded_snr_db.png
+
+  - x_param: freq_sep
+    output_path: figures/scans/outputs/delay_embedded_freq_sep.png
+
+  - x_param: eig_mag
+    xlim: [0.87, 1.0]
+    output_path: figures/scans/outputs/delay_embedded_eig_mag.png
+
+  - x_param: spatial_dim
+    output_path: figures/scans/outputs/delay_embedded_spatial_dim.png
+
+  - x_param: delays_over_timesteps
+    output_path: figures/scans/outputs/delay_embedded_delays_over_timesteps.png
+
+  - x_param: top_amplitude
+    output_path: figures/scans/outputs/delay_embedded_top_amplitude.png
+
+  - x_param: max_rank
+    output_path: figures/scans/outputs/delay_embedded_max_rank.png

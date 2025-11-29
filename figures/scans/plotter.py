@@ -12,8 +12,11 @@ import yaml
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
-plt.style.use("../mplstyle_files/chaos_double.mplstyle")
+# Add parent directory to path for importing plotting_common
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from common.plotting_common import apply_style, resolve_project_root, load_yaml_config
 
 
 class SingleScanPlotter:
@@ -365,11 +368,28 @@ class PanelComposer:
 
 
 def load_config(path: str | None = None) -> dict[str, Any]:
-    """Load configuration."""
+    """Load configuration and apply plotting style.
+    
+    Args:
+        path: Path to config file (defaults to design_config.yaml)
+    
+    Returns:
+        Configuration dictionary
+    """
     if path is None:
         path = Path(__file__).parent / "design_config.yaml"
-    with open(path, "r") as f:
-        return yaml.safe_load(f)
+    
+    # Load config using shared utility
+    config = load_yaml_config(path)
+    
+    # Resolve project root and apply style
+    project_root = resolve_project_root(config, path)
+    
+    # Apply style if plotting config exists
+    if "plotting" in config:
+        apply_style(config["plotting"], project_root)
+    
+    return config
 
 
 def load_data(csv_path: str) -> pd.DataFrame:

@@ -1,0 +1,268 @@
+"""
+Plot leakage separation visualizations: RSLN and RELN for true vs spurious components.
+
+This script reads the YAML config and plotting parameters to generate
+multi-panel box plots or scatter plots.
+
+Usage (via Fire):
+    python leakage_separation_plotter.py path/to/config.yaml
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Any, Mapping
+
+import fire
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Add figures/ directory to sys.path to import common
+# Assumes this script is in figures/leakage/
+sys.path.append(str(Path(__file__).parents[1]))
+from common import plotting_common
+
+
+def _split_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split dataframe by true/spurious components."""
+    true_df = df[df["is_true"] == 1]
+    spurious_df = df[df["is_true"] == 0]
+    return true_df, spurious_df
+
+
+def plot_multi_scenario_boxplot(
+    csv_paths: list[Path],
+    panel_labels: list[str],
+    output_path: Path,
+    rsln_version: str,
+    annotate_gap_panel: int | None,
+    style_mode: str,
+    project_root: Path,
+):
+    """
+    Create multi-panel box plot comparing RSLN and RELN distributions across scenarios.
+    """
+    if len(csv_paths) != len(panel_labels):
+        raise ValueError("csv_paths and panel_labels must have the same length")
+
+    # Determine dimensions based on style
+    if style_mode == "single":
+        total_width = 3.375
+        panel_height = 2.0
+    else:
+        # Default to double or custom
+        total_width = 7.0
+        panel_height = 3.0
+
+    n_panels = len(csv_paths)
+    
+    # Create horizontal panels
+    fig, axes = plt.subplots(
+        1, n_panels, figsize=(total_width, panel_height), squeeze=False
+    )
+    axes = axes[0]  # Flatten
+
+    for i, (csv_path, label) in enumerate(zip(csv_paths, panel_labels)):
+        print(f"Reading {csv_path}")
+        df = pd.read_csv(csv_path)
+        
+        show_gap_annotation = (i == annotate_gap_panel)
+        show_ylabel = (i == 0)
+
+        _plot_boxplot_panel(
+            axes[i],
+            df,
+            title=label,
+            show_ylabel=show_ylabel,
+            rsln_version=rsln_version,
+            show_gap_annotation=show_gap_annotation,
+        )
+
+        if i > 0:
+            axes[i].set_yticklabels([])
+
+    plt.tight_layout()
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Multi-scenario box plot saved to: {output_path}")
+
+
+def _plot_boxplot_panel(
+    ax: plt.Axes,
+    df: pd.DataFrame,
+    title: str,
+    show_ylabel: bool,
+    rsln_version: str,
+    show_gap_annotation: bool,
+):
+    """
+    Plot a single panel with box plots for RSLN and RELN.
+    """
+    true_df, spurious_df = _split_data(df)
+    rsln_col = f"rsln_{rsln_version}"
+
+    data_dict = {
+        "true_rsln": true_df[rsln_col].values,
+        "spurious_rsln": spurious_df[rsln_col].values,
+        "true_reln": true_df["reln"].values,
+        "spurious_reln": spurious_df["reln"].values,
+    }
+
+    positions = [0, 1, 3, 4]
+    data_list = [
+        data_dict["true_rsln"],
+        data_dict["spurious_rsln"],
+        data_dict["true_reln"],
+        data_dict["spurious_reln"],
+    ]
+
+    bp = ax.boxplot(
+        data_list,
+        positions=positions,
+        widths=0.45,
+        patch_artist=True,
+        showfliers=True,
+        flierprops=dict(marker="o", markersize=2, alpha=0.3),
+    )
+
+    colors = ["#1f77b4", "#d62728", "#1f77b4", "#d62728"]
+
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_edgecolor("black")
+        patch.set_linewidth(0.8)
+        patch.set_alpha(0.7)
+
+    for element in ["whiskers", "caps", "medians"]:
+        for item in bp[element]:
+            item.set_color("black")
+            item.set_linewidth(0.8)
+
+    ax.set_xticks([0, 1, 3, 4])
+    labels = ["True-RSLN", "Spur-RSLN", "True-RELN", "Spur-RELN"]
+    ax.set_xticklabels(labels, rotation=45, ha="right")
+
+    ax.set_xlim([-0.5, 5.5])
+    ax.set_yscale("log")
+    
+    if show_ylabel:
+        ax.set_ylabel("Relative Leakage Norm")
+
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3, linestyle=":", axis="y", linewidth=0.5)
+
+    if show_gap_annotation:
+        _annotate_gap(ax, df, rsln_col, data_dict)
+
+
+def _annotate_gap(ax, df, rsln_col, data_dict):
+    """Add gap annotation to the plot."""
+    if "trial_id" in df.columns:
+        tau_spur_per_trial = df[df["is_true"] == 0].groupby("trial_id")[rsln_col].min()
+        tau_true_per_trial = df[df["is_true"] == 1].groupby("trial_id")[rsln_col].max()
+        
+        tau_spur_median = tau_spur_per_trial.median()
+        tau_spur_low = np.percentile(tau_spur_per_trial, 5)
+        tau_spur_high = np.percentile(tau_spur_per_trial, 95)
+        
+        tau_true_median = tau_true_per_trial.median()
+        tau_true_low = np.percentile(tau_true_per_trial, 5)
+        tau_true_high = np.percentile(tau_true_per_trial, 95)
+        
+        ax.axhspan(tau_spur_low, tau_spur_high, color='red', alpha=0.15, zorder=0)
+        ax.axhspan(tau_true_low, tau_true_high, color='blue', alpha=0.15, zorder=0)
+        
+        tau_spur_val = tau_spur_median
+        tau_true_val = tau_true_median
+    else:
+        tau_spur_val = np.min(data_dict["spurious_rsln"])
+        tau_true_val = np.max(data_dict["true_rsln"])
+
+    ax.axhline(tau_spur_val, color='red', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
+    ax.axhline(tau_true_val, color='blue', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
+
+    ax.text(5.2, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
+    ax.text(5.2, tau_true_val, r"$\tau_{\mathrm{true}}$", va="top", ha="left")
+
+    from matplotlib.patches import FancyArrowPatch
+    arrow = FancyArrowPatch(
+        (5.0, tau_spur_val),
+        (5.0, tau_true_val),
+        arrowstyle="<->",
+        mutation_scale=15,
+        linewidth=1.2,
+        color="black",
+        zorder=10,
+    )
+    ax.add_patch(arrow)
+
+    gamma_y = np.sqrt(tau_spur_val * tau_true_val)
+    ax.text(5.15, gamma_y, r"$\gamma$", va="center", ha="left", weight="bold")
+
+
+def main(config_path: str) -> None:
+    """
+    CLI entry point.
+    """
+    config = plotting_common.load_yaml_config(config_path)
+    project_root = plotting_common.resolve_project_root(config, config_path)
+
+    # 1. Get plotting config
+    try:
+        plot_cfg = config["plotting"]
+    except KeyError as exc:
+        raise KeyError("Config missing required section 'plotting'.") from exc
+
+    # 2. Apply style
+    plotting_common.apply_style(plot_cfg, project_root)
+    
+    # Get style mode for figure sizing
+    style_mode = plot_cfg.get("mplstyle", {}).get("style_mode", "double")
+
+    # 3. Parse scenarios
+    scenarios = plot_cfg.get("scenarios", [])
+    if not scenarios:
+        raise ValueError("No scenarios defined in plotting.scenarios")
+
+    csv_paths = []
+    panel_labels = []
+    for sc in scenarios:
+        rel_path = sc["csv_path"]
+        csv_paths.append(plotting_common.resolve_path(project_root, rel_path))
+        panel_labels.append(sc["label"])
+
+    # 4. Other params
+    rsln_version = plot_cfg.get("rsln", {}).get("version", "perturbed")
+    annotate_gap_panel = plot_cfg.get("figure", {}).get("annotate_gap_panel", 0)
+    
+    # 5. Output
+    try:
+        rel_out_dir = config["output"]["output_dir"]
+        filename = config["output"]["filename"]
+    except KeyError:
+        raise KeyError("Config must contain output.output_dir and output.filename")
+
+    out_dir = plotting_common.resolve_path(project_root, rel_out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    output_path = out_dir / filename
+
+    print(f"Generating plot for {len(scenarios)} scenarios...")
+    print(f"Output: {output_path}")
+
+    plot_multi_scenario_boxplot(
+        csv_paths=csv_paths,
+        panel_labels=panel_labels,
+        output_path=output_path,
+        rsln_version=rsln_version,
+        annotate_gap_panel=annotate_gap_panel,
+        style_mode=style_mode,
+        project_root=project_root,
+    )
+    
+    print("Done.")
+
+
+if __name__ == "__main__":
+    fire.Fire(main)

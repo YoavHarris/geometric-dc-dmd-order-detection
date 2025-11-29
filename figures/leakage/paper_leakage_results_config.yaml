@@ -1,0 +1,29 @@
+project_root: "../.."
+
+plotting:
+  mplstyle:
+    style_mode: "double"
+
+  rsln:
+    version: "perturbed"
+
+  figure:
+    type: "boxplot"
+    annotate_gap_panel: 0
+
+  scenarios:
+    - name: "easy"
+      label: "Easy"
+      csv_path: "C:/Users/Yoav/dcdmd_experiments/leakage_251125/easy_results.csv"
+
+    - name: "noisy"
+      label: "Noisy"
+      csv_path: "C:/Users/Yoav/dcdmd_experiments/leakage_251125/noisy_results.csv"
+
+    - name: "overestimation"
+      label: "Overestimation"
+      csv_path: "C:/Users/Yoav/dcdmd_experiments/leakage_251125/overestimation_results.csv"
+
+output:
+  output_dir: 'C:\Users\Yoav\dcdmd_experiments\leakage_251125'
+  filename: "paper_leakage_results.png"

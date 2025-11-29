@@ -1,9 +1,9 @@
 """
-Leakage Separation Experiment: SELN vs RELN validation.
+Leakage Separation Experiment: RSLN vs RELN validation.
 
 This script validates the theoretical separation of leakage norms between
 true and spurious DMD components using:
-- SELN (Signal-subspace Empirical Leakage Norm): oracle metric using true signal subspace
+- RSLN (Relative Subspace Leakage Norm): oracle metric using true signal subspace
 - RELN (Rank-estimated Empirical Leakage Norm): practical metric using estimated subspace
 
 The experiment runs at a fixed working point (N=200, D=45, m=5, L=64, M=15, etc.)
@@ -45,7 +45,7 @@ class LeakageSeparationExperiment:
     Validates leakage norm separation between true and spurious DMD components.
 
     This class encapsulates the entire experiment workflow at a fixed working point,
-    measuring both SELN and RELN for each recovered component.
+    measuring both RSLN and RELN for each recovered component.
     """
 
     def __init__(self, config: dict[str, Any]):
@@ -245,8 +245,8 @@ class LeakageSeparationExperiment:
             esl = compute_esl(mode, estimated_basis)
 
             # Compute relative norms
-            seln_clean = ssl_clean / exact_mode_norm if exact_mode_norm > 0 else 0.0
-            seln_perturbed = (
+            rsln_clean = ssl_clean / exact_mode_norm if exact_mode_norm > 0 else 0.0
+            rsln_perturbed = (
                 ssl_perturbed / exact_mode_norm if exact_mode_norm > 0 else 0.0
             )
             reln = esl / exact_mode_norm if exact_mode_norm > 0 else 0.0
@@ -259,8 +259,8 @@ class LeakageSeparationExperiment:
                 "ssl_clean": float(ssl_clean),
                 "ssl_perturbed": float(ssl_perturbed),
                 "esl": float(esl),
-                "seln_clean": float(seln_clean),
-                "seln_perturbed": float(seln_perturbed),
+                "rsln_clean": float(rsln_clean),
+                "rsln_perturbed": float(rsln_perturbed),
                 "reln": float(reln),
                 "snr_db": self.sig_cfg["snr_db"],
                 "noise_model": self.sig_cfg.get("noise_mode", "gaussian"),
@@ -295,7 +295,7 @@ class LeakageSeparationExperiment:
     def _print_header(self):
         """Print experiment header information."""
         print("=" * 70)
-        print("LEAKAGE SEPARATION EXPERIMENT: SELN vs RELN")
+        print("LEAKAGE SEPARATION EXPERIMENT: RSLN vs RELN")
         print("=" * 70)
         print(f"Working point:")
         print(f"  N={self.N}, D={self.D}, m={self.m}, M={self.M}, L={self.L}")
