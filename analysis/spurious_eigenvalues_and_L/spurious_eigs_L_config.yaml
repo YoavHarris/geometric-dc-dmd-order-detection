@@ -42,7 +42,7 @@ plotting:
     bandwidth: scott
 
   min_stats:
-    interval_percentiles: [10, 90]
+    interval_percentiles: [5, 95]
     show_mean: true
 
   colors:

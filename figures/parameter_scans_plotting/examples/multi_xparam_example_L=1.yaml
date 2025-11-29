@@ -3,7 +3,7 @@
 # This is useful for comparing sensitivity across different parameters
 
 base:
-  csv_path: C:\Users\Yoav\dcdmd_experiments\241125_no_delays\combined_results.csv
+  csv_path: 'C:\Users\Yoav\dcdmd_experiments\exp_281125_no_delays\combined_results.csv'
   metric: order_hit_prob
   methods:
     - BIC
@@ -21,10 +21,10 @@ baseline_working_point:
   freq_sep: 0.01
   eig_mag: 0.98
   eig_mag_spread: 0.0
-  rho_mode: random
   delays_over_timesteps: 0.005
+  spatial_dim: 220
   temporal_dim: 200
-  spatial_dim: 45
+  rho_mode: random
   max_rank: 15
   artificial_damping: 1.0
   num_modes: 3
@@ -34,5 +34,6 @@ baseline_working_point:
 plots:
   # Example 1: Three parameters - SNR, Frequency Separation, Eigenvalue Magnitude
   - x_params: [snr_db, freq_sep, eig_mag]
-    output_path: C:\Users\Yoav\dcdmd_experiments\241125_no_delays\figures\3_params.png
+    output_path: C:\Users\Yoav\dcdmd_experiments\exp_281125_no_delays\figures\3_params.png
+
     title: "Standard DMD Order Detection Scans $(L=1)$"

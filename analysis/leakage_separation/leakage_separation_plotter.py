@@ -96,7 +96,7 @@ def plot_two_panel_cdfs(
         true_data=true_df[seln_col].values,
         spurious_data=spurious_df[seln_col].values,
         metric_name=r"$r_{\mathcal{S}}(\phi)$",  # Mathtext equivalent of \RSLN
-        title="(a) SELN (Oracle)",
+        title="(a) RSLN (Oracle)",
     )
 
     # --- Right panel: RELN (practical) ---
@@ -246,7 +246,7 @@ def plot_two_panel_scatter(
         true_values=seln_true,
         spurious_values=seln_spurious,
         metric_name=r"$r_{\mathcal{S}}(\phi)$",
-        title="(a) SELN (Oracle)",
+        title="(a) RSLN (Oracle)",
     )
 
     # --- Right panel: RELN (practical) ---
@@ -408,7 +408,10 @@ def plot_multi_scenario_boxplot(
         print(f"Warning: Style file {style_path} not found.")
 
     n_panels = len(csv_paths)
-    panel_height = 3.0  # Match parameter_scans_plotting height
+    if style_file == "single":
+        panel_height = 2.0
+    else:
+        panel_height = 3.0  # Match parameter_scans_plotting height
 
     # Create horizontal panels
     # Use squeeze=False to always get an array of axes
@@ -514,8 +517,8 @@ def _plot_boxplot_panel(
     # Set x-axis with individual labels for each box (rotated diagonally)
     ax.set_xticks([0, 1, 3, 4])
     labels = [
-        "True-SELN",
-        "Spur-SELN",
+        "True-RSLN",
+        "Spur-RSLN",
         "True-RELN",
         "Spur-RELN",
     ]
@@ -535,30 +538,54 @@ def _plot_boxplot_panel(
 
     # Add gap annotation if requested
     if show_gap_annotation:
-        # tau_spur: minimum spurious SELN
-        tau_spur = np.min(data_dict["spurious_seln"])
-        # tau_true: maximum true SELN
-        tau_true = np.max(data_dict["true_seln"])
-
-        # Draw horizontal lines spanning full panel
-        ax.axhline(
-            tau_spur, color="red", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
-        )
-        ax.axhline(
-            tau_true, color="blue", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
-        )
+        # Check if trial_id exists for per-iteration stats
+        if "trial_id" in df.columns:
+            # Compute per-trial stats
+            # tau_spur: minimum spurious SELN per trial
+            tau_spur_per_trial = df[df["is_true"] == 0].groupby("trial_id")[seln_col].min()
+            # tau_true: maximum true SELN per trial
+            tau_true_per_trial = df[df["is_true"] == 1].groupby("trial_id")[seln_col].max()
+            
+            # Compute statistics
+            tau_spur_median = tau_spur_per_trial.median()
+            tau_spur_low = np.percentile(tau_spur_per_trial, 5)
+            tau_spur_high = np.percentile(tau_spur_per_trial, 95)
+            
+            tau_true_median = tau_true_per_trial.median()
+            tau_true_low = np.percentile(tau_true_per_trial, 5)
+            tau_true_high = np.percentile(tau_true_per_trial, 95)
+            
+            # Plot shaded regions (CI)
+            ax.axhspan(tau_spur_low, tau_spur_high, color='red', alpha=0.15, zorder=0, label="5-95% CI")
+            ax.axhspan(tau_true_low, tau_true_high, color='blue', alpha=0.15, zorder=0)
+            
+            # Plot median lines
+            ax.axhline(tau_spur_median, color='red', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
+            ax.axhline(tau_true_median, color='blue', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
+            
+            # Use medians for labels and arrows
+            tau_spur_val = tau_spur_median
+            tau_true_val = tau_true_median
+            
+        else:
+            # Fallback to global min/max if trial_id is missing
+            tau_spur_val = np.min(data_dict["spurious_seln"])
+            tau_true_val = np.max(data_dict["true_seln"])
+            
+            ax.axhline(tau_spur_val, color='red', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
+            ax.axhline(tau_true_val, color='blue', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
 
         # Add labels for the horizontal lines at the right edge
         # Remove manual fontsize
-        ax.text(5.2, tau_spur, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
-        ax.text(5.2, tau_true, r"$\tau_{\mathrm{true}}$", va="top", ha="left")
+        ax.text(5.2, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
+        ax.text(5.2, tau_true_val, r"$\tau_{\mathrm{true}}$", va="top", ha="left")
 
         # Add bidirectional arrow at reserved position 5
         from matplotlib.patches import FancyArrowPatch
 
         arrow = FancyArrowPatch(
-            (5.0, tau_spur),
-            (5.0, tau_true),
+            (5.0, tau_spur_val),
+            (5.0, tau_true_val),
             arrowstyle="<->",
             mutation_scale=15,  # Increased scale for larger arrow
             linewidth=1.2,
@@ -568,7 +595,7 @@ def _plot_boxplot_panel(
         ax.add_patch(arrow)
 
         # Add gamma label next to arrow
-        gamma_y = np.sqrt(tau_spur * tau_true)  # Geometric mean for log scale
+        gamma_y = np.sqrt(tau_spur_val * tau_true_val)  # Geometric mean for log scale
         # Remove manual fontsize, keep bold
         ax.text(5.15, gamma_y, r"$\gamma$", va="center", ha="left", weight="bold")
 
@@ -582,6 +609,7 @@ def main(
     seln_version: str = "perturbed",
     style_file: str = "double",
     annotate_gap_panel: int = 0,
+    output_filename: str | None = None,
 ):
     """
     Plot leakage separation visualizations from experiment results.
@@ -593,6 +621,7 @@ def main(
         seln_version: Version of SELN to plot, either "clean" or "perturbed" (default: "perturbed")
         style_file: 'single', 'double', or path to mplstyle file (default: 'double')
         annotate_gap_panel: Index of the panel to annotate with gap markers (default: 0)
+        output_filename: Specific filename for the output plot (optional)
     """
     # Handle inputs
     if isinstance(csv_paths, str):
@@ -621,7 +650,9 @@ def main(
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Define output file paths
-    if style_file == "double":
+    if output_filename:
+        cdf_output = output_path / output_filename
+    elif style_file == "double":
         cdf_output = output_path / "seln_reln_scatters.png"
     else:
         cdf_output = (
