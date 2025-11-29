@@ -20,10 +20,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
 
-# Add figures/ directory to sys.path to import common
-# Assumes this script is in figures/spurious/
-sys.path.append(str(Path(__file__).parents[1]))
-from common import plotting_common
+from figures.common import plotting_common
 
 
 # =============================================================================

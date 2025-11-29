@@ -7,7 +7,7 @@ Generates parameter combinations for experiment jobs.
 from __future__ import annotations
 
 import itertools
-from typing import Any, Dict, List, Union
+from typing import Any
 import numpy as np
 
 
@@ -28,7 +28,7 @@ def _compute_decimal_places(step_size: float, margin: int = 2) -> int:
     return min(decimals, MAX_DECIMAL_PLACES)
 
 
-def _gen_range(spec: Dict[str, Any]) -> List[Union[int, float]]:
+def _gen_range(spec: dict[str, Any]) -> list[int | float]:
     """Generate values for range-type parameter."""
     start, end, steps = spec["start"], spec["end"], spec["num_steps"]
     scale = spec.get("scale", "lin")
@@ -68,12 +68,12 @@ def _gen_range(spec: Dict[str, Any]) -> List[Union[int, float]]:
     return vals.tolist()
 
 
-def _gen_list(spec: Dict[str, Any]) -> List[Any]:
+def _gen_list(spec: dict[str, Any]) -> list[Any]:
     """Generate values for list-type parameter."""
     return spec["values"]
 
 
-def _gen_const(spec: Dict[str, Any]) -> List[Any]:
+def _gen_const(spec: dict[str, Any]) -> list[Any]:
     """Generate values for const-type parameter."""
     return [spec["value"]]
 
@@ -85,10 +85,10 @@ _GENERATORS = {
 }
 
 
-def _deduplicate_jobs(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _deduplicate_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Remove duplicate parameter combinations."""
     seen: set[tuple] = set()
-    unique: list[Dict[str, Any]] = []
+    unique: list[dict[str, Any]] = []
 
     for d in jobs:
         key = tuple(sorted(d.items()))
@@ -100,9 +100,9 @@ def _deduplicate_jobs(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def generate_parameter_combinations(
-    parameters: Dict[str, Dict[str, Any]],
-    working_point: Dict[str, Any] | None = None,
-) -> List[Dict[str, Any]]:
+    parameters: dict[str, dict[str, Any]],
+    working_point: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     """
     Generate all parameter combinations based on roles.
 
@@ -114,9 +114,9 @@ def generate_parameter_combinations(
         List of parameter dictionaries, one per job
     """
     # Separate parameters by role
-    wp_params: List[str] = []
-    cart_params: List[str] = []
-    param_values: Dict[str, List[Any]] = {}
+    wp_params: list[str] = []
+    cart_params: list[str] = []
+    param_values: dict[str, list[Any]] = {}
 
     for name, spec in parameters.items():
         ptype = spec["type"]
@@ -134,7 +134,7 @@ def generate_parameter_combinations(
         if working_point is None:
             raise ValueError("working_point required when parameters have role='wp'")
 
-        wp_set: List[Dict[str, Any]] = []
+        wp_set: list[dict[str, Any]] = []
 
         # Start with exact working point
         base = working_point.copy()
@@ -166,7 +166,7 @@ def generate_parameter_combinations(
         cart_set = [{}]
 
     # Final product: wp_set × cart_set
-    all_combinations: List[Dict[str, Any]] = []
+    all_combinations: list[dict[str, Any]] = []
     for w in wp_set:
         for c in cart_set:
             merged = {**w, **c}
@@ -186,7 +186,7 @@ def generate_parameter_combinations(
     return deduped
 
 
-def generate_job_parameters(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def generate_job_parameters(config: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Generate all job parameter combinations from config.
 

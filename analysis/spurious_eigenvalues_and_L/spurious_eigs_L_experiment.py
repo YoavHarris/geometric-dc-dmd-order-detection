@@ -284,11 +284,11 @@ class SpuriousEigenvalueExperiment:
         """
         # Deterministic random seed
         seed = self.base_seed + L * 1000 + mc_iter
-        
+
         # Compute N for this L
         N_used = self._compute_num_timesteps(L)
         N_cols = N_used - L
-        
+
         # Generate data and run DMD
         (
             recovered_eigenvalues,
@@ -373,7 +373,9 @@ class SpuriousEigenvalueExperiment:
         print("SPURIOUS EIGENVALUE MAGNITUDE vs L EXPERIMENT")
         print("=" * 70)
         print(f"Sample size mode: {self.sample_size_mode}")
-        print(f"Baseline: N={self.N_base} at L_min={self.L_min} (N_cols={self.N_cols_base})")
+        print(
+            f"Baseline: N={self.N_base} at L_min={self.L_min} (N_cols={self.N_cols_base})"
+        )
         print(f"L values: {self.L_values}")
         print(f"MC iterations per L: {self.n_mc}")
         print(f"Base random seed: {self.base_seed}")

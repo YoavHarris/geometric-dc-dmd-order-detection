@@ -14,20 +14,20 @@ import os
 import shutil
 import stat
 from pathlib import Path
-from typing import List, Set
+from typing import Any
 import yaml
 import fire
 
-from config_validator import validate_config_file, ConfigValidationError
-from param_generator import generate_job_parameters
-from job_config_builder import write_job_configs
-from pbs_utils import (
+from .config_validator import validate_config_file, ConfigValidationError
+from .param_generator import generate_job_parameters
+from .job_config_builder import write_job_configs
+from .pbs_utils import (
     build_pbs_script,
     write_script,
     submit_job,
     fetch_running_job_ids,
 )
-from state_manager import (
+from .state_manager import (
     save_state,
     mark_succeeded,
     mark_failed,
@@ -39,7 +39,7 @@ from state_manager import (
     find_attempted_jobs,
     DEFAULT_STATE,
 )
-from result_combiner import combine_results
+from .result_combiner import combine_results
 
 
 def _load_config(config_path: str) -> dict:
@@ -68,7 +68,7 @@ def _get_frozen_config_path(config_path: str) -> str:
     return os.path.join(output_dir, "config.frozen.yaml")
 
 
-def _normalize_ids(ids_arg) -> List[int]:
+def _normalize_ids(ids_arg) -> list[int]:
     """Parse job IDs from various input formats."""
     if ids_arg is None:
         return []

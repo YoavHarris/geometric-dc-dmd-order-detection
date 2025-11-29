@@ -1,7 +1,7 @@
 """Command-line interface for scan plotter."""
 
 import fire
-from plotter import (
+from .plotter import (
     SingleScanPlotter,
     PanelComposer,
     load_config,
@@ -193,7 +193,9 @@ class ScanPlotterCLI:
             if methods:
                 filtered = filtered[filtered["method"].isin(methods)]
                 if len(filtered) == 0:
-                    print(f"Warning: No data for x_param={x_param} with specified methods, skipping")
+                    print(
+                        f"Warning: No data for x_param={x_param} with specified methods, skipping"
+                    )
                     continue
 
             # Create panel title from x_param label

@@ -5,19 +5,12 @@ Validates all configuration parameters before job generation.
 """
 
 import os
+import sys
 from typing import Any
 import numpy as np
 
-
-class ConfigValidationError(Exception):
-    """Raised when configuration validation fails."""
-
-    pass
-
-
+# Constants
 VALID_METHODS = {
-    "AIC",
-    "AICc",
     "BIC",
     "GAP",
     "ExactModeNorm",
@@ -32,11 +25,18 @@ VALID_METHODS = {
 VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}
 VALID_CLUSTERING_STRATEGIES = {"mean", "distance"}
 VALID_CLUSTERING_NORMALIZATIONS = {"min_max", "standard", "null", None}
-VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "uniform", "student_t", "hetero", "ar1"}
-VALID_RHO_MODES = {"random", "linspace"}
+
 VALID_PARAMETER_TYPES = {"range", "list", "const"}
-VALID_SCALES = {"lin", "log"}
 VALID_ROLES = {"wp", "cartesian"}
+VALID_SCALES = {"lin", "log"}
+VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "student_t", "hetero"}
+VALID_RHO_MODES = {"random", "fixed"}
+
+
+class ConfigValidationError(Exception):
+    """Raised when configuration validation fails."""
+
+    pass
 
 
 def validate_config(config: dict[str, Any]) -> None:
@@ -426,16 +426,22 @@ def validate_config_file(config_path: str) -> dict[str, Any]:
     return config
 
 
-if __name__ == "__main__":
-    import sys
+def main(config_path: str):
+    """
+    Validate a configuration file.
 
-    if len(sys.argv) != 2:
-        print("Usage: python config_validator.py <config.yaml>")
-        sys.exit(1)
-
+    Args:
+        config_path: Path to YAML config file
+    """
     try:
-        validate_config_file(sys.argv[1])
+        validate_config_file(config_path)
         print("✓ Configuration is valid")
     except ConfigValidationError as e:
         print(f"✗ Configuration validation failed: {e}")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    import fire
+
+    fire.Fire(main)

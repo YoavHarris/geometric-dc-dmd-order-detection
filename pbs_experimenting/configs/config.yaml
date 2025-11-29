@@ -9,7 +9,6 @@ experiment:
 # Methods to evaluate (comment out to disable)
 # ──────────────────────────────────────────────────────────────────────────────
 methods:
-  - AIC
   - BIC
   - GAP
   - ExactModeNorm

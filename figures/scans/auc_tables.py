@@ -95,7 +95,9 @@ def compute_normalized_auc(df: pd.DataFrame) -> Dict[Tuple[int, str, str], float
     return auc_dict
 
 
-def format_latex_tables(auc_dict: Dict[Tuple[int, str, str], float], df: pd.DataFrame) -> str:
+def format_latex_tables(
+    auc_dict: Dict[Tuple[int, str, str], float], df: pd.DataFrame
+) -> str:
     """
     Build LaTeX tables (one per num_modes) as a single string.
     """

@@ -1,4 +1,3 @@
-from typing import Optional, List
 import numpy as np
 from numpy.typing import NDArray
 from matplotlib import pyplot as plt
@@ -61,12 +60,12 @@ def plot_power_spectrum(
 
 def plot_matrices_list(
     matrices: NDArray[np.complexfloating],
-    row_mask: Optional[NDArray[np.bool_]] = None,
+    row_mask: NDArray[np.bool_] | None = None,
     title: str = "Matrix",
     show_imag: bool = True,
     x_label: str = "",
     y_label: str = "",
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> None:
     """
     Plot a batch of 2D matrices (M, D, L) using imshow.
@@ -168,7 +167,7 @@ def scatter_scores(score_dict: dict[str, NDArray[np.floating]]) -> None:
 
 def scatter_scores_2d(
     score_mat: NDArray[np.floating],
-    score_names: List[str],
+    score_names: list[str],
     title: str = "",
     show_id: bool = False,
 ):

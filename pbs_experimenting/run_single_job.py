@@ -8,7 +8,7 @@ import sys
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Tuple, Optional, Union, Any
+from typing import Any
 import yaml
 
 import numpy as np
@@ -19,15 +19,11 @@ from tqdm import tqdm
 import fire
 
 from algorithms.estimated_subspace_leakage import EstimatedSubspaceLeakage
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from algorithms.block_vandermonde_fit import FixedEigenvalueBVFit, NestedDMD
 from algorithms.clustering import ModeClustering
 from algorithms.stc import STC
-from algorithms.info_criteria import (
-    InformationCriteriaOrderEstimator,
+from algorithms.bic import (
+    compute_bic_rank,
     gap_ranks,
 )
 
@@ -53,14 +49,12 @@ DELAY_EMBEDDING_METHODS = {
 
 # Information criteria methods
 INFO_CRITERIA_METHODS = {
-    "AIC",
-    "AICc",
     "BIC",
 }
 
 
 def _skip_run_with_empty_csv(
-    output_path: Union[str, Path],
+    output_path: str | Path,
     reason: str,
 ) -> None:
     """Abort the run and write a header-only CSV."""
@@ -129,15 +123,15 @@ def get_gt_eigs_indices(gt_eigs: np.ndarray, pred_eigs: np.ndarray) -> np.ndarra
 
 
 def cluster_scores(
-    scores: Dict[str, np.ndarray],
-    clustering_config: Dict[str, Any],
-) -> Tuple[np.ndarray, int]:
+    scores: dict[str, np.ndarray],
+    clustering_config: dict[str, Any],
+) -> tuple[np.ndarray, int]:
     """Cluster scores and return labels and order estimate."""
     """
     normalization: str | None = "min_mafx",
         strategy: str = "vote",
         pilot_feature: str = "",
-        weights: Dict[str, float] | None = None,
+        weights: dict[str, float] | None = None,
         algorithm: str = "kmeans",
         gmm_covariance: str = "full",
         random_state: int | None = None,
@@ -154,7 +148,7 @@ def cluster_scores(
 def compute_subspace_proximity_stats(
     clean_angles: np.ndarray,
     practical_angles: np.ndarray,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Compute summary statistics from principal angle arrays.
 
@@ -179,7 +173,7 @@ def compute_subspace_proximity_analysis(
     true_eigenvalues: np.ndarray,
     num_modes: int,
     num_delays: int,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Compute subspace proximity summary statistics.
 
@@ -231,7 +225,7 @@ class MethodEvaluator:
         exact_dmd,
         max_rank: int,
         plot: bool = False,
-    ) -> Tuple[Dict[str, int], Dict[str, np.ndarray]]:
+    ) -> tuple[dict[str, int], dict[str, np.ndarray]]:
         """
         Evaluate all methods and return order estimates and masks.
 
@@ -251,14 +245,11 @@ class MethodEvaluator:
             exact_dmd.modes, exact_dmd.amplitudes
         )
 
-        # Information criteria methods
-        info_methods = [m for m in self.enabled_methods if m in INFO_CRITERIA_METHODS]
-        if info_methods:
-            info_est = InformationCriteriaOrderEstimator(num_delays=self.num_delays)
-            info_orders = info_est.fit(signal, max_rank=max_rank, plot=plot)
-            for method in info_methods:
-                if method in info_orders:
-                    order_estimates[method] = info_orders[method]
+        # BIC method
+        if "BIC" in self.enabled_methods:
+            order_estimates["BIC"] = compute_bic_rank(
+                signal, max_rank=max_rank, num_delays=self.num_delays, plot=plot
+            )
 
         # GAP statistic
         if "GAP" in self.enabled_methods:
@@ -440,7 +431,7 @@ class MetricsTracker:
         self,
         method: str,
         pred_order: int,
-        pred_mask: Optional[np.ndarray],
+        pred_mask: np.ndarray | None,
         true_mask: np.ndarray,
         true_order: int,
     ):
@@ -458,7 +449,7 @@ class MetricsTracker:
             rec["fn"] += int((~p & t).sum())
             rec["tn"] += int((~p & ~t).sum())
 
-    def add_subspace_proximity_stats(self, stats: Dict[str, float]):
+    def add_subspace_proximity_stats(self, stats: dict[str, float]):
         """Add subspace proximity statistics from current iteration."""
         for key, value in stats.items():
             self.subspace_stats[key].append(value)
@@ -540,7 +531,7 @@ def compute_dmd_and_ground_truth(
     max_rank: int,
     num_delays: int,
     gt_eigs: np.ndarray,
-) -> Tuple:
+) -> tuple:
     """Compute DMD results and ground truth matching."""
     proj_dmd = fit_dmd(
         signal, svd_rank=max_rank, mode="projected", num_delays=num_delays
@@ -554,7 +545,7 @@ def compute_dmd_and_ground_truth(
     return proj_dmd, exact_dmd, true_mask
 
 
-def run_experiment(job_config: Dict, plot: bool = False) -> None:
+def run_experiment(job_config: dict, plot: bool = False) -> None:
     """
     Run the experiment for a single job configuration.
 

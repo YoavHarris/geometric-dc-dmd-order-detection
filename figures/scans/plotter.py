@@ -14,9 +14,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-# Add parent directory to path for importing plotting_common
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from common.plotting_common import apply_style, resolve_project_root, load_yaml_config
+from figures.common.plotting_common import (
+    apply_style,
+    resolve_project_root,
+    load_yaml_config,
+)
 
 
 class SingleScanPlotter:
@@ -316,8 +318,6 @@ class PanelComposer:
                 ylabel=panel_spec.get("ylabel"),
             )
 
-
-
         # Add shared legend based on layout
         # Get handles and labels from any axis (they should all have the same)
         handles, labels = axes[0].get_legend_handles_labels()
@@ -369,26 +369,26 @@ class PanelComposer:
 
 def load_config(path: str | None = None) -> dict[str, Any]:
     """Load configuration and apply plotting style.
-    
+
     Args:
         path: Path to config file (defaults to design_config.yaml)
-    
+
     Returns:
         Configuration dictionary
     """
     if path is None:
         path = Path(__file__).parent / "design_config.yaml"
-    
+
     # Load config using shared utility
     config = load_yaml_config(path)
-    
+
     # Resolve project root and apply style
     project_root = resolve_project_root(config, path)
-    
+
     # Apply style if plotting config exists
     if "plotting" in config:
         apply_style(config["plotting"], project_root)
-    
+
     return config
 
 

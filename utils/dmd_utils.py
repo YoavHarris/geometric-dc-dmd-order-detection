@@ -1,6 +1,5 @@
 import logging
 import warnings
-from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 from pydmd import DMD
@@ -102,7 +101,7 @@ def warn_if_rank_mismatch(
 
 def align_modes_and_amplitudes_phases(
     modes: NDArray[np.complexfloating], amplitudes: NDArray[np.complexfloating]
-) -> Tuple[NDArray[np.complexfloating], NDArray[np.floating]]:
+) -> tuple[NDArray[np.complexfloating], NDArray[np.floating]]:
     """
     Align mode phases to ensure amplitudes are real and positive.
 

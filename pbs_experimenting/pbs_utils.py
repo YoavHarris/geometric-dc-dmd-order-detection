@@ -8,11 +8,11 @@ import os
 import subprocess
 import logging
 import time
-from typing import Tuple, Optional, Dict, Any, Set
+from typing import Any
 
 
 def build_pbs_script(
-    pbs_cfg: Dict[str, Any],
+    pbs_cfg: dict[str, Any],
     interpreter: str,
     code_dir: str,
     worker_script: str,
@@ -71,7 +71,7 @@ def write_script(content: str, script_path: str) -> None:
 
 def submit_job(
     script_path: str, retries: int = 5, retry_delay: int = 10
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     """
     Submit the PBS script via qsub, retrying on failure.
 
@@ -100,7 +100,7 @@ def submit_job(
     return None, err
 
 
-def fetch_running_job_ids() -> Set[int]:
+def fetch_running_job_ids() -> set[int]:
     """
     Return set of job IDs currently in the PBS queue.
     Looks for jobs named 'job_XXXX' where XXXX is the job ID.

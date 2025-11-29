@@ -10,19 +10,14 @@ Usage (via Fire):
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-from typing import Any, Mapping
-
 import fire
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
 
-# Add figures/ directory to sys.path to import common
-# Assumes this script is in figures/leakage/
-sys.path.append(str(Path(__file__).parents[1]))
-from common import plotting_common
+from figures.common import plotting_common
 
 
 def _split_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -57,7 +52,7 @@ def plot_multi_scenario_boxplot(
         panel_height = 3.0
 
     n_panels = len(csv_paths)
-    
+
     # Create horizontal panels
     fig, axes = plt.subplots(
         1, n_panels, figsize=(total_width, panel_height), squeeze=False
@@ -67,9 +62,9 @@ def plot_multi_scenario_boxplot(
     for i, (csv_path, label) in enumerate(zip(csv_paths, panel_labels)):
         print(f"Reading {csv_path}")
         df = pd.read_csv(csv_path)
-        
-        show_gap_annotation = (i == annotate_gap_panel)
-        show_ylabel = (i == 0)
+
+        show_gap_annotation = i == annotate_gap_panel
+        show_ylabel = i == 0
 
         _plot_boxplot_panel(
             axes[i],
@@ -144,9 +139,9 @@ def _plot_boxplot_panel(
     labels = ["True-RSLN", "Spur-RSLN", "True-RELN", "Spur-RELN"]
     ax.set_xticklabels(labels, rotation=45, ha="right")
 
-    ax.set_xlim([-0.5, 5.5])
+    ax.set_xlim((-0.5, 5.5))
     ax.set_yscale("log")
-    
+
     if show_ylabel:
         ax.set_ylabel("Relative Leakage Norm")
 
@@ -162,31 +157,34 @@ def _annotate_gap(ax, df, rsln_col, data_dict):
     if "trial_id" in df.columns:
         tau_spur_per_trial = df[df["is_true"] == 0].groupby("trial_id")[rsln_col].min()
         tau_true_per_trial = df[df["is_true"] == 1].groupby("trial_id")[rsln_col].max()
-        
+
         tau_spur_median = tau_spur_per_trial.median()
         tau_spur_low = np.percentile(tau_spur_per_trial, 5)
         tau_spur_high = np.percentile(tau_spur_per_trial, 95)
-        
+
         tau_true_median = tau_true_per_trial.median()
         tau_true_low = np.percentile(tau_true_per_trial, 5)
         tau_true_high = np.percentile(tau_true_per_trial, 95)
-        
-        ax.axhspan(tau_spur_low, tau_spur_high, color='red', alpha=0.15, zorder=0)
-        ax.axhspan(tau_true_low, tau_true_high, color='blue', alpha=0.15, zorder=0)
-        
+
+        ax.axhspan(tau_spur_low, tau_spur_high, color="red", alpha=0.15, zorder=0)
+        ax.axhspan(tau_true_low, tau_true_high, color="blue", alpha=0.15, zorder=0)
+
         tau_spur_val = tau_spur_median
         tau_true_val = tau_true_median
     else:
         tau_spur_val = np.min(data_dict["spurious_rsln"])
         tau_true_val = np.max(data_dict["true_rsln"])
 
-    ax.axhline(tau_spur_val, color='red', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
-    ax.axhline(tau_true_val, color='blue', linestyle='--', linewidth=1.0, alpha=0.7, zorder=10)
+    ax.axhline(
+        tau_spur_val, color="red", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
+    )
+    ax.axhline(
+        tau_true_val, color="blue", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
+    )
 
     ax.text(5.2, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
     ax.text(5.2, tau_true_val, r"$\tau_{\mathrm{true}}$", va="top", ha="left")
 
-    from matplotlib.patches import FancyArrowPatch
     arrow = FancyArrowPatch(
         (5.0, tau_spur_val),
         (5.0, tau_true_val),
@@ -217,7 +215,7 @@ def main(config_path: str) -> None:
 
     # 2. Apply style
     plotting_common.apply_style(plot_cfg, project_root)
-    
+
     # Get style mode for figure sizing
     style_mode = plot_cfg.get("mplstyle", {}).get("style_mode", "double")
 
@@ -236,7 +234,7 @@ def main(config_path: str) -> None:
     # 4. Other params
     rsln_version = plot_cfg.get("rsln", {}).get("version", "perturbed")
     annotate_gap_panel = plot_cfg.get("figure", {}).get("annotate_gap_panel", 0)
-    
+
     # 5. Output
     try:
         rel_out_dir = config["output"]["output_dir"]
@@ -260,7 +258,7 @@ def main(config_path: str) -> None:
         style_mode=style_mode,
         project_root=project_root,
     )
-    
+
     print("Done.")
 
 
