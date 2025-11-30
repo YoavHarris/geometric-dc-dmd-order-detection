@@ -20,6 +20,19 @@ CONFIG = {
     "col_proj_true": "blue!80",
     "col_proj_spur": "red!80",
     "col_right_angle": "black!60",
+    "caption": (
+        r"Geometric illustration of signal-subspace leakage (SSL) and "
+        r"estimated-subspace leakage (ESL) in the case \(m=1\) and \(M=2\), "
+        r"where the true signal subspace \(\mathcal{S}\) (green) lies inside "
+        r"the truncation subspace \(\mathcal{U}_M = \operatorname{span}\{u_1,u_2\}\). "
+        r"True and spurious modes are drawn in blue and red, respectively, together with "
+        r"their projections onto \(\mathcal{U}_M\) (dashed). "
+        r"(a) SSL corresponds to the in-plane deviation of a mode from \(\mathcal{S}\), "
+        r"shown as violet arrows. "
+        r"(b) ESL corresponds to the out-of-plane component of a mode, shown as orange arrows. "
+        r"In this constructed example, the true mode has small SSL and ESL, "
+        r"whereas the spurious mode has larger leakage in both senses."
+    ),
     # -- Line Widths & Styles --
     "lw_axis": "0.8pt",
     "lw_vector": "1pt",
@@ -185,7 +198,7 @@ def generate_figure():
 
     \\end{{groupplot}}
   \\end{{tikzpicture}}
-  \\caption{{Comparison of leakage definitions. The arc $\\arcsin(\\eta)$ denotes the angle between the basis $u_1$ and the signal subspace $\\mathcal{{S}}$.}}
+  \\caption{{{c['caption']}}}
   \\label{{fig:two_panel_leakage}}
 \\end{{figure*}}
 """
