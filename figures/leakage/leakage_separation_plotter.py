@@ -33,9 +33,10 @@ def plot_multi_scenario_boxplot(
     output_path: Path,
     rsln_version: str,
     annotate_gap_panel: int | None,
-    style_mode: str,
+
     project_root: Path,
     show_titles: bool = True,
+    panel_height: float | None = None,
 ):
     """
     Create multi-panel box plot comparing RSLN and RELN distributions across scenarios.
@@ -43,20 +44,21 @@ def plot_multi_scenario_boxplot(
     if len(csv_paths) != len(panel_labels):
         raise ValueError("csv_paths and panel_labels must have the same length")
 
-    # Determine dimensions based on style
-    if style_mode == "single":
-        total_width = 3.375
-        panel_height = 2.0
-    else:
-        # Default to double or custom
-        total_width = 7.0
-        panel_height = 3.0
+    # Determine dimensions
+    # Default to rcParams (from mplstyle)
+    default_width, default_height = plt.rcParams["figure.figsize"]
+    
+    if panel_height is None:
+        panel_height = default_height
+        
+    # Use default width, but override height if specified
+    figsize = (default_width, panel_height)
 
     n_panels = len(csv_paths)
 
     # Create horizontal panels
     fig, axes = plt.subplots(
-        1, n_panels, figsize=(total_width, panel_height), squeeze=False
+        1, n_panels, figsize=figsize, squeeze=False
     )
     axes = axes[0]  # Flatten
 
@@ -227,7 +229,7 @@ def _annotate_gap(ax, df, rsln_col, data_dict):
     text_x = 0.55
     
     ax.text(text_x, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
-    ax.text(text_x, tau_true_val, r"$\tau_{\mathrm{true}}$", va="bottom", ha="left")
+    ax.text(text_x, tau_true_val * 1.2, r"$\tau_{\mathrm{true}}$", va="bottom", ha="left")
 
     arrow = FancyArrowPatch(
         (arrow_x, tau_spur_val),
@@ -260,8 +262,7 @@ def main(config_path: str) -> None:
     # 2. Apply style
     plotting_common.apply_style(plot_cfg, project_root)
 
-    # Get style mode for figure sizing
-    style_mode = plot_cfg.get("mplstyle", {}).get("style_mode", "double")
+
 
     # 3. Parse scenarios
     scenarios = plot_cfg.get("scenarios", [])
@@ -279,6 +280,7 @@ def main(config_path: str) -> None:
     rsln_version = plot_cfg.get("rsln", {}).get("version", "perturbed")
     annotate_gap_panel = plot_cfg.get("figure", {}).get("annotate_gap_panel", 0)
     show_titles = plot_cfg.get("figure", {}).get("show_titles", True)
+    panel_height = plot_cfg.get("figure", {}).get("panel_height", None)
 
     # 5. Output
     try:
@@ -300,9 +302,9 @@ def main(config_path: str) -> None:
         output_path=output_path,
         rsln_version=rsln_version,
         annotate_gap_panel=annotate_gap_panel,
-        style_mode=style_mode,
         project_root=project_root,
         show_titles=show_titles,
+        panel_height=panel_height,
     )
 
     print("Done.")

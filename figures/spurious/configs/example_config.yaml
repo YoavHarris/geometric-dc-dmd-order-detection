@@ -1,7 +1,7 @@
 project_root: "../../.."
 
 plotting:
-  mplstyle_path: "figures/mplstyle_files/chaos_double.mplstyle"
+  mplstyle_path: "figures/mplstyle_files/chaos_single.mplstyle"
 
   data:
     csv_path: "figures/spurious/data/spurious_eigenvalues_results.csv"
