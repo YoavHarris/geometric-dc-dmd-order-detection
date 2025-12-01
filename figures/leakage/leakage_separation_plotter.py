@@ -33,7 +33,6 @@ def plot_multi_scenario_boxplot(
     output_path: Path,
     rsln_version: str,
     annotate_gap_panel: int | None,
-
     project_root: Path,
     show_titles: bool = True,
     panel_height: float | None = None,
@@ -47,19 +46,17 @@ def plot_multi_scenario_boxplot(
     # Determine dimensions
     # Default to rcParams (from mplstyle)
     default_width, default_height = plt.rcParams["figure.figsize"]
-    
+
     if panel_height is None:
         panel_height = default_height
-        
+
     # Use default width, but override height if specified
     figsize = (default_width, panel_height)
 
     n_panels = len(csv_paths)
 
     # Create horizontal panels
-    fig, axes = plt.subplots(
-        1, n_panels, figsize=figsize, squeeze=False
-    )
+    fig, axes = plt.subplots(1, n_panels, figsize=figsize, squeeze=False)
     axes = axes[0]  # Flatten
 
     for i, (csv_path, label) in enumerate(zip(csv_paths, panel_labels)):
@@ -126,7 +123,7 @@ def _plot_boxplot_panel(
     ax.set_xticklabels(labels, rotation=0, ha="center")
 
     ax.set_xlim((-0.5, 4.75))
-    
+
     _add_underbraces(ax)
 
     ax.set_yscale("log")
@@ -171,35 +168,83 @@ def _add_underbraces(ax):
     """Add underbraces for Signal and Estimated groups."""
     # Position brackets closer to x-axis labels
     bracket_y = -0.13  # Position below x-axis in axis fraction
-    text_y = -0.20     # Position for text labels
-    
+    text_y = -0.20  # Position for text labels
+
     # Draw underbraces using simple bracket style (horizontal line with end ticks)
     # Signal brace (spanning positions 0 and 1)
     brace_height = 0.015
-    ax.plot([-0.25, -0.25], [bracket_y, bracket_y + brace_height], 
-            transform=ax.get_xaxis_transform(), 
-            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
-    ax.plot([-0.25, 1.25], [bracket_y, bracket_y], 
-            transform=ax.get_xaxis_transform(), 
-            color='black', lw=0.8, clip_on=False)
-    ax.plot([1.25, 1.25], [bracket_y, bracket_y + brace_height], 
-            transform=ax.get_xaxis_transform(), 
-            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
-    ax.text(0.5, text_y, 'Signal', ha='center', va='top', 
-            transform=ax.get_xaxis_transform(), fontsize=9)
-    
+    ax.plot(
+        [-0.25, -0.25],
+        [bracket_y, bracket_y + brace_height],
+        transform=ax.get_xaxis_transform(),
+        color="black",
+        lw=0.8,
+        clip_on=False,
+        solid_capstyle="butt",
+    )
+    ax.plot(
+        [-0.25, 1.25],
+        [bracket_y, bracket_y],
+        transform=ax.get_xaxis_transform(),
+        color="black",
+        lw=0.8,
+        clip_on=False,
+    )
+    ax.plot(
+        [1.25, 1.25],
+        [bracket_y, bracket_y + brace_height],
+        transform=ax.get_xaxis_transform(),
+        color="black",
+        lw=0.8,
+        clip_on=False,
+        solid_capstyle="butt",
+    )
+    ax.text(
+        0.5,
+        text_y,
+        "Signal",
+        ha="center",
+        va="top",
+        transform=ax.get_xaxis_transform(),
+        fontsize=9,
+    )
+
     # Estimated brace (spanning positions 3 and 4)
-    ax.plot([2.75, 2.75], [bracket_y, bracket_y + brace_height], 
-            transform=ax.get_xaxis_transform(), 
-            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
-    ax.plot([2.75, 4.25], [bracket_y, bracket_y], 
-            transform=ax.get_xaxis_transform(), 
-            color='black', lw=0.8, clip_on=False)
-    ax.plot([4.25, 4.25], [bracket_y, bracket_y + brace_height], 
-            transform=ax.get_xaxis_transform(), 
-            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
-    ax.text(3.5, text_y, 'Estimated', ha='center', va='top',
-            transform=ax.get_xaxis_transform(), fontsize=9)
+    ax.plot(
+        [2.75, 2.75],
+        [bracket_y, bracket_y + brace_height],
+        transform=ax.get_xaxis_transform(),
+        color="black",
+        lw=0.8,
+        clip_on=False,
+        solid_capstyle="butt",
+    )
+    ax.plot(
+        [2.75, 4.25],
+        [bracket_y, bracket_y],
+        transform=ax.get_xaxis_transform(),
+        color="black",
+        lw=0.8,
+        clip_on=False,
+    )
+    ax.plot(
+        [4.25, 4.25],
+        [bracket_y, bracket_y + brace_height],
+        transform=ax.get_xaxis_transform(),
+        color="black",
+        lw=0.8,
+        clip_on=False,
+        solid_capstyle="butt",
+    )
+    ax.text(
+        3.5,
+        text_y,
+        "Estimated",
+        ha="center",
+        va="top",
+        transform=ax.get_xaxis_transform(),
+        fontsize=9,
+    )
 
 
 def _annotate_gap(ax, df, rsln_col, data_dict):
@@ -227,9 +272,11 @@ def _annotate_gap(ax, df, rsln_col, data_dict):
     # Position arrow and labels between Signal boxes (between positions 0 and 1)
     arrow_x = 0.5
     text_x = 0.55
-    
+
     ax.text(text_x, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
-    ax.text(text_x, tau_true_val * 1.2, r"$\tau_{\mathrm{true}}$", va="bottom", ha="left")
+    ax.text(
+        text_x, tau_true_val * 1.2, r"$\tau_{\mathrm{true}}$", va="bottom", ha="left"
+    )
 
     arrow = FancyArrowPatch(
         (arrow_x, tau_spur_val),
@@ -261,8 +308,6 @@ def main(config_path: str) -> None:
 
     # 2. Apply style
     plotting_common.apply_style(plot_cfg, project_root)
-
-
 
     # 3. Parse scenarios
     scenarios = plot_cfg.get("scenarios", [])

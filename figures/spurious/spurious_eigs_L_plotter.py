@@ -180,7 +180,7 @@ def plot_min_stats(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) 
         )
 
     ax.set_xlabel("Embedding length L")
-    ax.set_ylabel("Spurious Eigenvalue Magnitude $r$")
+    ax.set_ylabel("Min Spurious $|\lambda|$")
     ax.grid(True, alpha=0.3, linestyle=":")
     ax.legend()
 
