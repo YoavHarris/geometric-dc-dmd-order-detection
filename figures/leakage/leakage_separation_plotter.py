@@ -35,6 +35,7 @@ def plot_multi_scenario_boxplot(
     annotate_gap_panel: int | None,
     style_mode: str,
     project_root: Path,
+    show_titles: bool = True,
 ):
     """
     Create multi-panel box plot comparing RSLN and RELN distributions across scenarios.
@@ -73,6 +74,7 @@ def plot_multi_scenario_boxplot(
             show_ylabel=show_ylabel,
             rsln_version=rsln_version,
             show_gap_annotation=show_gap_annotation,
+            show_title=show_titles,
         )
 
         if i > 0:
@@ -91,6 +93,7 @@ def _plot_boxplot_panel(
     show_ylabel: bool,
     rsln_version: str,
     show_gap_annotation: bool,
+    show_title: bool = True,
 ):
     """
     Plot a single panel with box plots for RSLN and RELN.
@@ -113,6 +116,32 @@ def _plot_boxplot_panel(
         data_dict["spurious_reln"],
     ]
 
+    _create_boxplot(ax, data_list, positions)
+
+    # First level: True/Spurious labels
+    ax.set_xticks([0, 1, 3, 4])
+    labels = ["True", "Spurious", "True", "Spurious"]
+    ax.set_xticklabels(labels, rotation=0, ha="center")
+
+    ax.set_xlim((-0.5, 4.75))
+    
+    _add_underbraces(ax)
+
+    ax.set_yscale("log")
+
+    if show_ylabel:
+        ax.set_ylabel("Relative Leakage Norm")
+
+    if show_title:
+        ax.set_title(title)
+    ax.grid(True, alpha=0.3, linestyle=":", axis="y", linewidth=0.5)
+
+    if show_gap_annotation:
+        _annotate_gap(ax, df, rsln_col, data_dict)
+
+
+def _create_boxplot(ax, data_list, positions):
+    """Create and style the boxplot."""
     bp = ax.boxplot(
         data_list,
         positions=positions,
@@ -135,21 +164,40 @@ def _plot_boxplot_panel(
             item.set_color("black")
             item.set_linewidth(0.8)
 
-    ax.set_xticks([0, 1, 3, 4])
-    labels = ["True-RSLN", "Spur-RSLN", "True-RELN", "Spur-RELN"]
-    ax.set_xticklabels(labels, rotation=45, ha="right")
 
-    ax.set_xlim((-0.5, 5.5))
-    ax.set_yscale("log")
-
-    if show_ylabel:
-        ax.set_ylabel("Relative Leakage Norm")
-
-    ax.set_title(title)
-    ax.grid(True, alpha=0.3, linestyle=":", axis="y", linewidth=0.5)
-
-    if show_gap_annotation:
-        _annotate_gap(ax, df, rsln_col, data_dict)
+def _add_underbraces(ax):
+    """Add underbraces for Signal and Estimated groups."""
+    # Position brackets closer to x-axis labels
+    bracket_y = -0.13  # Position below x-axis in axis fraction
+    text_y = -0.20     # Position for text labels
+    
+    # Draw underbraces using simple bracket style (horizontal line with end ticks)
+    # Signal brace (spanning positions 0 and 1)
+    brace_height = 0.015
+    ax.plot([-0.25, -0.25], [bracket_y, bracket_y + brace_height], 
+            transform=ax.get_xaxis_transform(), 
+            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
+    ax.plot([-0.25, 1.25], [bracket_y, bracket_y], 
+            transform=ax.get_xaxis_transform(), 
+            color='black', lw=0.8, clip_on=False)
+    ax.plot([1.25, 1.25], [bracket_y, bracket_y + brace_height], 
+            transform=ax.get_xaxis_transform(), 
+            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
+    ax.text(0.5, text_y, 'Signal', ha='center', va='top', 
+            transform=ax.get_xaxis_transform(), fontsize=9)
+    
+    # Estimated brace (spanning positions 3 and 4)
+    ax.plot([2.75, 2.75], [bracket_y, bracket_y + brace_height], 
+            transform=ax.get_xaxis_transform(), 
+            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
+    ax.plot([2.75, 4.25], [bracket_y, bracket_y], 
+            transform=ax.get_xaxis_transform(), 
+            color='black', lw=0.8, clip_on=False)
+    ax.plot([4.25, 4.25], [bracket_y, bracket_y + brace_height], 
+            transform=ax.get_xaxis_transform(), 
+            color='black', lw=0.8, clip_on=False, solid_capstyle='butt')
+    ax.text(3.5, text_y, 'Estimated', ha='center', va='top',
+            transform=ax.get_xaxis_transform(), fontsize=9)
 
 
 def _annotate_gap(ax, df, rsln_col, data_dict):
@@ -159,15 +207,7 @@ def _annotate_gap(ax, df, rsln_col, data_dict):
         tau_true_per_trial = df[df["is_true"] == 1].groupby("trial_id")[rsln_col].max()
 
         tau_spur_median = tau_spur_per_trial.median()
-        tau_spur_low = np.percentile(tau_spur_per_trial, 5)
-        tau_spur_high = np.percentile(tau_spur_per_trial, 95)
-
         tau_true_median = tau_true_per_trial.median()
-        tau_true_low = np.percentile(tau_true_per_trial, 5)
-        tau_true_high = np.percentile(tau_true_per_trial, 95)
-
-        ax.axhspan(tau_spur_low, tau_spur_high, color="red", alpha=0.15, zorder=0)
-        ax.axhspan(tau_true_low, tau_true_high, color="blue", alpha=0.15, zorder=0)
 
         tau_spur_val = tau_spur_median
         tau_true_val = tau_true_median
@@ -182,12 +222,16 @@ def _annotate_gap(ax, df, rsln_col, data_dict):
         tau_true_val, color="blue", linestyle="--", linewidth=1.0, alpha=0.7, zorder=10
     )
 
-    ax.text(5.2, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
-    ax.text(5.2, tau_true_val, r"$\tau_{\mathrm{true}}$", va="top", ha="left")
+    # Position arrow and labels between Signal boxes (between positions 0 and 1)
+    arrow_x = 0.5
+    text_x = 0.55
+    
+    ax.text(text_x, tau_spur_val, r"$\tau_{\mathrm{spur}}$", va="top", ha="left")
+    ax.text(text_x, tau_true_val, r"$\tau_{\mathrm{true}}$", va="bottom", ha="left")
 
     arrow = FancyArrowPatch(
-        (5.0, tau_spur_val),
-        (5.0, tau_true_val),
+        (arrow_x, tau_spur_val),
+        (arrow_x, tau_true_val),
         arrowstyle="<->",
         mutation_scale=15,
         linewidth=1.2,
@@ -197,7 +241,7 @@ def _annotate_gap(ax, df, rsln_col, data_dict):
     ax.add_patch(arrow)
 
     gamma_y = np.sqrt(tau_spur_val * tau_true_val)
-    ax.text(5.15, gamma_y, r"$\gamma$", va="center", ha="left", weight="bold")
+    ax.text(text_x, gamma_y, r"$\gamma$", va="center", ha="left", weight="bold")
 
 
 def main(config_path: str) -> None:
@@ -234,6 +278,7 @@ def main(config_path: str) -> None:
     # 4. Other params
     rsln_version = plot_cfg.get("rsln", {}).get("version", "perturbed")
     annotate_gap_panel = plot_cfg.get("figure", {}).get("annotate_gap_panel", 0)
+    show_titles = plot_cfg.get("figure", {}).get("show_titles", True)
 
     # 5. Output
     try:
@@ -257,6 +302,7 @@ def main(config_path: str) -> None:
         annotate_gap_panel=annotate_gap_panel,
         style_mode=style_mode,
         project_root=project_root,
+        show_titles=show_titles,
     )
 
     print("Done.")

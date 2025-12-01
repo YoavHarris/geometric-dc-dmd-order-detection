@@ -1,26 +1,63 @@
 # leakage_separation_utils.py
 
 from __future__ import annotations
+import warnings
 import numpy as np
 from numpy.typing import NDArray
 
 
 def compute_leakage_projector(
-    basis: NDArray[np.complexfloating],
+    orthonormal_basis: NDArray[np.complexfloating],
 ) -> NDArray[np.complexfloating]:
     """
     Compute the leakage projector: I - P where P projects onto span(basis).
 
     Args:
-        basis: Basis matrix (columns are basis vectors), shape (DL, rank).
+        orthonormal_basis: Orthonormal basis matrix (columns are basis vectors), shape (DL, rank).
 
     Returns:
         Orthogonal complement projector I - basis @ basis^H, shape (DL, DL).
+
+    Raises:
+        ValueError: If the input basis is not orthonormal.
     """
-    DL = basis.shape[0]
-    projector = basis @ basis.conj().T
+    DL, rank = orthonormal_basis.shape
+
+    # Verify orthonormality
+    gram = orthonormal_basis.conj().T @ orthonormal_basis
+    if not np.allclose(gram, np.eye(rank), atol=1e-10):
+        raise ValueError("Basis must be orthonormal for P = BB^H formula.")
+
+    projector = orthonormal_basis @ orthonormal_basis.conj().T
     leakage_projector = np.eye(DL, dtype=complex) - projector
     return leakage_projector
+
+
+def _compute_subspace_leakage(
+    mode: NDArray[np.complexfloating],
+    orthonormal_basis: NDArray[np.complexfloating],
+) -> float:
+    """
+    Compute subspace leakage given an orthonormal basis.
+
+    Measures how much of the mode lies outside the given subspace.
+    This is the squared norm of the component of the mode orthogonal to
+    the subspace.
+
+    Args:
+        mode: DMD mode vector, shape (DL,).
+        orthonormal_basis: Orthonormal basis for subspace, shape (DL, rank).
+            MUST be orthonormal (not checked for performance).
+
+    Returns:
+        Subspace leakage: ||(I - P) @ mode||^2, where P projects onto the subspace.
+    """
+    # Compute leakage projector: I - P
+    leakage_projector = compute_leakage_projector(orthonormal_basis)
+
+    # Project mode onto subspace complement and compute squared norm
+    leakage = leakage_projector @ mode
+    return float(np.sum(np.abs(leakage) ** 2))
 
 
 def compute_ssl(
@@ -36,23 +73,17 @@ def compute_ssl(
 
     Args:
         mode: DMD mode vector, shape (DL,).
-        signal_basis: Orthonormal basis for true signal subspace, shape (DL, m).
+        signal_basis: Basis for true signal subspace, shape (DL, m).
+            Will be orthonormalized internally.
 
     Returns:
         SSL value: ||（I - P_signal) @ mode||^2, where P_signal projects onto
         the signal subspace.
     """
-    # Ensure signal basis is orthonormal
+    # Orthonormalize signal basis (may not be orthonormal initially)
     signal_basis_orthonormal, _ = np.linalg.qr(signal_basis)
 
-    # Compute leakage projector: I - P_signal
-    leakage_projector = compute_leakage_projector(signal_basis_orthonormal)
-
-    # Project mode onto signal complement and compute squared norm
-    leakage = leakage_projector @ mode
-    ssl = float(np.sum(np.abs(leakage) ** 2))
-
-    return ssl
+    return _compute_subspace_leakage(mode, signal_basis_orthonormal)
 
 
 def compute_esl(
@@ -69,22 +100,14 @@ def compute_esl(
     Args:
         mode: DMD mode vector, shape (DL,).
         estimated_basis: Orthonormal basis for estimated subspace, shape (DL, M).
+            Should already be orthonormal from SVD (not re-orthonormalized for efficiency).
 
     Returns:
         ESL value: ||(I - P_est) @ mode||^2, where P_est projects onto
         the estimated subspace.
     """
-    # Ensure estimated basis is orthonormal
-    estimated_basis_orthonormal, _ = np.linalg.qr(estimated_basis)
-
-    # Compute leakage projector: I - P_estimated
-    leakage_projector = compute_leakage_projector(estimated_basis_orthonormal)
-
-    # Project mode onto estimated complement and compute squared norm
-    leakage = leakage_projector @ mode
-    esl = float(np.sum(np.abs(leakage) ** 2))
-
-    return esl
+    # Estimated basis from SVD is already orthonormal, use directly
+    return _compute_subspace_leakage(mode, estimated_basis)
 
 
 def compute_exact_mode_norm(mode: NDArray[np.complexfloating]) -> float:
@@ -98,6 +121,94 @@ def compute_exact_mode_norm(mode: NDArray[np.complexfloating]) -> float:
         Squared norm: ||mode||^2.
     """
     return float(np.sum(np.abs(mode) ** 2))
+
+
+# =============================================================================
+# Subspace gap and bound computation
+# =============================================================================
+
+
+def compute_directed_gap(
+    basis_A: NDArray[np.complexfloating],
+    basis_B: NDArray[np.complexfloating],
+) -> float:
+    """
+    Compute directed gap delta(A,B) = ||(I - P_B)P_A||_2.
+
+    This measures how much of subspace A is not captured by subspace B.
+
+    Args:
+        basis_A: Basis matrix for subspace A, shape (DL, rank_A).
+        basis_B: Basis matrix for subspace B, shape (DL, rank_B).
+
+    Returns:
+        Directed gap: largest singular value of (I - P_B)P_A.
+    """
+    r_A = basis_A.shape[1]
+    r_B = basis_B.shape[1]
+
+    # Degenerate regime: theoretical delta(A,B) = 1 exactly
+    if r_A > r_B:
+        warnings.warn(
+            f"compute_directed_gap: dim(A)={r_A} > dim(B)={r_B}. "
+            "Returning delta(A,B)=1.0 (degenerate direction).",
+            RuntimeWarning,
+        )
+        return 1.0
+
+    # Orthonormalize both bases
+    Q_A, _ = np.linalg.qr(basis_A)
+    Q_B, _ = np.linalg.qr(basis_B)
+
+    # Compute residual: A - B(B^H A)
+    # This is equivalent to (I - P_B)P_A applied to basis A
+    residual = Q_A - Q_B @ (Q_B.conj().T @ Q_A)
+
+    # Return largest singular value
+    sigma = np.linalg.svd(residual, compute_uv=False)
+    return float(sigma[0]) if len(sigma) > 0 else 0.0
+
+
+def compute_delta_tail(
+    signal_basis: NDArray[np.complexfloating],
+    basis_m: NDArray[np.complexfloating],
+    basis_M: NDArray[np.complexfloating],
+) -> float:
+    """
+    Compute delta_tail(M) = ||(I - P_S) P_{U_tail}||_2.
+
+    This measures the tail overestimation factor when using rank M > m.
+
+    Args:
+        signal_basis: Orthonormal basis for true signal subspace, shape (DL, m).
+        basis_m: Rank-m estimated basis, shape (DL, m).
+        basis_M: Rank-M estimated basis (M > m), shape (DL, M).
+
+    Returns:
+        Tail overestimation factor.
+    """
+    # Orthonormalize all bases
+    Q_S, _ = np.linalg.qr(signal_basis)
+    Q_m, _ = np.linalg.qr(basis_m)
+    Q_M, _ = np.linalg.qr(basis_M)
+
+    # Extract U_tail = orthonormal_basis(U_M - U_m(U_m^H U_M))
+    # This is the component of U_M orthogonal to U_m
+    U_tail_unnormalized = Q_M - Q_m @ (Q_m.conj().T @ Q_M)
+
+    # Check if U_tail is effectively zero
+    if np.linalg.norm(U_tail_unnormalized) < 1e-14:
+        return 0.0
+
+    # Orthonormalize U_tail
+    Q_tail, _ = np.linalg.qr(U_tail_unnormalized)
+
+    # Compute residual: U_tail - S(S^H U_tail) = (I - P_S) U_tail
+    residual = Q_tail - Q_S @ (Q_S.conj().T @ Q_tail)
+
+    # Return largest singular value
+    sigma = np.linalg.svd(residual, compute_uv=False)
+    return float(sigma[0]) if len(sigma) > 0 else 0.0
 
 
 # =============================================================================

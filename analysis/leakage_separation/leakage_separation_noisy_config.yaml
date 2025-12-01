@@ -21,9 +21,9 @@ signal:
 
 # Experiment parameters
 experiment:
-  num_trials: 500               # Number of Monte Carlo trials
+  num_trials: 1000               # Number of Monte Carlo trials
   base_random_seed: 42          # Base seed (actual seed = base + trial_id)
 
 # Output settings
 output:
-  csv_path: 'C:\Users\Yoav\dcdmd_experiments\leakage_separation\results.csv'
+  csv_path: 'results/leakage_results_noisy.csv'

@@ -29,6 +29,8 @@ from analysis.leakage_separation.leakage_separation_utils import (
     compute_exact_mode_norm,
     compute_estimated_basis,
     compute_practical_basis,
+    compute_directed_gap,
+    compute_delta_tail,
 )
 from analysis.subspace_analysis import (
     build_block_vandermonde_modes,
@@ -75,9 +77,9 @@ class LeakageSeparationExperiment:
 
     def _create_bv_embedded_modes(
         self,
-        true_modes: NDArray[np.complexfloating],
-        true_eigenvalues: NDArray[np.complexfloating],
-    ) -> NDArray[np.complexfloating]:
+        true_modes: NDArray[np.complex128],
+        true_eigenvalues: NDArray[np.complex128],
+    ) -> NDArray[np.complex128]:
         """
         Create delay-embedded true modes with Block-Vandermonde structure.
 
@@ -226,6 +228,20 @@ class LeakageSeparationExperiment:
         # Create estimated subspace for RELN (uses rank M, includes spurious components)
         estimated_basis = compute_estimated_basis(X_noisy_embedded, self.M)
 
+        # Compute rank-m estimated basis for eta computation
+        estimated_basis_m = compute_estimated_basis(X_noisy_embedded, self.m)
+
+        # Compute eta bound: max(delta(S, U_m), delta(U_m, S))
+        # Since ranks are identical (m), directed gap equals symmetric gap
+        eta = compute_directed_gap(true_bv_modes_clean, estimated_basis_m)
+
+        # Compute delta_tail(M): tail overestimation factor
+        delta_tail_M = compute_delta_tail(
+            true_bv_modes_clean,
+            estimated_basis_m,
+            estimated_basis,
+        )
+
         # Classify modes as true or spurious (using clean signal subspace)
         is_true = self._classify_modes_by_ssl(recovered_modes, true_bv_modes_clean)
 
@@ -262,6 +278,8 @@ class LeakageSeparationExperiment:
                 "rsln_clean": float(rsln_clean),
                 "rsln_perturbed": float(rsln_perturbed),
                 "reln": float(reln),
+                "eta": float(eta),
+                "delta_tail_M": float(delta_tail_M),
                 "snr_db": self.sig_cfg["snr_db"],
                 "noise_model": self.sig_cfg.get("noise_mode", "gaussian"),
             }
