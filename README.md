@@ -60,11 +60,9 @@ dc-dmd-order-detection/
 │   ├── dmd_utils.py        # DMD fitting utilities
 │   └── visualizations.py   # Plotting helpers
 ├── analysis/               # Experiment scripts
-│   ├── leakage_separation/ # Leakage norm separation validation
 │   └── spurious_eigenvalues_and_L/  # Embedding length analysis
 ├── figures/                # Publication-ready plotting
 │   ├── scans/             # Parameter scan plotter
-│   ├── leakage/           # Leakage separation plots
 │   └── spurious/          # Spurious eigenvalue plots
 └── pbs_experimenting/      # HPC job submission framework
     └── README.md          # Full PBS framework documentation
@@ -218,25 +216,6 @@ See [figures/scans/README.md](figures/scans/README.md) for detailed usage.
 
 ## Analysis Experiments
 
-### Leakage Separation (`analysis/leakage_separation/`)
-
-Validates theoretical separation of leakage norms between true and spurious modes.
-
-**Metrics:**
-- **RSLN** (Relative Squared Leakage Norm): Separation using estimated basis
-- **RELN** (Relative Exact Leakage Norm): Separation using true basis
-
-Run experiment:
-```bash
-python leakage_separation_experiment.py leakage_separation_config.yaml
-```
-
-Plot results:
-```bash
-cd figures/leakage
-python leakage_separation_plotter.py configs/example_config.yaml
-```
-
 ### Spurious Eigenvalues vs. Embedding Length (`analysis/spurious_eigenvalues_and_L/`)
 
 Studies how embedding length L affects spurious eigenvalue behavior.
@@ -351,9 +330,6 @@ Individual experiments can be run manually for debugging:
 ```bash
 # Single PBS job
 python run_single_job.py run job_configs/job0042.yaml --plot
-
-# Single experiment
-python leakage_separation_experiment.py config.yaml
 ```
 
 ## Citation

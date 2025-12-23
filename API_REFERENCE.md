@@ -247,60 +247,6 @@ features = esl.compute_features(
 
 ## Analysis Experiments
 
-### Leakage Separation (`analysis/leakage_separation/`)
-
-#### Experiment Script
-
-```bash
-python leakage_separation_experiment.py config.yaml
-```
-
-**Configuration** (`leakage_separation_config.yaml`):
-```yaml
-experiment:
-  num_iter: 100
-  random_seed: 42
-
-generator:
-  num_modes: 3
-  snr_db: 10.0
-  # ... other DMD parameters
-
-dmd:
-  num_delays: 8
-  max_rank: 20
-
-output:
-  csv_path: results/leakage_separation_results.csv
-```
-
-**Output CSV columns:**
-- Parameter columns
-- `RSLN_true_median`, `RSLN_spurious_median`: Median RSLN values
-- `RELN_true_median`, `RELN_spurious_median`: Median RELN values
-- `RSLN_true_iqr`, `RSLN_spurious_iqr`: Interquartile ranges
-- Similar for RELN
-
-#### Plotting
-
-```bash
-cd figures/leakage
-python leakage_separation_plotter.py configs/example_config.yaml
-```
-
-**Configuration:**
-```yaml
-csv_paths:
-  - path: ../../analysis/leakage_separation/results/results.csv
-    panel_label: "Scenario Name"
-
-output_filename: leakage_separation_comparison.pdf
-plot_style: double  # or 'single'
-design_config: design_config.yaml
-```
-
----
-
 ### Spurious Eigenvalues vs. L (`analysis/spurious_eigenvalues_and_L/`)
 
 #### Experiment Script
