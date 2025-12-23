@@ -11,18 +11,18 @@ plotting:
     annotate_gap_panel: 0
 
   scenarios:
-    - name: "easy"
-      label: "Easy"
-      csv_path: "figures/leakage/data/easy_results.csv"
+    - name: "D=1"
+      label: "$D=1$"
+      csv_path: "figures/leakage/data/results_D1.csv"
     
-    - name: "noisy"
-      label: "Low SNR"
-      csv_path: "figures/leakage/data/noisy_results.csv"
-    
-    - name: "overestimation"
-      label: "Overestimation"
-      csv_path: "figures/leakage/data/overestimation_results.csv"
+#    - name: "noisy"
+#      label: "Low SNR"
+#      csv_path: "figures/leakage/data/noisy_results.csv"
+#
+#    - name: "overestimation"
+#      label: "Overestimation"
+#      csv_path: "figures/leakage/data/overestimation_results.csv"
 
 output:
   output_dir: "figures/leakage/outputs"
-  filename: "leakage_separation_boxplot.png"
+  filename: "leakage_separation_boxplot_D1.pdf"

@@ -13,7 +13,7 @@ plotting:
 # Method styling (fixed colors, linestyles, and markers)
 # Convention: Our methods use circles (o), comparison methods use triangles (^)
 methods:
-  ESL-Norm:
+  ESR-Energy:
     color: '#00008B'
     linestyle: '-'
     marker: 'o'
@@ -87,7 +87,7 @@ defaults:
 # These are used automatically unless overridden in individual plots
 parameter_labels:
   snr_db: "SNR (dB)"
-  eig_mag: "Damping parameter $r$"
+  eig_mag: "Damping parameter $\\rho$"
   freq_sep: "$\\Delta \\theta$"
   top_amplitude: "$\\kappa_b$"
   order_hit_prob: "$P_{\\mathrm{hit}}$"

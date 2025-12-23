@@ -26,4 +26,4 @@ plotting:
 
 output:
   output_dir: 'C:\Users\Yoav\dcdmd_experiments\leakage_251125'
-  filename: "paper_leakage_results.png"
+  filename: "paper_leakage_results.pdf"

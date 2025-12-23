@@ -138,7 +138,7 @@ plots:
     xscale: linear
     xlim: [6.0, 10.0]
     # Method filtering
-    methods: [ESL-Norm, FixedEigenvalueBVFit, NestedDMD]
+    methods: [ESR-Energy, FixedEigenvalueBVFit, NestedDMD]
     # Title
     title: "Performance vs SNR"
     output_path: output/full_control.png

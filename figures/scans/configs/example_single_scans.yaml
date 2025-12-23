@@ -8,7 +8,7 @@ base:
     - BIC
     - GAP
     - STC
-    - ESL-Norm
+    - ESR-Energy
     - NestedDMD
     - FixedEigenvalueBVFit
 
@@ -32,23 +32,23 @@ baseline_working_point:
 
 plots:
   - x_param: snr_db
-    output_path: figures/scans/outputs/delay_embedded_snr_db.png
+    output_path: figures/scans/outputs/delay_embedded_snr_db.pdf
 
   - x_param: freq_sep
-    output_path: figures/scans/outputs/delay_embedded_freq_sep.png
+    output_path: figures/scans/outputs/delay_embedded_freq_sep.pdf
 
   - x_param: eig_mag
     xlim: [0.87, 1.0]
-    output_path: figures/scans/outputs/delay_embedded_eig_mag.png
+    output_path: figures/scans/outputs/delay_embedded_eig_mag.pdf
 
   - x_param: spatial_dim
-    output_path: figures/scans/outputs/delay_embedded_spatial_dim.png
+    output_path: figures/scans/outputs/delay_embedded_spatial_dim.pdf
 
   - x_param: delays_over_timesteps
-    output_path: figures/scans/outputs/delay_embedded_delays_over_timesteps.png
+    output_path: figures/scans/outputs/delay_embedded_delays_over_timesteps.pdf
 
   - x_param: top_amplitude
-    output_path: figures/scans/outputs/delay_embedded_top_amplitude.png
+    output_path: figures/scans/outputs/delay_embedded_top_amplitude.pdf
 
   - x_param: max_rank
-    output_path: figures/scans/outputs/delay_embedded_max_rank.png
+    output_path: figures/scans/outputs/delay_embedded_max_rank.pdf

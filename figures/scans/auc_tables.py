@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Compute normalized AUCs from results.csv and print LaTeX tables.
+Generate AUC tables for paper: two wide tables (delay-embedded and L=1).
 
 Usage:
-    python auc_tables.py results.csv > auc_tables.tex
+    python auc_tables.py delay_embedded_combined_results.csv no_delays_combined_results.csv
+
+Outputs:
+    figures/scans/outputs/auc_delay_embedded_allm.tex
+    figures/scans/outputs/auc_L1_allm.tex
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Dict, Tuple
 
 import fire
 import numpy as np
@@ -21,30 +24,41 @@ import pandas as pd
 PARAM_COLS = ["snr_db", "freq_sep", "eig_mag", "top_amplitude"]
 PARAM_LATEX = {
     "snr_db": "SNR",
-    "freq_sep": "\\Delta f",
-    "eig_mag": "r",
-    "top_amplitude": "\\kappa_b",
+    "freq_sep": "$\\Delta\\theta$",  # Changed from \Delta f
+    "eig_mag": "$r$",
+    "top_amplitude": "$\\kappa_b$",
 }
 
-# Desired method order in the tables
-METHOD_ORDER = [
+# Methods for delay-embedded table
+DELAY_METHODS = [
     "BIC",
     "GAP",
     "STC",
-    "ESL-Norm",
+    "ESR-Energy",
     "NestedDMD",
     "FixedEigenvalueBVFit",
-    "NestedDMD+ESL",
-    "FixedEigenvalueBVFit+ESL",
 ]
 
-# Methods we never want to show
-EXCLUDE_METHODS = {"AIC", "ExactModeNorm"}
+# Methods for L=1 table (only those that work without delays)
+L1_METHODS = [
+    "BIC",
+    "GAP",
+    "ESR-Energy",
+]
+
+# Methods to always exclude
+EXCLUDE_METHODS = {"AIC", "ExactModeNorm", "NestedDMD+ESL", "FixedEigenvalueBVFit+ESL"}
 
 
-def compute_normalized_auc(df: pd.DataFrame) -> Dict[Tuple[int, str, str], float]:
+def compute_normalized_auc(
+    df: pd.DataFrame, methods_to_include: list[str]
+) -> dict[tuple[int, str, str], float]:
     """
     Compute normalized AUC of order_hit_prob for each (num_modes, method, param).
+
+    Args:
+        df: DataFrame with experimental results
+        methods_to_include: List of methods to compute AUCs for
 
     Returns:
         dict keyed by (num_modes, method, param_col) -> auc_norm
@@ -52,7 +66,7 @@ def compute_normalized_auc(df: pd.DataFrame) -> Dict[Tuple[int, str, str], float
     if "order_hit_prob" not in df.columns:
         raise ValueError("Expected column 'order_hit_prob' in results CSV")
 
-    auc_dict: Dict[Tuple[int, str, str], float] = {}
+    auc_dict: dict[tuple[int, str, str], float] = {}
 
     for param in PARAM_COLS:
         if param not in df.columns:
@@ -61,7 +75,7 @@ def compute_normalized_auc(df: pd.DataFrame) -> Dict[Tuple[int, str, str], float
         for m in sorted(df["num_modes"].unique()):
             df_m = df[df["num_modes"] == m]
 
-            for method in sorted(df_m["method"].unique()):
+            for method in methods_to_include:
                 if method in EXCLUDE_METHODS:
                     continue
 
@@ -69,7 +83,7 @@ def compute_normalized_auc(df: pd.DataFrame) -> Dict[Tuple[int, str, str], float
                 if df_mm.empty:
                     continue
 
-                # average over replicates at each parameter value
+                # Average over replicates at each parameter value
                 grouped = (
                     df_mm.groupby(param)["order_hit_prob"]
                     .mean()
@@ -95,99 +109,169 @@ def compute_normalized_auc(df: pd.DataFrame) -> Dict[Tuple[int, str, str], float
     return auc_dict
 
 
-def format_latex_tables(
-    auc_dict: Dict[Tuple[int, str, str], float], df: pd.DataFrame
-) -> str:
+def format_wide_latex_table(
+    auc_dict: dict[tuple[int, str, str], float],
+    methods: list[str],
+    table_label: str,
+    caption: str,
+    output_path: Path,
+) -> None:
     """
-    Build LaTeX tables (one per num_modes) as a single string.
+    Generate one wide table spanning all m values.
+
+    Structure:
+    - Rows: methods
+    - Columns: grouped by m, each group has 4 params (SNR, Δθ, r, κ_b)
     """
     lines: list[str] = []
 
-    all_ms = sorted(df["num_modes"].unique())
-    # Only keep m that actually appear in auc_dict
-    all_ms = [m for m in all_ms if any(key[0] == m for key in auc_dict.keys())]
+    # Get all m values present in the data
+    all_ms = sorted({key[0] for key in auc_dict.keys()})
 
+    # Filter to only include methods that have data
+    methods_with_data = [m for m in methods if any(key[1] == m for key in auc_dict.keys())]
+
+    if not methods_with_data or not all_ms:
+        print(f"Warning: No data for {table_label}", file=sys.stderr)
+        return
+
+    # Table header
+    lines.append("\\begin{table*}[t]")
+    lines.append("\\centering")
+    lines.append("\\small")
+    lines.append("\\setlength{\\tabcolsep}{3pt}")
+
+    # Tabular environment: 1 col for method names + 4*len(all_ms) for data
+    num_data_cols = 4 * len(all_ms)
+    col_spec = "l" + "c" * num_data_cols
+    lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
+
+    # Top rule
+    lines.append("\\hline")
+
+    # First header row: m groups
+    header1_parts = [""]  # Empty for method column
     for m in all_ms:
-        # Collect methods present for this m and in desired order
-        methods_for_m = sorted(
-            {
-                method
-                for (m_key, method, _param) in auc_dict.keys()
-                if m_key == m and method not in EXCLUDE_METHODS
-            }
-        )
-        methods_for_m = [mtd for mtd in METHOD_ORDER if mtd in methods_for_m]
+        header1_parts.append(f"\\multicolumn{{4}}{{c}}{{$m = {m}$}}")
+    lines.append(" & ".join(header1_parts) + " \\\\")
 
-        if not methods_for_m:
-            continue
+    # Second header row: parameter labels (repeated for each m)
+    header2_parts = ["Method"]
+    param_headers = [PARAM_LATEX[p] for p in PARAM_COLS]
+    for _ in all_ms:
+        header2_parts.extend(param_headers)
+    lines.append(" & ".join(header2_parts) + " \\\\")
+    lines.append("\\hline")
 
-        # Determine best AUC per parameter (for boldface)
-        best_per_param: Dict[str, float] = {}
-        for param in PARAM_COLS:
-            vals = [
-                auc_dict[(m, method, param)]
-                for method in methods_for_m
-                if (m, method, param) in auc_dict
-            ]
-            if vals:
-                best_per_param[param] = max(vals)
+    # Data rows
+    for method in methods_with_data:
+        row_parts = [method]
 
-        # Start table
-        lines.append("\\begin{table}[t]")
-        lines.append("\\centering")
-        lines.append("\\small")
-        lines.append("\\setlength{\\tabcolsep}{4pt}")
-        lines.append("\\begin{tabular}{lcccc}")
-        lines.append("\\toprule")
-        lines.append(f"& \\multicolumn{{4}}{{c}}{{$m = {m}$}} \\\\")
-        lines.append("\\cmidrule(lr){2-5}")
-        header_cols = [PARAM_LATEX[p] for p in PARAM_COLS]
-        lines.append("Method & " + " & ".join(header_cols) + " \\\\")
-        lines.append("\\midrule")
-
-        for method in methods_for_m:
-            row_vals = []
+        for m in all_ms:
             for param in PARAM_COLS:
                 key = (m, method, param)
                 if key not in auc_dict:
-                    row_vals.append("--")
+                    row_parts.append("--")
                     continue
+
                 v = auc_dict[key]
+
+                # Find best value for this (m, param) block
+                best_v = max(
+                    auc_dict.get((m, mtd, param), -np.inf)
+                    for mtd in methods_with_data
+                )
+
                 v_str = f"{v:.3f}"
-                if param in best_per_param and np.isclose(v, best_per_param[param]):
+                if np.isclose(v, best_v) and best_v > 0:
                     v_str = f"\\textbf{{{v_str}}}"
-                row_vals.append(v_str)
 
-            line = method + " & " + " & ".join(row_vals) + " \\\\"
-            lines.append(line)
+                row_parts.append(v_str)
 
-        lines.append("\\bottomrule")
-        lines.append("\\end{tabular}")
-        lines.append(
-            f"\\caption{{Normalized AUC for one-dimensional sweeps with $m={m}$. Columns correspond to SNR, frequency separation $\\Delta f$, damping coefficient $r$, and amplitude ratio $\\kappa_b = b_{{\\max}}/b_{{\\min}}$.}}"
-        )
-        lines.append(f"\\label{{{{tab:auc_m{m}}}}}")
-        lines.append("\\end{table}")
-        lines.append("")  # blank line between tables
+        lines.append(" & ".join(row_parts) + " \\\\")
 
-    return "\n".join(lines)
+    # Bottom rule
+    lines.append("\\hline")
+    lines.append("\\end{tabular}")
+
+    # Caption and label
+    lines.append(f"\\caption{{{caption}}}")
+    lines.append(f"\\label{{tab:{table_label}}}")
+    lines.append("\\end{table*}")
+
+    # Write to file
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"Generated: {output_path}")
 
 
-def main(csv_path: str) -> None:
-    csv_path = Path(csv_path)
-    if not csv_path.is_file():
-        print(f"Error: file not found: {csv_path}", file=sys.stderr)
+def main(delay_csv: str, l1_csv: str) -> None:
+    """
+    Generate both AUC tables.
+
+    Args:
+        delay_csv: Path to delay_embedded_combined_results.csv
+        l1_csv: Path to no_delays_combined_results.csv
+    """
+    delay_path = Path(delay_csv)
+    l1_path = Path(l1_csv)
+
+    if not delay_path.is_file():
+        print(f"Error: file not found: {delay_path}", file=sys.stderr)
+        sys.exit(1)
+    if not l1_path.is_file():
+        print(f"Error: file not found: {l1_path}", file=sys.stderr)
         sys.exit(1)
 
-    df = pd.read_csv(csv_path)
+    # Load data
+    df_delay = pd.read_csv(delay_path)
+    df_l1 = pd.read_csv(l1_path)
 
-    # Restrict to Gaussian noise if available
-    if "noise_mode" in df.columns:
-        df = df[df["noise_mode"] == "gaussian"].copy()
+    # Filter to Gaussian noise if available
+    if "noise_mode" in df_delay.columns:
+        df_delay = df_delay[df_delay["noise_mode"] == "gaussian"].copy()
+    if "noise_mode" in df_l1.columns:
+        df_l1 = df_l1[df_l1["noise_mode"] == "gaussian"].copy()
 
-    auc_dict = compute_normalized_auc(df)
-    latex = format_latex_tables(auc_dict, df)
-    print(latex)
+    # Compute AUCs
+    auc_delay = compute_normalized_auc(df_delay, DELAY_METHODS)
+    auc_l1 = compute_normalized_auc(df_l1, L1_METHODS)
+
+    # Output directory
+    output_dir = Path("figures/scans/outputs")
+
+    # Generate delay-embedded table
+    delay_caption = (
+        "Normalized AUC for delay-embedded experiments across one-dimensional parameter sweeps. "
+        "Columns grouped by number of true modes ($m$) contain AUC values for: "
+        "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
+        "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
+    )
+    format_wide_latex_table(
+        auc_delay,
+        DELAY_METHODS,
+        "auc_delay_embedded",
+        delay_caption,
+        output_dir / "auc_delay_embedded.tex",
+    )
+
+    # Generate L=1 table
+    l1_caption = (
+        "Normalized AUC for standard DMD ($L=1$, no delays) across one-dimensional parameter sweeps. "
+        "Only methods that do not require delay embedding are shown. "
+        "Columns grouped by number of true modes ($m$) contain AUC values for: "
+        "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
+        "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
+    )
+    format_wide_latex_table(
+        auc_l1,
+        L1_METHODS,
+        "auc_L1",
+        l1_caption,
+        output_dir / "auc_L1.tex",
+    )
 
 
 if __name__ == "__main__":

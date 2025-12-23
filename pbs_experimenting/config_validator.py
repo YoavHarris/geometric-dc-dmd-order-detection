@@ -14,12 +14,12 @@ VALID_METHODS = {
     "BIC",
     "GAP",
     "ExactModeNorm",
-    "ESL-Norm",
+    "ESR-Energy",
     "STC",
     "NestedDMD",
     "FixedEigenvalueBVFit",
-    "NestedDMD+ESL",
-    "FixedEigenvalueBVFit+ESL",
+    "NestedDMD+ESR",
+    "FixedEigenvalueBVFit+ESR",
 }
 
 VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}

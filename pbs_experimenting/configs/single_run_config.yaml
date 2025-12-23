@@ -9,7 +9,7 @@ random_seed: 1235
 # ---- Parameters for this single job ----
 parameters:
   # Signal/noise
-  snr_db: 8                # signal-to-noise ratio in decibels
+  snr_db: 10                # signal-to-noise ratio in decibels
   noise_mode: gaussian       # noise type used by data generator
 
   # Spectrum
@@ -42,12 +42,12 @@ methods:
   - GAP
   - ExactModeNorm
   - STC
-  - ESL-Norm
+  - ESR-Energy
   - NestedDMD
   - FixedEigenvalueBVFit
   # Combination methods (merge features before clustering):
-  - NestedDMD+ESL            # Combines NestedDMD features with ESL-Norm
-  - FixedEigenvalueBVFit+ESL # Combines FixedEigenvalueBVFit features with ESL-Norm
+  - NestedDMD+ESR            # Combines NestedDMD features with ESR-Energy
+  - FixedEigenvalueBVFit+ESR # Combines FixedEigenvalueBVFit features with ESR-Energy
 
 # ---- Clustering configuration ----
 clustering:

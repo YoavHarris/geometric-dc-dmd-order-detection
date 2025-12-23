@@ -22,4 +22,4 @@ plotting:
 
 output:
   output_dir: "figures/leakage/outputs"
-  filename: "leakage_appendix.png"
+  filename: "leakage_appendix.pdf"

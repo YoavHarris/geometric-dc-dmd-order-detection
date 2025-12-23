@@ -41,7 +41,7 @@ class ScanPlotterCLI:
                 --csv_path=data.csv \\
                 --x_param=snr_db \\
                 --metric=order_hit_prob \\
-                --output_path=output.png \\
+                --output_path=output.pdf \\
                 --working_point="{'num_modes': 2, 'noise_mode': 'gaussian'}" \\
                 --xlim="(0.85, 0.95)"
         """
@@ -103,7 +103,7 @@ class ScanPlotterCLI:
                 --metric=order_hit_prob \\
                 --panel_param=noise_mode \\
                 --panel_values="['gaussian', 'student_t']" \\
-                --output_path=output.png \\
+                --output_path=output.pdf \\
                 --working_point="{'num_modes': 2}" \\
                 --xlim="(0.85, 0.95)"
         """
@@ -176,7 +176,7 @@ class ScanPlotterCLI:
                 --csv_path=data.csv \\
                 --x_params="['snr_db', 'freq_sep', 'eig_mag']" \\
                 --metric=order_hit_prob \\
-                --output_path=output.png \\
+                --output_path=output.pdf \\
                 --working_point="{'num_modes': 3, 'noise_mode': 'gaussian'}"
         """
         df = load_data(csv_path)

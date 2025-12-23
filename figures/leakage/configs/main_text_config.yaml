@@ -19,6 +19,6 @@ plotting:
 
 output:
   output_dir: "figures/leakage/outputs"
-#  filename: "leakage_main_text.png"
-  filename: "leakage_main_text1000.png"
+#  filename: "leakage_main_text.pdf"
+  filename: "leakage_main_text1000.pdf"
 

@@ -15,12 +15,12 @@ methods:
   - GAP
   - ExactModeNorm
   - STC
-  - ESL-Norm
+  - ESR-Energy
   - NestedDMD
   - FixedEigenvalueBVFit
   # Combination methods (merge features before clustering):
-  - NestedDMD+ESL            # Combines NestedDMD features with ESL-Norm
-  - FixedEigenvalueBVFit+ESL # Combines FixedEigenvalueBVFit features with ESL-Norm
+  - NestedDMD+ESR            # Combines NestedDMD features with ESR-Energy
+  - FixedEigenvalueBVFit+ESR # Combines FixedEigenvalueBVFit features with ESR-Energy
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clustering configuration (shared by all clustering-based methods)

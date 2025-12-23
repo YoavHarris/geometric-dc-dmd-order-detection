@@ -159,7 +159,7 @@ def plot_min_stats(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) 
         stats_df["median"],
         marker="o",
         linestyle="-",
-        label="Median($r_{min}$)",
+        label="Median($\\rho_{\\mathrm{min}}$)",
     )
 
     ax.fill_between(
@@ -176,7 +176,7 @@ def plot_min_stats(df: pd.DataFrame, cfg: Mapping[str, Any], output_path: Path) 
             stats_df["mean"],
             linestyle="--",
             linewidth=1.0,
-            label="Mean($r_{min}$)",
+            label="Mean($\\rho_{\\mathrm{min}}$)",
         )
 
     ax.set_xlabel("Embedding length L")
@@ -248,10 +248,10 @@ def main(config_path: str) -> None:
 
     # 5. Figure filenames from config
     out_cfg = config["output"]
-    cdf_filename = out_cfg.get("cdf_filename", "spurious_eigs_L_cdf.png")
-    pdf_filename = out_cfg.get("pdf_filename", "spurious_eigs_L_pdf.png")
+    cdf_filename = out_cfg.get("cdf_filename", "spurious_eigs_L_cdf.pdf")
+    pdf_filename = out_cfg.get("pdf_filename", "spurious_eigs_L_pdf.pdf")
     min_stats_filename = out_cfg.get(
-        "min_stats_filename", "spurious_eigs_L_min_stats.png"
+        "min_stats_filename", "spurious_eigs_L_min_stats.pdf"
     )
 
     cdf_path = out_dir / cdf_filename

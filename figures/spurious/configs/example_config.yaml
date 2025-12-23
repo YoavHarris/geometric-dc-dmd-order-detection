@@ -21,7 +21,7 @@ plotting:
 
 output:
   output_dir: 'figures/spurious/outputs'
-  cdf_filename: "spurious_eigs_L_cdf.png"
-  pdf_filename: "spurious_eigs_L_pdf.png"
-  min_stats_filename: "spurious_eigs_L_min_stats.png"
+  cdf_filename: "spurious_eigs_L_cdf.pdf"
+  pdf_filename: "spurious_eigs_L_pdf.pdf"
+  min_stats_filename: "spurious_eigs_L_min_stats.pdf"
 

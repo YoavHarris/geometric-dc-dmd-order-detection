@@ -53,23 +53,6 @@ def compute_bic_rank(
         dmd = fit_dmd(data, num_delays=num_delays, svd_rank=rank)
 
         # Reconstruct the data window corresponding to the valid Hankel columns
-        # The reconstruction in dmd.reconstructed_data is (spatial_dim, num_usable_snapshots)
-        # We need to compare it to the original data in that same window.
-        # The Hankel matrix uses columns from index 0 to num_usable_snapshots-1.
-        # The last column involves data up to index num_snapshots-1.
-        # Wait, let's check dmd_tools.py logic or just trust the previous implementation.
-        # Previous implementation:
-        # reconstruction = dmd.reconstructed_data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots]
-        # residual = data[:, num_delays - 1 : num_delays - 1 + num_usable_snapshots] - reconstruction
-
-        # Let's verify the alignment.
-        # If num_delays=1, indices are 0 : num_snapshots.
-        # dmd.reconstructed_data is full size?
-        # Usually fit_dmd returns a DMD object.
-        # If projected/exact, reconstructed_data might be the size of the input to fit()?
-        # In fit_dmd, it does delay embedding.
-        # Let's stick to the logic from the previous file which presumably worked.
-
         reconstruction = dmd.reconstructed_data[
             :, num_delays - 1 : num_delays - 1 + num_usable_snapshots
         ]

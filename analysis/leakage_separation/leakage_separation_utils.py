@@ -294,3 +294,104 @@ def compute_practical_basis(
     practical_bv = perturbed_bv / norms
 
     return orthonormal_basis(practical_bv, num_modes)
+
+
+# =============================================================================
+# Proxy signal subspace selection
+# =============================================================================
+
+
+def select_proxy_signal_subspace(
+    signal_subspace_basis: NDArray[np.complexfloating],
+    estimated_subspace_basis: NDArray[np.complexfloating],
+    *,
+    assume_orthonormal: bool = True,
+    return_distance: bool = True,
+) -> dict[str, any]:
+    """
+    Select m columns from estimated M-column basis that best align with signal subspace.
+    
+    Uses exhaustive search over all C(M, m) combinations to minimize spectral
+    projector distance ||P_S - P_{U_J}||_2 between signal subspace and selected
+    columns.
+    
+    Efficient scoring per subset uses:
+        C = S^T U  (m x M)
+        For J: C_J = C[:, J] (m x m)
+               G_J = C_J^T C_J
+        sigma_min(C_J)^2 = lambda_min(G_J)
+    Minimize distance <=> maximize sigma_min(C_J).
+    
+    Args:
+        signal_subspace_basis: Basis for true signal subspace, shape (DL, m).
+        estimated_subspace_basis: Basis for estimated subspace, shape (DL, M).
+        assume_orthonormal: If True, assume inputs are already orthonormal.
+                           If False, orthonormalize internally.
+        return_distance: If True, include spectral projector distance in output.
+    
+    Returns:
+        Dictionary with:
+            - 'selected_indices': tuple of m column indices from estimated basis
+            - 'proxy_basis': selected m columns, shape (DL, m)
+            - 'tail_basis': remaining M-m columns, shape (DL, M-m)
+            - 'sigma_min': smallest singular value of overlap matrix for best subset
+            - 'distance': spectral projector distance (if return_distance=True)
+    """
+    from itertools import combinations
+    
+    S = np.asarray(signal_subspace_basis, dtype=complex)
+    U = np.asarray(estimated_subspace_basis, dtype=complex)
+    
+    if S.ndim != 2 or U.ndim != 2:
+        raise ValueError("Inputs must be 2D arrays.")
+    DL_s, m = S.shape
+    DL_u, M = U.shape
+    if DL_s != DL_u:
+        raise ValueError(f"Row mismatch: S is {DL_s}x{m}, U is {DL_u}x{M}.")
+    if m > M:
+        raise ValueError(f"Need m <= M, got m={m}, M={M}.")
+    
+    if not assume_orthonormal:
+        S, _ = np.linalg.qr(S)
+        U, _ = np.linalg.qr(U)
+    
+    # Precompute overlap matrix (m x M)
+    C = S.conj().T @ U
+    
+    best_indices = None
+    best_lambda_min = -np.inf  # maximize
+    
+    # Iterate all subsets of size m
+    for J in combinations(range(M), m):
+        C_J = C[:, J]                 # (m, m)
+        G_J = C_J.conj().T @ C_J      # (m, m), symmetric PSD
+        # Smallest eigenvalue is sigma_min(C_J)^2
+        eigvals = np.linalg.eigvalsh(G_J)
+        lam_min = float(eigvals[0])
+        if lam_min > best_lambda_min:
+            best_lambda_min = lam_min
+            best_indices = J
+    
+    # Recover sigma_min and build output
+    sigma_min = float(np.sqrt(max(best_lambda_min, 0.0)))
+    
+    # Extract selected columns and tail columns
+    all_indices = set(range(M))
+    tail_indices = sorted(all_indices - set(best_indices))
+    
+    proxy_basis = U[:, best_indices]
+    tail_basis = U[:, tail_indices] if tail_indices else np.zeros((DL_u, 0), dtype=complex)
+    
+    result = {
+        "selected_indices": best_indices,
+        "proxy_basis": proxy_basis,
+        "tail_basis": tail_basis,
+        "sigma_min": sigma_min,
+    }
+    
+    if return_distance:
+        # distance = sqrt(1 - sigma_min^2) = sin(theta_max)
+        dist = float(np.sqrt(max(0.0, 1.0 - sigma_min * sigma_min)))
+        result["distance"] = dist
+    
+    return result

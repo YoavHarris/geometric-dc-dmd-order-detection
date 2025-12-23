@@ -7,7 +7,7 @@ base:
   methods:
     - BIC
     - GAP
-    - ESL-Norm
+    - ESR-Energy
     - NestedDMD
     - FixedEigenvalueBVFit
 
@@ -31,5 +31,5 @@ baseline_working_point:
 
 plots:
   - x_params: [snr_db, freq_sep, eig_mag]
-    output_path: figures/scans/outputs/multi_param_scan_L1.png
+    output_path: figures/scans/outputs/multi_param_scan_L1.pdf
     title: "Standard DMD Order Detection Scans $(L=1)$"

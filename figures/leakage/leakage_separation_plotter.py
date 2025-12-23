@@ -247,17 +247,22 @@ def _add_underbraces(ax):
     )
 
 
+def _compute_tau_thresholds_per_trial(
+    df: pd.DataFrame, rsln_col: str
+) -> tuple[pd.Series, pd.Series]:
+    """Compute tau_spur and tau_true thresholds per trial."""
+    tau_spur_per_trial = df[df["is_true"] == 0].groupby("trial_id")[rsln_col].min()
+    tau_true_per_trial = df[df["is_true"] == 1].groupby("trial_id")[rsln_col].max()
+    return tau_spur_per_trial, tau_true_per_trial
+
+
 def _annotate_gap(ax, df, rsln_col, data_dict):
     """Add gap annotation to the plot."""
     if "trial_id" in df.columns:
-        tau_spur_per_trial = df[df["is_true"] == 0].groupby("trial_id")[rsln_col].min()
-        tau_true_per_trial = df[df["is_true"] == 1].groupby("trial_id")[rsln_col].max()
+        tau_spur_per_trial, tau_true_per_trial = _compute_tau_thresholds_per_trial(df, rsln_col)
 
-        tau_spur_median = tau_spur_per_trial.median()
-        tau_true_median = tau_true_per_trial.median()
-
-        tau_spur_val = tau_spur_median
-        tau_true_val = tau_true_median
+        tau_spur_val = tau_spur_per_trial.median()
+        tau_true_val = tau_true_per_trial.median()
     else:
         tau_spur_val = np.min(data_dict["spurious_rsln"])
         tau_true_val = np.max(data_dict["true_rsln"])
@@ -352,7 +357,93 @@ def main(config_path: str) -> None:
         panel_height=panel_height,
     )
 
+    # Generate Gamma (gap) CDF plot
+    gamma_output_path = out_dir / (output_path.stem + "_gamma_cdf" + output_path.suffix)
+    _generate_gamma_cdf_plot(csv_paths, panel_labels, rsln_version, gamma_output_path, show_titles)
+
     print("Done.")
+
+
+def _generate_gamma_cdf_plot(
+    csv_paths: list[Path],
+    panel_labels: list[str],
+    rsln_version: str,
+    output_path: Path,
+    show_titles: bool,
+) -> None:
+    """Generate and save CDF plot of gamma (gap) values across scenarios."""
+    print(f"Generating Gamma CDF plot...")
+    print(f"Output: {output_path}")
+
+    gaps_list = []
+    labels_list = []
+    
+    for csv_path, label in zip(csv_paths, panel_labels):
+        df = pd.read_csv(csv_path)
+        rsln_col = f"rsln_{rsln_version}"
+        gap_values = _compute_gap_values(df, rsln_col)
+        gaps_list.append(gap_values)
+        labels_list.append(label)
+
+    _plot_gamma_cdf(
+        gaps_list=gaps_list,
+        labels_list=labels_list,
+        output_path=output_path,
+        show_titles=show_titles,
+    )
+
+
+def _compute_gap_values(df: pd.DataFrame, rsln_col: str) -> np.ndarray:
+    """
+    Compute gap values gamma = tau_spur - tau_true per trial.
+    """
+    if "trial_id" not in df.columns:
+        # Fallback if no trial_id (e.g. summarized data, though normally we have raw)
+        true_df, spur_df = _split_data(df)
+        tau_spur = spur_df[rsln_col].min()
+        tau_true = true_df[rsln_col].max()
+        return np.array([tau_spur - tau_true])
+
+    # Use shared helper to compute per-trial thresholds
+    tau_spur_per_trial, tau_true_per_trial = _compute_tau_thresholds_per_trial(df, rsln_col)
+
+    # Align indices just in case
+    common_trials = tau_spur_per_trial.index.intersection(tau_true_per_trial.index)
+    gamma_per_trial = tau_spur_per_trial.loc[common_trials] - tau_true_per_trial.loc[common_trials]
+    
+    return gamma_per_trial.values
+
+
+def _plot_gamma_cdf(
+    gaps_list: list[np.ndarray],
+    labels_list: list[str],
+    output_path: Path,
+    show_titles: bool = True,
+):
+    """
+    Plot CDF of gamma values for multiple scenarios.
+    """
+    fig, ax = plt.subplots(figsize=(6, 4))
+
+    for gaps, label in zip(gaps_list, labels_list):
+        # Sort data for CDF
+        sorted_gaps = np.sort(gaps)
+        yvals = np.arange(1, len(sorted_gaps) + 1) / len(sorted_gaps)
+        
+        # Plot step function
+        ax.step(sorted_gaps, yvals, where='post', label=label, linewidth=1.5)
+
+    ax.set_xlabel(r"Gap $\gamma = \tau_{\mathrm{spur}} - \tau_{\mathrm{true}}$")
+    ax.set_ylabel("CDF")
+    ax.grid(True, linestyle=":", alpha=0.6)
+    
+    # Legend
+    if show_titles:
+        ax.legend(loc="lower right")
+
+    plt.tight_layout()
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
 
 if __name__ == "__main__":

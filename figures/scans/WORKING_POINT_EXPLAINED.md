@@ -11,14 +11,14 @@ A **working point** is a complete specification of where you are in parameter sp
 ```
 snr_db | freq_sep | num_modes | noise_mode | method      | order_hit_prob
 -------|----------|-----------|------------|-------------|---------------
-0      | 0.01     | 2         | gaussian   | ESL-Norm    | 0.3
-5      | 0.01     | 2         | gaussian   | ESL-Norm    | 0.7
-10     | 0.01     | 2         | gaussian   | ESL-Norm    | 0.95
-0      | 0.01     | 2         | student_t  | ESL-Norm    | 0.25
-5      | 0.01     | 2         | student_t  | ESL-Norm    | 0.65
-10     | 0.01     | 2         | student_t  | ESL-Norm    | 0.90
-0      | 0.01     | 3         | gaussian   | ESL-Norm    | 0.2
-5      | 0.01     | 3         | gaussian   | ESL-Norm    | 0.5
+0      | 0.01     | 2         | gaussian   | ESR-Energy  | 0.3
+5      | 0.01     | 2         | gaussian   | ESR-Energy  | 0.7
+10     | 0.01     | 2         | gaussian   | ESR-Energy  | 0.95
+0      | 0.01     | 2         | student_t  | ESR-Energy  | 0.25
+5      | 0.01     | 2         | student_t  | ESR-Energy  | 0.65
+10     | 0.01     | 2         | student_t  | ESR-Energy  | 0.90
+0      | 0.01     | 3         | gaussian   | ESR-Energy  | 0.2
+5      | 0.01     | 3         | gaussian   | ESR-Energy  | 0.5
 ...
 ```
 
@@ -46,9 +46,9 @@ x_param = 'snr_db'
 ```
 snr_db | freq_sep | num_modes | noise_mode | method      | order_hit_prob
 -------|----------|-----------|------------|-------------|---------------
-0      | 0.01     | 2         | gaussian   | ESL-Norm    | 0.3    ← plot this
-5      | 0.01     | 2         | gaussian   | ESL-Norm    | 0.7    ← plot this
-10     | 0.01     | 2         | gaussian   | ESL-Norm    | 0.95   ← plot this
+0      | 0.01     | 2         | gaussian   | ESR-Energy  | 0.3    ← plot this
+5      | 0.01     | 2         | gaussian   | ESR-Energy  | 0.7    ← plot this
+10     | 0.01     | 2         | gaussian   | ESR-Energy  | 0.95   ← plot this
 ```
 
 Now you can plot snr_db vs order_hit_prob!
