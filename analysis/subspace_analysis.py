@@ -95,7 +95,7 @@ def compute_practical_basis(
     num_modes: int,
 ) -> NDArray[np.complex128]:
     """
-    Compute practical BV basis following the paper's formula (equations 31-36).
+    Compute practical KV basis following the paper's formula (equations 31-36).
     Absorbs noise that's aligned with the exponential temporal structures of the signal into the modes.
     """
     LD, T = embedded_noise.shape
@@ -185,13 +185,13 @@ def compute_subspace_principal_angles(
     # Compute bases
     estimated_basis = compute_estimated_basis(embedded_data, num_modes)
 
-    # Build clean BV modes (needed for both clean and practical bases)
+    # Build clean KV modes (needed for both clean and practical bases)
     clean_bv_modes = build_block_vandermonde_modes(
         true_modes, true_eigenvalues, num_delays
     )
     clean_basis = orthonormal_basis(clean_bv_modes, num_modes)
 
-    # Practical basis: clean BV modes + noise perturbation
+    # Practical basis: clean KV modes + noise perturbation
     practical_basis = compute_practical_basis(
         embedded_noise, clean_bv_modes, true_eigenvalues, num_modes
     )

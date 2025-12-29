@@ -127,7 +127,7 @@ class SingleScanPlotter:
             style = self._get_style(method)
 
             label = method
-            if method in ["ESR-Energy", "NestedDMD", "FixedEigenvalueBVFit"]:
+            if method in ["ESR-Energy", "NestedDMD", "FixedEigenvalueKVFit"]:
                 label += " (Ours)"
 
             # Plot

@@ -17,7 +17,7 @@ methods:
     color: '#00008B'
     linestyle: '-'
     marker: 'o'
-  FixedEigenvalueBVFit:
+  FixedEigenvalueKVFit:
     color: '#5DADE2'
     linestyle: '-'
     marker: 'o'
@@ -29,7 +29,7 @@ methods:
     color: '#006400'
     linestyle: '-'
     marker: 'o'
-  FixedEigenvalueBVFit+ESL:
+  FixedEigenvalueKVFit+ESL:
     color: '#228B22'
     linestyle: '-'
     marker: 'o'

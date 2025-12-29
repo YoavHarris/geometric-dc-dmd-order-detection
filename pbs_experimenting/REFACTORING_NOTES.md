@@ -10,7 +10,7 @@ Successfully refactored the PBS experiment system with the following improvement
 2. **Proper random seed handling** - Deterministic seeds: `base_seed + job_id * 1000 + iteration`
 3. **Updated method names**:
    - ❌ Removed: `CDFAUC`, `MSMS`, `ModeEnergy`
-   - ✅ Replaced: `BlockVandermondeMatching` → `FixedEigenvalueBVFit`
+   - ✅ Replaced: `BlockVandermondeMatching` → `FixedEigenvalueKVFit`
    - ✅ Replaced: `ModeMatDMD` → `NestedDMD`
    - ✅ Replaced: `dcDMD` → `STC`
 4. **Modular design** - Separated concerns into classes:
@@ -57,14 +57,14 @@ The refactored code works with the current method implementations:
   - Returns: `{"STC": scores}`
   - Status: Working as-is
 
-✅ **NestedDMD** (`algorithms/block_vandermonde_fit.py`)
+✅ **NestedDMD** (`algorithms/kronecker_vandermonde_fit.py`)
   - Interface: `compute_features(modes, eigenvalues, plot)`
   - Returns: `{"Reconstruction": scores, "Eigenvalue-Consistency": scores}`
   - Status: Working as-is
 
-✅ **FixedEigenvalueBVFit** (`algorithms/block_vandermonde_fit.py`)
+✅ **FixedEigenvalueKVFit** (`algorithms/kronecker_vandermonde_fit.py`)
   - Interface: `compute_features(modes, eigenvalues, plot)`
-  - Returns: `{"BV-Fit": scores}`
+  - Returns: `{"KV-Fit": scores}`
   - Status: Working as-is
 
 All three methods follow the consistent `compute_features(...)` API and return score dictionaries compatible with `ModeClustering`.
@@ -160,7 +160,7 @@ To switch from old to new system:
    # New methods (use):
    - STC
    - NestedDMD
-   - FixedEigenvalueBVFit
+   - FixedEigenvalueKVFit
    ```
 
 3. **Run new system:**

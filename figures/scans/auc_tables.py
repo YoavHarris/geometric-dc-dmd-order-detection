@@ -36,7 +36,7 @@ DELAY_METHODS = [
     "STC",
     "ESR-Energy",
     "NestedDMD",
-    "FixedEigenvalueBVFit",
+    "FixedEigenvalueKVFit",
 ]
 
 # Methods for L=1 table (only those that work without delays)
@@ -47,7 +47,7 @@ L1_METHODS = [
 ]
 
 # Methods to always exclude
-EXCLUDE_METHODS = {"AIC", "ExactModeNorm", "NestedDMD+ESL", "FixedEigenvalueBVFit+ESL"}
+EXCLUDE_METHODS = {"AIC", "ExactModeNorm", "NestedDMD+ESL", "FixedEigenvalueKVFit+ESL"}
 
 
 def compute_normalized_auc(
@@ -129,7 +129,9 @@ def format_wide_latex_table(
     all_ms = sorted({key[0] for key in auc_dict.keys()})
 
     # Filter to only include methods that have data
-    methods_with_data = [m for m in methods if any(key[1] == m for key in auc_dict.keys())]
+    methods_with_data = [
+        m for m in methods if any(key[1] == m for key in auc_dict.keys())
+    ]
 
     if not methods_with_data or not all_ms:
         print(f"Warning: No data for {table_label}", file=sys.stderr)
@@ -178,8 +180,7 @@ def format_wide_latex_table(
 
                 # Find best value for this (m, param) block
                 best_v = max(
-                    auc_dict.get((m, mtd, param), -np.inf)
-                    for mtd in methods_with_data
+                    auc_dict.get((m, mtd, param), -np.inf) for mtd in methods_with_data
                 )
 
                 v_str = f"{v:.3f}"

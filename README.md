@@ -53,7 +53,7 @@ dc-dmd-order-detection/
 │   ├── bic.py              # BIC (Bayesian Information Criterion)
 │   ├── clustering.py       # 2-cluster mode classification
 │   ├── stc.py              # Spatiotemporal Coupling (STC)
-│   ├── block_vandermonde_fit.py  # NestedDMD, FixedEigenvalueBVFit
+│   ├── kronecker_vandermonde_fit.py  # NestedDMD, FixedEigenvalueKVFit
 │   └── estimated_subspace_leakage.py  # ESL-Norm
 ├── utils/                   # Data generation & visualization
 │   ├── data_generation.py  # Synthetic DMD data with noise
@@ -108,7 +108,7 @@ All use `ModeClustering` for 2-cluster classification:
 **Feature extractors:**
 - **STC**: Spatiotemporal coupling quotient consistency
 - **NestedDMD**: Rank-1 DMD fit to each mode's block structure
-- **FixedEigenvalueBVFit**: Block-Vandermonde fit using external eigenvalues
+- **FixedEigenvalueKVFit**: Kronecker-Vandermonde fit using external eigenvalues
 - **ESL-Norm**: Estimated subspace leakage
 
 **Clustering API:**
@@ -268,7 +268,7 @@ Transform time series into augmented state vectors via Hankel (delay-coordinate)
 - Captures time-delay dynamics in spatial structure
 - Essential for distinguishing true vs. spurious modes
 
-### Block-Vandermonde Structure
+### Kronecker-Vandermonde Structure
 True DMD modes exhibit block-Vandermonde structure along delay axis:
 ```
 Mode matrix (D × L):
@@ -278,7 +278,7 @@ where `λ` is the mode's eigenvalue and `v₀` is the spatial pattern.
 
 **Detection strategies:**
 - **NestedDMD**: Fit rank-1 DMD to each mode's block structure
-- **FixedEigenvalueBVFit**: Use external eigenvalue for closed-form fit
+- **FixedEigenvalueKVFit**: Use external eigenvalue for closed-form fit
 - **STC**: Quotient consistency across delays
 
 ### Leakage Norms
@@ -296,12 +296,12 @@ True modes have small leakage; spurious modes have large leakage.
 | GAP | Singular Value | Largest SV gap | Single rank estimate |
 | STC | Clustering | Quotient consistency | Per-mode scores |
 | NestedDMD | Clustering | Reconstruction error, eigenvalue consistency | Per-mode scores |
-| FixedEigenvalueBVFit | Clustering | Block-Vandermonde fit | Per-mode scores |
+| FixedEigenvalueKVFit | Clustering | Kronecker-Vandermonde fit | Per-mode scores |
 | ESL-Norm | Clustering | Subspace leakage | Per-mode scores |
 
 **Clustering methods** can be combined:
 - `NestedDMD+ESL`: Merge features before clustering
-- `FixedEigenvalueBVFit+ESL`: Merge features before clustering
+- `FixedEigenvalueKVFit+ESL`: Merge features before clustering
 
 ## Development
 

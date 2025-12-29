@@ -17,10 +17,10 @@ methods:
   - STC
   - ESR-Energy
   - NestedDMD
-  - FixedEigenvalueBVFit
+  - FixedEigenvalueKVFit
   # Combination methods (merge features before clustering):
   - NestedDMD+ESR            # Combines NestedDMD features with ESR-Energy
-  - FixedEigenvalueBVFit+ESR # Combines FixedEigenvalueBVFit features with ESR-Energy
+  - FixedEigenvalueKVFit+ESR # Combines FixedEigenvalueKVFit features with ESR-Energy
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clustering configuration (shared by all clustering-based methods)

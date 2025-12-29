@@ -17,9 +17,9 @@ VALID_METHODS = {
     "ESR-Energy",
     "STC",
     "NestedDMD",
-    "FixedEigenvalueBVFit",
+    "FixedEigenvalueKVFit",
     "NestedDMD+ESR",
-    "FixedEigenvalueBVFit+ESR",
+    "FixedEigenvalueKVFit+ESR",
 }
 
 VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}

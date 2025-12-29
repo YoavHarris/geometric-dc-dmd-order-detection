@@ -6,8 +6,8 @@ class STC:
     """
     Spatiotemporal Coupling (STC) quotient-consistency feature extractor.
 
-    Based on Bronstein et al., Chaos 32, 123127 (2022), included for comparison with the new BV-fit methods
-    (NestedDMD, FixedEigenvalueBVFit).
+    Based on Bronstein et al., Chaos 32, 123127 (2022), included for comparison with the new KV-fit methods
+    (NestedDMD, FixedEigenvalueKVFit).
 
     For each mode, constructs per-delay quotients relative to the first sub-mode,
     estimates an effective eigenvalue via geometric means across valid lags, and

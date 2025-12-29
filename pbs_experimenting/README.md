@@ -78,10 +78,10 @@ methods:
   - STC                      # Spatiotemporal Coupling
   - ESR-Energy               # Estimated Subspace Residual Energy
   - NestedDMD                # Nested rank-1 DMD strategy
-  - FixedEigenvalueBVFit     # Fixed-eigenvalue BV fit
+  - FixedEigenvalueKVFit     # Fixed-eigenvalue KV fit
   # Combination methods (merge features before clustering):
   - NestedDMD+ESR            # Combines NestedDMD with ESR-Energy
-  - FixedEigenvalueBVFit+ESR # Combines FixedEigenvalueBVFit with ESR-Energy
+  - FixedEigenvalueKVFit+ESR # Combines FixedEigenvalueKVFit with ESR-Energy
 ```
 
 ### Clustering

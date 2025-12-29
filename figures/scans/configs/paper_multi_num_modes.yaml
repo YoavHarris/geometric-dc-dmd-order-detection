@@ -12,7 +12,7 @@ base:
     - STC
     - ESR-Energy
     - NestedDMD
-    - FixedEigenvalueBVFit
+    - FixedEigenvalueKVFit
 
   panel_param: num_modes
   panel_values: [2, 3, 5]

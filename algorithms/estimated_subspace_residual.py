@@ -3,15 +3,15 @@ from numpy.typing import NDArray
 from utils.visualizations import scatter_scores_1d
 
 
-class EstimatedSubspaceLeakage:
+class EstimatedSubspaceResidual:
     """
-    Estimated Subspace Leakage (ESL) for DMD mode selection.
+    Estimated Subspace Residual (ESR) for DMD mode selection.
 
     Computes how much each mode "leaks" outside the estimated subspace.
-    Formula: leakage_squared = ||mode||^2 - |eigenvalue|^2
-    Score: -log(leakage_squared + epsilon)  [larger = better]
+    Formula: residual_squared = ||mode||^2 - |eigenvalue|^2
+    Score: -log(residual_squared + epsilon)  [larger = better]
 
-    True modes have small leakage, spurious modes have large leakage.
+    True modes have small residual, spurious modes have large residual.
 
     Parameters
     ----------
@@ -31,7 +31,7 @@ class EstimatedSubspaceLeakage:
         plot: bool = False,
     ) -> dict[str, NDArray[np.floating]]:
         """
-        Compute leakage scores for each mode.
+        Compute residual scores for each mode.
 
         Parameters
         ----------
@@ -44,7 +44,7 @@ class EstimatedSubspaceLeakage:
 
         Returns
         -------
-        dict with "Estimated-Subspace-Leakage" -> scores of shape (M,)
+        dict with "Estimated-Subspace-Residual" -> scores of shape (M,)
         """
         # Validate shapes
         if exact_modes.ndim != 2:
@@ -58,23 +58,23 @@ class EstimatedSubspaceLeakage:
                 f"Shape mismatch: {num_modes} modes but {eigenvalues.shape[0]} eigenvalues"
             )
 
-        # Compute leakage: ||mode||^2 - |eigenvalue|^2
+        # Compute residual: ||mode||^2 - |eigenvalue|^2
         mode_norm_squared = np.sum(np.abs(exact_modes) ** 2, axis=0)
         eigenvalue_magnitude_squared = np.abs(eigenvalues) ** 2
-        leakage_squared = mode_norm_squared - eigenvalue_magnitude_squared
+        residual_squared = mode_norm_squared - eigenvalue_magnitude_squared
 
         # Clip to avoid numerical negatives
-        leakage_squared = np.maximum(leakage_squared, 0.0)
+        residual_squared = np.maximum(residual_squared, 0.0)
 
         # Convert to score: larger is better
-        scores = -np.log(leakage_squared + self.epsilon)
+        scores = -np.log(residual_squared + self.epsilon)
 
         if plot:
             scatter_scores_1d(
                 scores,
-                "Estimated-Subspace-Leakage",
-                title="ESL-Norm Scores",
+                "Estimated-Subspace-Residual",
+                title="ESR-Norm Scores",
                 show_id=True,
             )
 
-        return {"Estimated-Subspace-Leakage": scores.astype(np.float32)}
+        return {"Estimated-Subspace-Residual": scores.astype(np.float32)}

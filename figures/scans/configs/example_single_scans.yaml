@@ -10,7 +10,7 @@ base:
     - STC
     - ESR-Energy
     - NestedDMD
-    - FixedEigenvalueBVFit
+    - FixedEigenvalueKVFit
 
   show: false
 

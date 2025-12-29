@@ -8,8 +8,6 @@ base:
     - BIC
     - GAP
     - ESR-Energy
-    - NestedDMD
-    - FixedEigenvalueBVFit
 
   show: false
 

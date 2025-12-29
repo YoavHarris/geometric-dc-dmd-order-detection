@@ -18,8 +18,8 @@ from scipy import optimize
 from tqdm import tqdm
 import fire
 
-from algorithms.estimated_subspace_leakage import EstimatedSubspaceLeakage
-from algorithms.block_vandermonde_fit import FixedEigenvalueBVFit, NestedDMD
+from algorithms.estimated_subspace_residual import EstimatedSubspaceResidual
+from algorithms.kronecker_vandermonde_fit import FixedEigenvalueKVFit, NestedDMD
 from algorithms.clustering import ModeClustering
 from algorithms.stc import STC
 from algorithms.bic import (
@@ -42,9 +42,9 @@ from analysis.subspace_analysis import compute_subspace_principal_angles
 DELAY_EMBEDDING_METHODS = {
     "STC",
     "NestedDMD",
-    "FixedEigenvalueBVFit",
+    "FixedEigenvalueKVFit",
     "NestedDMD+ESR",
-    "FixedEigenvalueBVFit+ESR",
+    "FixedEigenvalueKVFit+ESR",
 }
 
 # Information criteria methods
@@ -269,8 +269,8 @@ class MethodEvaluator:
                 )
 
         if "ESR-Energy" in self.enabled_methods:
-            esl = EstimatedSubspaceLeakage()
-            scores = esl.compute_features(
+            esr = EstimatedSubspaceResidual()
+            scores = esr.compute_features(
                 exact_modes=aligned_ex_modes,  # shape (D*L, M)
                 eigenvalues=exact_dmd.eigs,  # match exact modes
                 plot=plot,
@@ -352,20 +352,20 @@ class MethodEvaluator:
                 plot=plot and "NestedDMD" in methods,
             )
 
-        if "FixedEigenvalueBVFit" in features_to_compute:
-            febvf = FixedEigenvalueBVFit(
+        if "FixedEigenvalueKVFit" in features_to_compute:
+            febvf = FixedEigenvalueKVFit(
                 num_delays=self.num_delays,
                 spatial_dim=self.spatial_dim,
             )
-            scores_cache["FixedEigenvalueBVFit"] = febvf.compute_features(
+            scores_cache["FixedEigenvalueKVFit"] = febvf.compute_features(
                 modes=aligned_proj_modes,
                 eigenvalues=eigenvalues,
-                plot=plot and "FixedEigenvalueBVFit" in methods,
+                plot=plot and "FixedEigenvalueKVFit" in methods,
             )
 
-        if "ESL" in features_to_compute and "ESL" not in scores_cache:
-            esl = EstimatedSubspaceLeakage()
-            scores_cache["ESL"] = esl.compute_features(
+        if "ESR" in features_to_compute and "ESR" not in scores_cache:
+            esr = EstimatedSubspaceResidual()
+            scores_cache["ESR"] = esr.compute_features(
                 exact_modes=aligned_ex_modes,
                 eigenvalues=eigenvalues,
                 plot=False,
@@ -385,29 +385,29 @@ class MethodEvaluator:
             order_estimates["NestedDMD"] = order
             pred_masks["NestedDMD"] = labels
 
-        if "FixedEigenvalueBVFit" in methods:
+        if "FixedEigenvalueKVFit" in methods:
             labels, order = cluster_scores(
-                scores_cache["FixedEigenvalueBVFit"], self.clustering_config
+                scores_cache["FixedEigenvalueKVFit"], self.clustering_config
             )
-            order_estimates["FixedEigenvalueBVFit"] = order
-            pred_masks["FixedEigenvalueBVFit"] = labels
+            order_estimates["FixedEigenvalueKVFit"] = order
+            pred_masks["FixedEigenvalueKVFit"] = labels
 
         # --- Cluster combinations (features guaranteed in cache) ---
 
         if "NestedDMD+ESR" in methods:
-            combined_scores = {**scores_cache["NestedDMD"], **scores_cache["ESL"]}
+            combined_scores = {**scores_cache["NestedDMD"], **scores_cache["ESR"]}
             labels, order = cluster_scores(combined_scores, self.clustering_config)
             order_estimates["NestedDMD+ESR"] = order
             pred_masks["NestedDMD+ESR"] = labels
 
-        if "FixedEigenvalueBVFit+ESR" in methods:
+        if "FixedEigenvalueKVFit+ESR" in methods:
             combined_scores = {
-                **scores_cache["FixedEigenvalueBVFit"],
-                **scores_cache["ESL"],
+                **scores_cache["FixedEigenvalueKVFit"],
+                **scores_cache["ESR"],
             }
             labels, order = cluster_scores(combined_scores, self.clustering_config)
-            order_estimates["FixedEigenvalueBVFit+ESR"] = order
-            pred_masks["FixedEigenvalueBVFit+ESR"] = labels
+            order_estimates["FixedEigenvalueKVFit+ESR"] = order
+            pred_masks["FixedEigenvalueKVFit+ESR"] = labels
 
 
 class MetricsTracker:

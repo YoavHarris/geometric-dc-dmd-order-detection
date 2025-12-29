@@ -52,7 +52,7 @@ def eigenvalue_distance(
 # Base class for shared functionality
 class BlockVandermondeFit(ABC):
     """
-    Base class for Block-Vandermonde fitting strategies.
+    Base class for Kronecker-Vandermonde fitting strategies.
 
     Each DMD mode is reshaped into a (spatial_dim x num_delays) matrix
     and analyzed for block-Vandermonde structure along the delay axis.
@@ -89,7 +89,7 @@ class BlockVandermondeFit(ABC):
         **kwargs,
     ) -> dict[str, NDArray[np.floating]]:
         """
-        Compute per-mode BV-fit features.
+        Compute per-mode KV-fit features.
 
         Parameters
         ----------
@@ -189,13 +189,13 @@ class BlockVandermondeFit(ABC):
 # Concrete strategy 1: Nested DMD
 class NestedDMD(BlockVandermondeFit):
     """
-    Nested Rank-1 DMD strategy for Block-Vandermonde fitting.
+    Nested Rank-1 DMD strategy for Kronecker-Vandermonde fitting.
 
     Fits rank-1 DMD to each mode matrix independently and computes:
     - Reconstruction error: how well rank-1 DMD captures the mode
     - Eigenvalue consistency: agreement between external and nested eigenvalue
 
-    Implements Algorithm "BV-fit via nested rank-1 DMD" from Section 4.3
+    Implements Algorithm "KV-fit via nested rank-1 DMD" from Section 4.3
     (bv_structure_and_nested_DMD.tex, lines 360-385).
     """
 
@@ -264,17 +264,17 @@ class NestedDMD(BlockVandermondeFit):
         )
 
 
-# Concrete strategy 2: Fixed-Eigenvalue BV Fit
-class FixedEigenvalueBVFit(BlockVandermondeFit):
+# Concrete strategy 2: Fixed-Eigenvalue KV Fit
+class FixedEigenvalueKVFit(BlockVandermondeFit):
     """
-    Fixed-Eigenvalue Block-Vandermonde Fit (FEBVF).
+    Fixed-Eigenvalue Kronecker-Vandermonde Fit (FEKVF).
 
-    Uses external eigenvalue directly to compute BV structure fit.
+    Uses external eigenvalue directly to compute KV structure fit.
     Single closed-form score based on weighted sum across delays.
 
     Faster than Nested DMD: O(D*L) vs O(D*L*min(D,L)).
 
-    Implements simplified FEBVF from Section 4.3
+    Implements simplified FEKVF from Section 4.3
     (bv_structure_and_nested_DMD.tex, lines 416-421).
     """
 
@@ -284,7 +284,7 @@ class FixedEigenvalueBVFit(BlockVandermondeFit):
         eigenvalues: NDArray[np.complexfloating],  # (M,)
         **kwargs,
     ) -> dict[str, NDArray[np.floating]]:
-        """Closed-form BV fit using external eigenvalues."""
+        """Closed-form KV fit using external eigenvalues."""
         num_modes, spatial_dim, num_delays = mode_matrices.shape
         eigenvalues = eigenvalues.astype(np.complex128)
 
@@ -314,15 +314,15 @@ class FixedEigenvalueBVFit(BlockVandermondeFit):
         scores = -np.log(residuals + self.epsilon)
 
         return {
-            "BV-Fit": scores.astype(np.float32),
-            "BV-Fit_raw": residuals.astype(np.float32),
+            "KV-Fit": scores.astype(np.float32),
+            "KV-Fit_raw": residuals.astype(np.float32),
         }
 
     def _plot_features(self, features: dict[str, NDArray]):
-        """Plot 1D scatter of FEBVF scores."""
+        """Plot 1D scatter of FEKVF scores."""
         scatter_scores_1d(
-            features["BV-Fit"],
-            "BV-Fit-Score",
-            title="Fixed-Eigenvalue BV Fit",
+            features["KV-Fit"],
+            "KV-Fit-Score",
+            title="Fixed-Eigenvalue KV Fit",
             show_id=True,
         )

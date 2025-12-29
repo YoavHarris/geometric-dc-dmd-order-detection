@@ -25,7 +25,7 @@ parameters:
   top_amplitude: 1.0         # amplitude of the strongest mode
 
   # Delay embedding
-  delays_over_timesteps: 0.2   # ratio of delays to time steps (L/N)
+  delays_over_timesteps: 0.32   # ratio of delays to time steps (L/N)
 
   # DMD truncation
   max_rank: 20              # rank used for DMD (>= num_modes)
@@ -44,10 +44,10 @@ methods:
   - STC
   - ESR-Energy
   - NestedDMD
-  - FixedEigenvalueBVFit
+  - FixedEigenvalueKVFit
   # Combination methods (merge features before clustering):
   - NestedDMD+ESR            # Combines NestedDMD features with ESR-Energy
-  - FixedEigenvalueBVFit+ESR # Combines FixedEigenvalueBVFit features with ESR-Energy
+  - FixedEigenvalueKVFit+ESR # Combines FixedEigenvalueKVFit features with ESR-Energy
 
 # ---- Clustering configuration ----
 clustering:

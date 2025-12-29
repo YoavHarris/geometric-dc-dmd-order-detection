@@ -15,23 +15,23 @@ CONFIG = {
     "col_subspace": "green!60!black",
     "col_mode_true": "blue",
     "col_mode_spur": "red",
-    "col_leak_ssl": "violet",
-    "col_leak_esl": "orange",
+    "col_resid_ssr": "violet",
+    "col_resid_esr": "orange",
     "col_proj_true": "blue!80",
     "col_proj_spur": "red!80",
     "col_right_angle": "black!60",
     "caption": (
-        r"Geometric illustration of signal-subspace leakage (SSL) and "
-        r"estimated-subspace leakage (ESL) in the case \(m=1\) and \(M=2\), "
+        r"Geometric illustration of signal-subspace residual (SSR) and "
+        r"estimated-subspace residual (ESR) in the case \(m=1\) and \(M=2\), "
         r"where the true signal subspace \(\mathcal{S}\) (green) lies inside "
         r"the truncation subspace \(\mathcal{U}_M = \operatorname{span}\{u_1,u_2\}\). "
         r"True and spurious modes are drawn in blue and red, respectively, together with "
         r"their projections onto \(\mathcal{U}_M\) (dashed). "
-        r"(a) SSL corresponds to the in-plane deviation of a mode from \(\mathcal{S}\), "
+        r"(a) SSR corresponds to the in-plane deviation of a mode from \(\mathcal{S}\), "
         r"shown as violet arrows. "
-        r"(b) ESL corresponds to the out-of-plane component of a mode, shown as orange arrows. "
-        r"In this constructed example, the true mode has small SSL and ESL, "
-        r"whereas the spurious mode has larger leakage in both senses."
+        r"(b) ESR corresponds to the out-of-plane component of a mode, shown as orange arrows. "
+        r"In this constructed example, the true mode has small SSR and ESR, "
+        r"whereas the spurious mode has larger residual in both senses."
     ),
     # -- Line Widths & Styles --
     "lw_axis": "0.8pt",
@@ -42,18 +42,18 @@ CONFIG = {
     "style_proj": "dashed",
     # -- Arrow Heads --
     "arrow_global": "stealth",  # Sharp technical arrow
-    "arrow_ssl": "violet",  # Color for SSL arrow (uses default tip in plot)
+    "arrow_ssr": "violet",  # Color for SSR arrow (uses default tip in plot)
     # -- Coordinates (The Geometry) --
     # Subspace S (Green)
     "S_end": "(1.5, 0.15, 0)",
     # True Mode (Blue) - High angle
     "true_tip": "(1, 0.25, 0.2)",
     "true_xy_proj": "(1, 0.25, 0)",
-    "true_ssl_start": "(1, 0.1, 0)",
+    "true_ssr_start": "(1, 0.1, 0)",
     # Spurious Mode (Red)
     "spur_tip": "(0.1, 1, 0.8)",
     "spur_xy_proj": "(0.1, 1, 0)",
-    "spur_ssl_start": "(0.15, 0.015, 0)",
+    "spur_ssr_start": "(0.15, 0.015, 0)",
 }
 
 # ==========================================
@@ -114,43 +114,43 @@ def generate_figure():
     # Panel Specific Content
     # ---------------------------------------------------------
 
-    # Panel 1: SSL Specifics (Violet arrows + Right Angles)
-    content_panel_ssl = f"""
-        % --- Right Angles (SSL) ---
-        % True-SSL Corner
+    # Panel 1: SSR Specifics (Violet arrows + Right Angles)
+    content_panel_ssr = f"""
+        % --- Right Angles (SSR) ---
+        % True-SSR Corner
         \\draw[{c['col_right_angle']}, thin]
           (axis cs: 1.08, 0.108, 0) --      
           (axis cs: 1.08, 0.15, 0.05) --    
           (axis cs: 1.0, 0.14, 0.05);       
 
-        % Spurious-SSL Corner
+        % Spurious-SSR Corner
         \\draw[{c['col_right_angle']}, thin]
           (axis cs: 0.23, 0.023, 0) --      
           (axis cs: 0.22, 0.12, 0.08) --    
           (axis cs: 0.14, 0.11, 0.08);      
 
-        % --- SSL Vectors (Violet) ---
-        % True-SSL
-        \\addplot3[->, line width={c['lw_vector']}, draw={c['col_leak_ssl']}] coordinates {{{c['true_ssl_start']} {c['true_tip']}}};
-        \\node[anchor=west, text={c['col_leak_ssl']}, font=\\footnotesize, inner sep=2pt] at (axis cs:1.05, 0.15, 0.1) {{True-SSL}};
+        % --- SSR Vectors (Violet) ---
+        % True-SSR
+        \\addplot3[->, line width={c['lw_vector']}, draw={c['col_resid_ssr']}] coordinates {{{c['true_ssr_start']} {c['true_tip']}}};
+        \\node[anchor=west, text={c['col_resid_ssr']}, font=\\footnotesize, inner sep=2pt] at (axis cs:1.05, 0.15, 0.1) {{True-SSR}};
 
-        % Spurious-SSL
-        \\addplot3[->, line width={c['lw_vector']}, draw={c['col_leak_ssl']}] coordinates {{{c['spur_ssl_start']} {c['spur_tip']}}};
-        \\node[anchor=west, text={c['col_leak_ssl']}, font=\\footnotesize, inner sep=2pt] at (axis cs:0.1, 0.6, 0.4) {{Spurious-SSL}};
+        % Spurious-SSR
+        \\addplot3[->, line width={c['lw_vector']}, draw={c['col_resid_ssr']}] coordinates {{{c['spur_ssr_start']} {c['spur_tip']}}};
+        \\node[anchor=west, text={c['col_resid_ssr']}, font=\\footnotesize, inner sep=2pt] at (axis cs:0.1, 0.6, 0.4) {{Spurious-SSR}};
     """
 
-    # Panel 2: ESL Specifics (Orange lines + Dashed projections)
-    content_panel_esl = f"""
-        % --- ESL Components ---
-        % True-ESL
+    # Panel 2: ESR Specifics (Orange lines + Dashed projections)
+    content_panel_esr = f"""
+        % --- ESR Components ---
+        % True-ESR
         \\addplot3[->, {c['style_proj']}, line width={c['lw_proj']}, draw={c['col_proj_true']}] coordinates {{(0,0,0) {c['true_xy_proj']}}};
-        \\addplot3[-, line width={c['lw_vector']}, draw={c['col_leak_esl']}] coordinates {{{c['true_xy_proj']} {c['true_tip']}}};
-        \\node[anchor=west, text={c['col_leak_esl']}, font=\\footnotesize] at (axis cs:1, 0.25, 0.1) {{True-ESL}};
+        \\addplot3[-, line width={c['lw_vector']}, draw={c['col_resid_esr']}] coordinates {{{c['true_xy_proj']} {c['true_tip']}}};
+        \\node[anchor=west, text={c['col_resid_esr']}, font=\\footnotesize] at (axis cs:1, 0.25, 0.1) {{True-ESR}};
 
-        % Spurious-ESL
+        % Spurious-ESR
         \\addplot3[->, {c['style_proj']}, line width={c['lw_proj']}, draw={c['col_proj_spur']}] coordinates {{(0,0,0) {c['spur_xy_proj']}}};
-        \\addplot3[-, line width={c['lw_vector']}, draw={c['col_leak_esl']}] coordinates {{{c['spur_xy_proj']} {c['spur_tip']}}};
-        \\node[anchor=west, text={c['col_leak_esl']}, font=\\footnotesize] at (axis cs:0.1, 1, 0.4) {{Spurious-ESL}};
+        \\addplot3[-, line width={c['lw_vector']}, draw={c['col_resid_esr']}] coordinates {{{c['spur_xy_proj']} {c['spur_tip']}}};
+        \\node[anchor=west, text={c['col_resid_esr']}, font=\\footnotesize] at (axis cs:0.1, 1, 0.4) {{Spurious-ESR}};
     """
 
     # ---------------------------------------------------------
@@ -179,27 +179,27 @@ def generate_figure():
     ]
 
       %=================================================
-      % PANEL 1: SSL FOCUS (Left)
+      % PANEL 1: SSR FOCUS (Left)
       %=================================================
-      \\nextgroupplot[title={{(a) Signal Subspace Leakage (SSL)}}]
+      \\nextgroupplot[title={{(a) Signal Subspace Residual (SSR)}}]
         {block_grid_basis}
         {block_subspace_angle}
         {block_modes}
-        {content_panel_ssl}
+        {content_panel_ssr}
 
       %=================================================
-      % PANEL 2: ESL FOCUS (Right)
+      % PANEL 2: ESR FOCUS (Right)
       %=================================================
-      \\nextgroupplot[title={{(b) Estimated Subspace Leakage (ESL)}}]
+      \\nextgroupplot[title={{(b) Estimated Subspace Residual (ESR)}}]
         {block_grid_basis}
         {block_subspace_angle}
         {block_modes}
-        {content_panel_esl}
+        {content_panel_esr}
 
     \\end{{groupplot}}
   \\end{{tikzpicture}}
   \\caption{{{c['caption']}}}
-  \\label{{fig:two_panel_leakage}}
+  \\label{{fig:two_panel_residual}}
 \\end{{figure*}}
 """
     print(latex_code)

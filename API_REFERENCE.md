@@ -182,7 +182,7 @@ features = stc.compute_features(
 
 ---
 
-### Block-Vandermonde Fitting (`algorithms/block_vandermonde_fit.py`)
+### Kronecker-Vandermonde Fitting (`algorithms/kronecker_vandermonde_fit.py`)
 
 #### `class NestedDMD`
 
@@ -206,23 +206,23 @@ features = nested.compute_features(
 
 ---
 
-#### `class FixedEigenvalueBVFit`
+#### `class FixedEigenvalueKVFit`
 
 ```python
-febvf = FixedEigenvalueBVFit(
+fekvf = FixedEigenvalueKVFit(
     num_delays=5,
     spatial_dim=50
 )
 
-features = febvf.compute_features(
+features = fekvf.compute_features(
     modes,        # (D*L, M)
     eigenvalues,  # (M,)
     plot=False
 )
-# Returns: {"BV-Fit": scores (M,)}
+# Returns: {"KV-Fit": scores (M,)}
 ```
 
-**Metric:** Closed-form block-Vandermonde fit using external eigenvalues.
+**Metric:** Closed-form kronecker-Vandermonde fit using external eigenvalues.
 
 ---
 
@@ -384,7 +384,7 @@ methods:
   - GAP
   - STC
   - NestedDMD
-  - FixedEigenvalueBVFit
+  - FixedEigenvalueKVFit
   - ESL-Norm
   - NestedDMD+ESL      # Combination method
 

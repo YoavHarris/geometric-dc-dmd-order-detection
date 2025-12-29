@@ -151,7 +151,7 @@ class SpuriousEigenvalueExperiment:
         L: int,
     ) -> NDArray[np.complexfloating]:
         """
-        Create delay-embedded true modes with Block-Vandermonde structure.
+        Create delay-embedded true modes with Kronecker-Vandermonde structure.
 
         Args:
             true_modes: True mode shapes, shape (D, m).
@@ -159,7 +159,7 @@ class SpuriousEigenvalueExperiment:
             L: Embedding length.
 
         Returns:
-            Delay-embedded modes with BV structure, shape (DL, m).
+            Delay-embedded modes with KV structure, shape (DL, m).
         """
         true_modes_embedded = np.zeros((L * self.D, self.m), dtype=complex)
 
@@ -167,7 +167,7 @@ class SpuriousEigenvalueExperiment:
             true_mode_spatial = true_modes[:, mode_idx]
             true_eig = true_eigenvalues[mode_idx]
 
-            # Create BV structure: [phi, lambda*phi, lambda^2*phi, ..., lambda^(L-1)*phi]
+            # Create KV structure: [phi, lambda*phi, lambda^2*phi, ..., lambda^(L-1)*phi]
             for delay_idx in range(L):
                 start_idx = delay_idx * self.D
                 end_idx = start_idx + self.D
