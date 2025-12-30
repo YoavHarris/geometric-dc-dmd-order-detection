@@ -24,10 +24,13 @@ import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 import yaml
+import fire
 from tqdm import tqdm
+from scipy.linalg import qr  # scipy implementation to allow pivoting
 
 from utils.data_generation import DMDDataGenerator
 from utils.dmd_utils import fit_dmd
+from dmd.dmd_tools import DelayEmbedding
 
 
 # =============================================================================
@@ -75,9 +78,8 @@ def classify_modes_by_ssl(
     """
     M = recovered_modes.shape[1]
 
-    # Compute signal subspace projector
-    # CRITICAL: Signal basis must be orthonormal for P = Q @ Q^H
-    signal_basis_orthonormal, _ = np.linalg.qr(signal_basis)
+    # Compute signal subspace projector (signal basis must be orthonormal for P = Q @ Q^H)
+    signal_basis_orthonormal, _ = qr(signal_basis, mode="economic")
 
     # Compute leakage projector: I - P_signal (projects onto signal complement)
     signal_leakage_projector = compute_leakage_projector(signal_basis_orthonormal)
@@ -97,6 +99,148 @@ def classify_modes_by_ssl(
     mode_labels[sorted_indices[:num_true_modes]] = "true"
 
     return mode_labels
+
+
+def select_subspaces_via_pivoted_qr(
+    U_M: NDArray[np.complexfloating],
+    true_modes_embedded: NDArray[np.complexfloating],
+    m: int,
+) -> tuple[NDArray[np.int_], NDArray[np.int_], NDArray[np.complexfloating]]:
+    """
+    Select U_m and U_tail from U_M using pivoted QR.
+
+    Uses pivoted QR on Q^H @ U_M to identify the best m-subset of U_M
+    that aligns with the true signal subspace Q. The remaining M-m columns
+    form U_tail (the spurious subspace).
+
+    Args:
+        U_M: First M left singular vectors of embedded snapshot matrix, shape (DL, M).
+        true_modes_embedded: True embedded modes, shape (DL, m).
+        m: Number of true modes.
+
+    Returns:
+        Tuple of (I_m, I_tail, U_tail) where:
+        - I_m: Column indices of U_M that best align with signal subspace, shape (m,).
+        - I_tail: Remaining column indices (spurious subspace), shape (M-m,).
+        - U_tail: The spurious subspace U_M[:, I_tail], shape (DL, M-m).
+    """
+    M = U_M.shape[1]
+
+    # Compute Q: orthonormal basis of true signal subspace
+    Q, _ = qr(true_modes_embedded, mode="economic")
+
+    # Pivoted QR to select columns
+    # G = Q^H @ U_M, shape (m, M)
+    G = Q.conj().T @ U_M
+
+    # Pivoted QR on G (not G.T!) to choose informative columns
+    # With full mode, piv will be a permutation of all M columns
+    _, _, piv = qr(G, pivoting=True, mode="economic")
+
+    # First m indices are I_m (best aligned), rest are I_tail
+    I_m = piv[:m]
+    I_tail = piv[m:]
+
+    # Extract U_tail
+    U_tail = U_M[:, I_tail]
+
+    return I_m, I_tail, U_tail
+
+
+def compute_subspace_boundary_norms(
+    U_subspace: NDArray[np.complexfloating],
+    D: int,
+    L: int,
+) -> tuple[float, float]:
+    """
+    Compute mu_L and nu_L: spectral norms of first and last D-blocks of a subspace.
+
+    Args:
+        U_subspace: Subspace basis matrix, shape (DL, rank).
+        D: Spatial dimension.
+        L: Embedding length.
+
+    Returns:
+        Tuple of (mu_L, nu_L) where:
+        - mu_L: Spectral norm of first D rows (U[0:D, :]).
+        - nu_L: Spectral norm of last D rows (U[(L-1)*D:L*D, :]).
+    """
+    U_first = U_subspace[0:D, :]
+    U_last = U_subspace[(L - 1) * D : L * D, :]
+
+    mu_L = float(np.linalg.norm(U_first, 2))
+    nu_L = float(np.linalg.norm(U_last, 2))
+
+    return mu_L, nu_L
+
+
+def build_eigenvalue_result_dict(
+    L: int,
+    trial_id: int,
+    setting: str,
+    eigenvalue: complex,
+    mode_index: int,
+    mu_L: float,
+    nu_L: float,
+    svd_rank_used: int,
+    tail_rank_used: int,
+    system_params: dict[str, Any],
+    signal_params: dict[str, Any],
+    random_seed: int,
+) -> dict[str, Any]:
+    """
+    Build a dictionary for a single eigenvalue result row.
+
+    Args:
+        L: Embedding length.
+        trial_id: Trial iteration number.
+        setting: Either "mixture_spurious" or "noise_only".
+        eigenvalue: Complex eigenvalue.
+        mode_index: Index of this eigenvalue.
+        mu_L: Subspace boundary norm (first block).
+        nu_L: Subspace boundary norm (last block).
+        svd_rank_used: Rank used in SVD.
+        tail_rank_used: Number of tail components.
+        system_params: Dict with D, N_used, N_cols, m, M.
+        signal_params: Dict with signal generation parameters.
+        random_seed: Random seed used.
+
+    Returns:
+        Dictionary containing all columns for CSV export.
+    """
+    mode_type = "spurious" if setting == "mixture_spurious" else "noise"
+
+    return {
+        # Experiment parameters
+        "L": L,
+        "trial_id": trial_id,
+        "mode_index": mode_index,
+        "setting": setting,
+        # Eigenvalue information
+        "eigenvalue_magnitude": float(np.abs(eigenvalue)),
+        "eigenvalue_real": float(np.real(eigenvalue)),
+        "eigenvalue_imag": float(np.imag(eigenvalue)),
+        "mode_type": mode_type,
+        # Subspace metrics
+        "mu_L": mu_L,
+        "nu_L": nu_L,
+        "svd_rank_used": svd_rank_used,
+        "tail_rank_used": tail_rank_used,
+        # System parameters
+        "spatial_dim": system_params["D"],
+        "num_timesteps": system_params["N_used"],
+        "N_cols": system_params["N_cols"],
+        "num_modes": system_params["m"],
+        "max_rank": system_params["M"],
+        # Signal parameters
+        "signal_eigenvalue_magnitude": signal_params["eigenvalue_magnitude"],
+        "frequency_separation": signal_params["frequency_separation"],
+        "snr_db": signal_params["snr_db"],
+        "top_amplitude": signal_params["top_amplitude"],
+        "noise_mode": signal_params["noise_mode"],
+        # Random seed
+        "random_seed": random_seed,
+    }
 
 
 # =============================================================================
@@ -131,6 +275,13 @@ class SpuriousEigenvalueExperiment:
         self.M = self.sys_cfg["max_rank"]  # DMD truncation rank
         self.D = self.sys_cfg["spatial_dim"]  # spatial dimension
 
+        # Validate that M > m (need at least one spurious mode)
+        if self.M <= self.m:
+            raise ValueError(
+                f"max_rank (M={self.M}) must be greater than num_modes (m={self.m}). "
+                f"Need at least M = m+1 to have spurious modes."
+            )
+
         self.L_values = self.exp_cfg["L_values"]  # embedding lengths to test
         self.n_mc = self.exp_cfg["n_mc_iterations"]  # MC iterations per L
         self.base_seed = self.exp_cfg.get("base_random_seed", 42)
@@ -144,7 +295,7 @@ class SpuriousEigenvalueExperiment:
         self.N_cols_base = self.N_base - self.L_min  # Effective samples at L_min
         self.oversampling_base = self.N_cols_base / (self.D * self.L_min)
 
-    def _create_bv_embedded_modes(
+    def _create_kv_embedded_modes(
         self,
         true_modes: NDArray[np.complexfloating],
         true_eigenvalues: NDArray[np.complexfloating],
@@ -210,13 +361,13 @@ class SpuriousEigenvalueExperiment:
                 f"Valid options: 'fixed_N', 'fixed_N_cols', 'fixed_N_cols_over_DL'"
             )
 
-    def _generate_data_and_run_dmd(
+    def _generate_mixture_data(
         self,
         L: int,
         seed: int,
-    ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
+    ) -> tuple[NDArray, NDArray, NDArray, NDArray, NDArray]:
         """
-        Generate data and run DMD with delay embedding.
+        Generate mixture data (signal + noise) for one trial.
 
         Args:
             L: Embedding length (number of delays).
@@ -224,9 +375,10 @@ class SpuriousEigenvalueExperiment:
 
         Returns:
             Tuple of:
-            - recovered_eigenvalues: All recovered eigenvalues, shape (M,).
-            - recovered_modes: All recovered DMD modes, shape (DL, M).
+            - X_noisy: Noisy snapshot matrix, shape (D, N).
+            - X_clean: Clean signal snapshot matrix, shape (D, N).
             - true_eigenvalues: Ground truth eigenvalues, shape (m,).
+            - true_modes: True mode shapes, shape (D, m).
             - true_modes_embedded: Delay-embedded true modes, shape (DL, m).
         """
         # Compute N based on sample size mode
@@ -246,97 +398,197 @@ class SpuriousEigenvalueExperiment:
         X_noisy, X_clean, true_eigenvalues, true_modes, true_amplitudes = (
             generator.generate(
                 n_spatial=self.D,
-                n_timesteps=N,  # Use computed N instead of fixed self.N
+                n_timesteps=N,
                 n_modes=self.m,
             )
         )
 
         # Embed true modes for SSL classification
-        true_modes_embedded = self._create_bv_embedded_modes(
+        true_modes_embedded = self._create_kv_embedded_modes(
             true_modes, true_eigenvalues, L
         )
 
-        # Run DMD
+        return X_noisy, X_clean, true_eigenvalues, true_modes, true_modes_embedded
+
+    def _run_dmd(
+        self,
+        X_noisy: NDArray,
+        L: int,
+        svd_rank: int,
+    ) -> tuple[NDArray, NDArray]:
+        """
+        Run DMD on snapshot data.
+
+        Args:
+            X_noisy: Noisy snapshot matrix, shape (D, N).
+            L: Embedding length (number of delays).
+            svd_rank: SVD truncation rank.
+
+        Returns:
+            Tuple of:
+            - recovered_eigenvalues: All recovered eigenvalues, shape (svd_rank,).
+            - recovered_modes: All recovered DMD modes, shape (DL, svd_rank).
+        """
         dmd = fit_dmd(
             X_noisy,
-            svd_rank=self.M,
+            svd_rank=svd_rank,
             mode="exact",
             num_delays=L,
         )
 
-        return dmd.eigs, dmd.modes, true_eigenvalues, true_modes_embedded
+        return dmd.eigs, dmd.modes
 
     def _run_single_iteration(
         self,
         L: int,
-        mc_iter: int,
+        trial_id: int,
     ) -> list[dict[str, Any]]:
         """
-        Run a single Monte Carlo iteration.
+        Run a single Monte Carlo iteration with both mixture and noise-only runs.
 
         Args:
             L: Embedding length.
-            mc_iter: Monte Carlo iteration number.
+            trial_id: Trial iteration number (formerly mc_iter).
 
         Returns:
-            List of dictionaries, one per spurious eigenvalue, containing all
-            parameters and eigenvalue information.
+            List of dictionaries containing eigenvalues and metrics from both
+            mixture_spurious and noise_only settings.
         """
         # Deterministic random seed
-        seed = self.base_seed + L * 1000 + mc_iter
+        seed = self.base_seed + L * 1000 + trial_id
 
         # Compute N for this L
         N_used = self._compute_num_timesteps(L)
         N_cols = N_used - L
 
-        # Generate data and run DMD
-        (
-            recovered_eigenvalues,
-            recovered_modes,
-            true_eigenvalues,
-            true_modes_embedded,
-        ) = self._generate_data_and_run_dmd(L, seed)
+        # Common parameter dicts for result building
+        system_params = {
+            "D": self.D,
+            "N_used": N_used,
+            "N_cols": N_cols,
+            "m": self.m,
+            "M": self.M,
+        }
+        signal_params = {
+            "eigenvalue_magnitude": self.sig_cfg["eigenvalue_magnitude"],
+            "frequency_separation": self.sig_cfg["frequency_separation"],
+            "snr_db": self.sig_cfg["snr_db"],
+            "top_amplitude": self.sig_cfg.get("top_amplitude", 1.0),
+            "noise_mode": self.sig_cfg.get("noise_mode", "gaussian"),
+        }
 
-        # Classify modes as true or spurious
-        mode_labels = classify_modes_by_ssl(
-            recovered_modes,
+        # =====================================================================
+        # MIXTURE RUN (signal + noise)
+        # =====================================================================
+
+        # Generate mixture data
+        (
+            X_noisy,
+            X_clean,
+            true_eigenvalues,
+            true_modes,
             true_modes_embedded,
-            self.m,
+        ) = self._generate_mixture_data(L, seed)
+
+        # Run DMD on the mixture data
+        recovered_eigenvalues, recovered_modes = self._run_dmd(
+            X_noisy, L, svd_rank=self.M
         )
 
-        # Extract spurious eigenvalues
+        # Compute U_M from the SAME X_noisy data
+        embedding = DelayEmbedding(L)
+        X_emb = embedding.transform(X_noisy)
+        X_emb_0 = X_emb[:, :-1]
+        U, _, _ = np.linalg.svd(X_emb_0, full_matrices=False)
+        U_M = U[:, : self.M]
+
+        # Select U_tail using pivoted QR
+        I_m, I_tail, U_tail = select_subspaces_via_pivoted_qr(
+            U_M, true_modes_embedded, self.m
+        )
+
+        # High-SNR validation diagnostic
+        if self.sig_cfg["snr_db"] >= 50:
+            overlap_count = len(set(I_m) & set(range(self.m)))
+            if overlap_count < self.m - 1:
+                print(
+                    f"WARNING: High SNR ({self.sig_cfg['snr_db']} dB) but I_m overlap is only {overlap_count}/{self.m}"
+                )
+                print(f"  I_m = {I_m}, expected first m indices")
+
+        # Compute mu_L and nu_L from U_tail
+        mu_L_mixture, nu_L_mixture = compute_subspace_boundary_norms(U_tail, self.D, L)
+
+        # Classify modes and extract spurious eigenvalues
+        mode_labels = classify_modes_by_ssl(
+            recovered_modes, true_modes_embedded, self.m
+        )
         spurious_mask = mode_labels == "spurious"
         spurious_eigenvalues = recovered_eigenvalues[spurious_mask]
         spurious_indices = np.where(spurious_mask)[0]
 
-        # Build results
+        # Build results for mixture_spurious setting
         results = []
         for idx, eig in zip(spurious_indices, spurious_eigenvalues):
-            result = {
-                # Experiment parameters
-                "L": L,
-                "mc_iter": mc_iter,
-                "mode_index": int(idx),
-                # Eigenvalue information
-                "eigenvalue_magnitude": float(np.abs(eig)),
-                "eigenvalue_real": float(np.real(eig)),
-                "eigenvalue_imag": float(np.imag(eig)),
-                "mode_type": "spurious",
-                # System parameters (for identifiability)
-                "spatial_dim": self.D,
-                "num_timesteps": N_used,  # Actual N used for this L
-                "N_cols": N_cols,  # Effective samples (N - L)
-                "num_modes": self.m,
-                "max_rank": self.M,
-                # Signal parameters
-                "signal_eigenvalue_magnitude": self.sig_cfg["eigenvalue_magnitude"],
-                "frequency_separation": self.sig_cfg["frequency_separation"],
-                "snr_db": self.sig_cfg["snr_db"],
-                "top_amplitude": self.sig_cfg.get("top_amplitude", 1.0),
-                "noise_mode": self.sig_cfg.get("noise_mode", "gaussian"),
-                # Random seed (for reproducibility)
-                "random_seed": seed,
-            }
+            result = build_eigenvalue_result_dict(
+                L=L,
+                trial_id=trial_id,
+                setting="mixture_spurious",
+                eigenvalue=eig,
+                mode_index=int(idx),
+                mu_L=mu_L_mixture,
+                nu_L=nu_L_mixture,
+                svd_rank_used=self.M,
+                tail_rank_used=self.M - self.m,
+                system_params=system_params,
+                signal_params=signal_params,
+                random_seed=seed,
+            )
+            results.append(result)
+
+        # =====================================================================
+        # NOISE-ONLY RUN (using paired residual)
+        # =====================================================================
+
+        # Use paired noise: X_noise = X_noisy - X_clean
+        X_noise = X_noisy - X_clean
+
+        # Delay embed and compute U_noise
+        X_noise_emb = embedding.transform(X_noise)
+        X_noise_emb_0 = X_noise_emb[:, :-1]
+        U_noise_full, _, _ = np.linalg.svd(X_noise_emb_0, full_matrices=False)
+        rank_noise = self.M - self.m
+        U_noise = U_noise_full[:, :rank_noise]
+
+        # Compute mu_L and nu_L from U_noise
+        mu_L_noise, nu_L_noise = compute_subspace_boundary_norms(U_noise, self.D, L)
+
+        # Run DMD on noise-only data to get eigenvalues
+        noise_eigenvalues, _ = self._run_dmd(X_noise, L, svd_rank=rank_noise)
+
+        # Sanity check: expect exactly rank_noise eigenvalues
+        if len(noise_eigenvalues) != rank_noise:
+            raise RuntimeError(
+                f"Expected {rank_noise} noise eigenvalues but DMD returned {len(noise_eigenvalues)}. "
+                f"This may indicate a change in fit_dmd behavior."
+            )
+
+        # Build results for noise_only setting
+        for idx, eig in enumerate(noise_eigenvalues):
+            result = build_eigenvalue_result_dict(
+                L=L,
+                trial_id=trial_id,
+                setting="noise_only",
+                eigenvalue=eig,
+                mode_index=idx,
+                mu_L=mu_L_noise,
+                nu_L=nu_L_noise,
+                svd_rank_used=rank_noise,
+                tail_rank_used=rank_noise,
+                system_params=system_params,
+                signal_params=signal_params,
+                random_seed=seed,  # Same base seed for pairing
+            )
             results.append(result)
 
         return results
@@ -356,8 +608,8 @@ class SpuriousEigenvalueExperiment:
 
         with tqdm(total=total_runs, desc="Running experiment") as pbar:
             for L in self.L_values:
-                for mc_iter in range(self.n_mc):
-                    results = self._run_single_iteration(L, mc_iter)
+                for trial_id in range(self.n_mc):
+                    results = self._run_single_iteration(L, trial_id)
                     all_results.extend(results)
                     pbar.update(1)
 
@@ -394,9 +646,11 @@ class SpuriousEigenvalueExperiment:
         print("=" * 70)
         print("EXPERIMENT COMPLETED")
         print("=" * 70)
-        print(f"Total spurious eigenvalues collected: {len(df)}")
-        expected = sum((self.M - self.m) * self.n_mc for _ in self.L_values)
-        print(f"Expected: {expected}")
+        print(f"Total eigenvalues collected: {len(df)}")
+        # Expected: (M-m) spurious + (M-m) noise per trial
+        expected_per_trial = 2 * (self.M - self.m)
+        expected = expected_per_trial * self.n_mc * len(self.L_values)
+        print(f"Expected: {expected} ({expected_per_trial} per trial)")
         print("=" * 70)
         print()
 
@@ -438,40 +692,29 @@ def load_config(config_path: str) -> dict[str, Any]:
     return config
 
 
-def main():
-    """Main entry point for CLI."""
-    import argparse
+def main(
+    config: str = "analysis/spurious_eigenvalues_and_L/spurious_eigs_L_config.yaml",
+    output: str = "results/spurious_eigs_L_results.csv",
+):
+    """
+    Run spurious eigenvalue magnitude vs embedding length L experiment.
 
-    parser = argparse.ArgumentParser(
-        description="Collect spurious eigenvalue magnitude data vs embedding length L"
-    )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="analysis/spurious_eigs_L_data_config.yaml",
-        help="Path to config YAML file",
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="results/spurious_eigs_L_results.csv",
-        help="Output CSV file path",
-    )
-
-    args = parser.parse_args()
-
+    Args:
+        config: Path to config YAML file
+        output: Output CSV file path
+    """
     # Load config and create experiment
-    config = load_config(args.config)
-    experiment = SpuriousEigenvalueExperiment(config)
+    config_dict = load_config(config)
+    experiment = SpuriousEigenvalueExperiment(config_dict)
 
     # Run experiment
     df = experiment.run()
 
     # Save results
-    experiment.save(df, args.output)
+    experiment.save(df, output)
 
     print("Done!")
 
 
 if __name__ == "__main__":
-    main()
+    fire.Fire(main)
