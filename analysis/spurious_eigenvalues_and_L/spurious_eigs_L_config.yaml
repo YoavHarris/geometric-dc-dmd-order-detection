@@ -32,18 +32,34 @@ output:
   csv_filename: 'fixed_N_cols_results.csv'
 
 plotting:
+  # Data and style paths
   data_csv_path: 'C:\Users\Yoav\dcdmd_experiments\spurious_eigenvalues_L_251125\spurious_eigs_L_results.csv'
   mplstyle_path: '..\figures\mplstyle_files\chaos_single.mplstyle'
 
+  # X-axis limits for CDF and PDF plots
   xlim: [0.85, 1.02]
+  
+  # Subset of L values for appendix comparison plots
+  # If not provided, defaults to [min, median, max]
+  L_subset: [2, 22, 62, 122]
 
+  # KDE/PDF parameters
   kde:
     x_eval_points: 500
     bandwidth: scott
 
+  # Minimum eigenvalue statistics (mixture-only plot)
   min_stats:
     interval_percentiles: [5, 95]
     show_mean: true
 
+  # Color scheme
   colors:
     colormap: viridis
+  
+  # Settings comparison configuration
+  compare_settings:
+    enabled: true
+    mixture_label: "Mixture (spurious)"
+    noise_label: "Noise-only"
+    overlay: true

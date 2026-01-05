@@ -174,6 +174,140 @@ def compute_subspace_boundary_norms(
     return mu_L, nu_L
 
 
+def _compute_reduced_propagator(
+    U_M: NDArray[np.complexfloating],
+    S_M: NDArray[np.floating],
+    V_M: NDArray[np.complexfloating],
+    X_emb_1: NDArray[np.complexfloating],
+) -> NDArray[np.complexfloating]:
+    """
+    Compute the reduced propagator A_M in the truncated SVD basis.
+
+    Uses the formula: A_M = (U_M^H @ X_emb_1 @ V_M) * (1.0 / S_M)
+    where the division is applied via broadcasting on columns.
+
+    Args:
+        U_M: First M left singular vectors, shape (DL, M).
+        S_M: First M singular values, shape (M,).
+        V_M: First M right singular vectors, shape (ncols, M).
+        X_emb_1: Second embedded snapshot matrix X[:, 1:], shape (DL, ncols).
+
+    Returns:
+        Reduced propagator matrix A_M, shape (M, M).
+    """
+    # Compute G = U_M^H @ X_emb_1 @ V_M
+    G = U_M.conj().T @ X_emb_1 @ V_M
+
+    # Scale columns by 1/S_M using broadcasting
+    A_M = G * (1.0 / S_M)[None, :]
+
+    return A_M
+
+
+def _compute_coupling_metrics(
+    A_M: NDArray[np.complexfloating],
+    I_m: NDArray[np.int_],
+    I_tail: NDArray[np.int_],
+) -> tuple[float, float, float]:
+    """
+    Compute coupling metrics from the reduced propagator A_M.
+
+    Computes three metrics:
+    1. max_coupling_norm: Maximum spectral norm of off-diagonal blocks
+    2. distance_to_spectrum: Minimum distance between diagonal block spectra (0 if spectra touch)
+    3. resolvent_norm: Maximum resolvent norm over tail eigenvalues (inf if resolvent explodes)
+
+    Args:
+        A_M: Reduced propagator matrix, shape (M, M).
+        I_m: Indices of signal subspace in A_M, shape (m,).
+        I_tail: Indices of spurious subspace in A_M, shape (M-m,).
+
+    Returns:
+        Tuple of (max_coupling_norm, distance_to_spectrum, resolvent_norm).
+        Returns NaN for metrics that cannot be computed (empty blocks or eigenvalue failure).
+        Returns inf for resolvent_norm if resolvent explodes.
+    """
+    m = len(I_m)
+    M_minus_m = len(I_tail)
+
+    # Handle edge cases: empty blocks
+    if m == 0 or M_minus_m == 0:
+        return np.nan, np.nan, np.nan
+
+    # Extract blocks using advanced indexing
+    A_mm = A_M[np.ix_(I_m, I_m)]
+    A_tail = A_M[np.ix_(I_tail, I_tail)]
+    Gamma12 = A_M[np.ix_(I_m, I_tail)]
+    Gamma21 = A_M[np.ix_(I_tail, I_m)]
+
+    # =========================================================================
+    # 1. Compute max_coupling_norm
+    # =========================================================================
+    if Gamma12.size > 0:
+        svals_12 = np.linalg.svdvals(Gamma12)
+        g12 = float(svals_12[0]) if len(svals_12) > 0 else 0.0
+    else:
+        g12 = 0.0
+
+    if Gamma21.size > 0:
+        svals_21 = np.linalg.svdvals(Gamma21)
+        g21 = float(svals_21[0]) if len(svals_21) > 0 else 0.0
+    else:
+        g21 = 0.0
+
+    max_coupling_norm = max(g12, g21)
+
+    # =========================================================================
+    # 2. Compute distance_to_spectrum
+    # =========================================================================
+    try:
+        eig_mm = np.linalg.eigvals(A_mm)
+        eig_tail = np.linalg.eigvals(A_tail)
+
+        # Check for NaN eigenvalues - this indicates failure
+        if np.any(np.isnan(eig_mm)) or np.any(np.isnan(eig_tail)):
+            return np.nan, np.nan, np.nan
+
+        # Vectorized pairwise distance computation
+        # dist_mat[i, j] = |eig_tail[i] - eig_mm[j]|
+        dist_mat = np.abs(eig_tail[:, None] - eig_mm[None, :])
+        distance_to_spectrum = float(dist_mat.min())  # Will be 0 if spectra touch
+
+    except np.linalg.LinAlgError:
+        # Eigenvalue computation failed
+        return np.nan, np.nan, np.nan
+
+    # =========================================================================
+    # 3. Compute resolvent_norm
+    # =========================================================================
+    try:
+        resolvent_norms = []
+        I_mat = np.eye(m, dtype=A_mm.dtype)
+
+        for lam in eig_tail:
+            # Compute (lambda * I - A_mm)
+            M_lam = lam * I_mat - A_mm
+
+            # Compute smallest singular value
+            svals = np.linalg.svdvals(M_lam)
+            smin = float(svals[-1])
+
+            # Resolvent norm is 1 / sigma_min
+            # If sigma_min is very small, resolvent explodes -> report inf
+            if smin < 1e-14:  # Numerical threshold for near-singularity
+                resolvent_norms.append(np.inf)
+            else:
+                resolvent_norms.append(1.0 / smin)
+
+        resolvent_norm = max(resolvent_norms) if resolvent_norms else np.nan
+
+    except np.linalg.LinAlgError:
+        # SVD computation failed
+        resolvent_norm = np.nan
+
+    return max_coupling_norm, distance_to_spectrum, resolvent_norm
+
+
 def build_eigenvalue_result_dict(
     L: int,
     trial_id: int,
@@ -187,6 +321,9 @@ def build_eigenvalue_result_dict(
     system_params: dict[str, Any],
     signal_params: dict[str, Any],
     random_seed: int,
+    max_coupling_norm: float = np.nan,
+    distance_to_spectrum: float = np.nan,
+    resolvent_norm: float = np.nan,
 ) -> dict[str, Any]:
     """
     Build a dictionary for a single eigenvalue result row.
@@ -204,6 +341,9 @@ def build_eigenvalue_result_dict(
         system_params: Dict with D, N_used, N_cols, m, M.
         signal_params: Dict with signal generation parameters.
         random_seed: Random seed used.
+        max_coupling_norm: Maximum spectral norm of off-diagonal coupling blocks (default: NaN).
+        distance_to_spectrum: Minimum distance between diagonal block spectra (default: NaN).
+        resolvent_norm: Maximum resolvent norm over tail eigenvalues (default: NaN).
 
     Returns:
         Dictionary containing all columns for CSV export.
@@ -226,6 +366,10 @@ def build_eigenvalue_result_dict(
         "nu_L": nu_L,
         "svd_rank_used": svd_rank_used,
         "tail_rank_used": tail_rank_used,
+        # Coupling metrics
+        "max_coupling_norm": max_coupling_norm,
+        "distance_to_spectrum": distance_to_spectrum,
+        "resolvent_norm": resolvent_norm,
         # System parameters
         "spatial_dim": system_params["D"],
         "num_timesteps": system_params["N_used"],
@@ -496,11 +640,16 @@ class SpuriousEigenvalueExperiment:
         )
 
         # Compute U_M from the SAME X_noisy data
+        # Keep full SVD to compute reduced propagator A_M
         embedding = DelayEmbedding(L)
         X_emb = embedding.transform(X_noisy)
         X_emb_0 = X_emb[:, :-1]
-        U, _, _ = np.linalg.svd(X_emb_0, full_matrices=False)
+        X_emb_1 = X_emb[:, 1:]
+        
+        U, S, Vh = np.linalg.svd(X_emb_0, full_matrices=False)
         U_M = U[:, : self.M]
+        S_M = S[: self.M]
+        V_M = Vh.conj().T[:, : self.M]  # Shape: (ncols, M)
 
         # Select U_tail using pivoted QR
         I_m, I_tail, U_tail = select_subspaces_via_pivoted_qr(
@@ -518,6 +667,19 @@ class SpuriousEigenvalueExperiment:
 
         # Compute mu_L and nu_L from U_tail
         mu_L_mixture, nu_L_mixture = compute_subspace_boundary_norms(U_tail, self.D, L)
+
+        # Compute reduced propagator A_M
+        A_M = _compute_reduced_propagator(U_M, S_M, V_M, X_emb_1)
+
+        # Compute coupling metrics
+        max_coupling_norm, distance_to_spectrum, resolvent_norm = (
+            _compute_coupling_metrics(A_M, I_m, I_tail)
+        )
+
+        # If eigenvalue computation failed (returned NaN), skip this trial
+        if np.isnan(distance_to_spectrum) and not (len(I_m) == 0 or len(I_tail) == 0):
+            # Skip trial only if NaN is due to eigenvalue failure, not empty blocks
+            return []
 
         # Classify modes and extract spurious eigenvalues
         mode_labels = classify_modes_by_ssl(
@@ -543,6 +705,9 @@ class SpuriousEigenvalueExperiment:
                 system_params=system_params,
                 signal_params=signal_params,
                 random_seed=seed,
+                max_coupling_norm=max_coupling_norm,
+                distance_to_spectrum=distance_to_spectrum,
+                resolvent_norm=resolvent_norm,
             )
             results.append(result)
 
