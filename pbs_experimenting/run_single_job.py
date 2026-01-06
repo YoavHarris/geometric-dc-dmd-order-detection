@@ -42,6 +42,7 @@ from analysis.subspace_analysis import compute_subspace_principal_angles
 DELAY_EMBEDDING_METHODS = {
     "STC",
     "NestedDMD",
+    "NestedDMD_OnlyRecon",
     "FixedEigenvalueKVFit",
     "NestedDMD+ESR",
     "FixedEigenvalueKVFit+ESR",
@@ -253,7 +254,7 @@ class MethodEvaluator:
 
         # GAP statistic
         if "GAP" in self.enabled_methods:
-            order_estimates["GAP"] = gap_ranks(signal).item()
+            order_estimates["GAP"] = gap_ranks(signal, num_delays=self.num_delays)
 
         # ExactModeNorm
         if "ExactModeNorm" in self.enabled_methods:
@@ -384,6 +385,13 @@ class MethodEvaluator:
             )
             order_estimates["NestedDMD"] = order
             pred_masks["NestedDMD"] = labels
+
+        if "NestedDMD_OnlyRecon" in methods:
+            # Use only reconstruction score (exclude eigenvalue consistency)
+            recon_only_scores = {"Reconstruction": scores_cache["NestedDMD"]["Reconstruction"]}
+            labels, order = cluster_scores(recon_only_scores, self.clustering_config)
+            order_estimates["NestedDMD_OnlyRecon"] = order
+            pred_masks["NestedDMD_OnlyRecon"] = labels
 
         if "FixedEigenvalueKVFit" in methods:
             labels, order = cluster_scores(
