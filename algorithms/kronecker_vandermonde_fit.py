@@ -193,11 +193,27 @@ class NestedDMD(BlockVandermondeFit):
 
     Fits rank-1 DMD to each mode matrix independently and computes:
     - Reconstruction error: how well rank-1 DMD captures the mode
-    - Eigenvalue consistency: agreement between external and nested eigenvalue
+    - Eigenvalue consistency (optional): agreement between external and nested eigenvalue
 
     Implements Algorithm "KV-fit via nested rank-1 DMD" from Section 4.3
     (bv_structure_and_nested_DMD.tex, lines 360-385).
+
+    Parameters
+    ----------
+    use_eigenvalue_consistency : bool, default False
+        If True, compute and return eigenvalue consistency feature.
+        If False, only return reconstruction error.
     """
+
+    def __init__(
+        self,
+        num_delays: int,
+        spatial_dim: int,
+        epsilon: float = float(np.finfo(np.float64).eps),
+        use_eigenvalue_consistency: bool = False,
+    ):
+        super().__init__(num_delays, spatial_dim, epsilon)
+        self.use_eigenvalue_consistency = use_eigenvalue_consistency
 
     def _compute_strategy(
         self,
@@ -235,33 +251,45 @@ class NestedDMD(BlockVandermondeFit):
             dtype=np.complex128,
         )
 
-        # Compute eigenvalue consistency
-        consistency_errors = eigenvalue_distance(eigenvalues, nested_eigenvalues)
-
         # Convert to scores (larger = better)
-        # Use 0.5 factor for MSE to effectively score by log(RMSE)
         recon_scores = -0.5 * np.log(recon_errors + self.epsilon)
-        consistency_scores = -np.log(consistency_errors + self.epsilon)
 
-        return {
+        result = {
             "Reconstruction": recon_scores.astype(np.float32),
-            "Eigenvalue-Consistency": consistency_scores.astype(np.float32),
             "Reconstruction_raw": recon_errors.astype(np.float32),
-            "Eigenvalue-Consistency_raw": consistency_errors.astype(np.float32),
         }
 
-    def _plot_features(self, features: dict[str, NDArray]):
-        """Plot 2D scatter of nested DMD scores."""
-        scores = np.stack(
-            [features["Reconstruction"], features["Eigenvalue-Consistency"]], axis=1
-        )
+        # Conditionally add eigenvalue consistency features
+        if self.use_eigenvalue_consistency:
+            # Compute eigenvalue consistency
+            consistency_errors = eigenvalue_distance(eigenvalues, nested_eigenvalues)
+            consistency_scores = -np.log(consistency_errors + self.epsilon)
+            result["Eigenvalue-Consistency"] = consistency_scores.astype(np.float32)
+            result["Eigenvalue-Consistency_raw"] = consistency_errors.astype(np.float32)
 
-        scatter_scores_2d(
-            scores,
-            score_names=["Reconstruction", "Eigenvalue-Consistency"],
-            title="Nested DMD Scores",
-            show_id=True,
-        )
+        return result
+
+    def _plot_features(self, features: dict[str, NDArray]):
+        """Plot nested DMD scores."""
+        if self.use_eigenvalue_consistency and "Eigenvalue-Consistency" in features:
+            # Plot 2D scatter when both features available
+            scores = np.stack(
+                [features["Reconstruction"], features["Eigenvalue-Consistency"]], axis=1
+            )
+            scatter_scores_2d(
+                scores,
+                score_names=["Reconstruction", "Eigenvalue-Consistency"],
+                title="Nested DMD Scores",
+                show_id=True,
+            )
+        else:
+            # Plot 1D scatter when only reconstruction available
+            scatter_scores_1d(
+                features["Reconstruction"],
+                "Reconstruction",
+                title="Nested DMD Reconstruction Score",
+                show_id=True,
+            )
 
 
 # Concrete strategy 2: Fixed-Eigenvalue KV Fit

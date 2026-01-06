@@ -1,6 +1,8 @@
 """Command-line interface for scan plotter."""
 
 import fire
+import yaml
+
 from .plotter import (
     SingleScanPlotter,
     PanelComposer,
@@ -236,7 +238,6 @@ class ScanPlotterCLI:
             base: (common settings)
             plots: (list of plot specs)
         """
-        import yaml
 
         with open(config_path, "r") as f:
             batch_cfg = yaml.safe_load(f)
