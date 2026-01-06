@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
+from dmd.dmd_tools import DelayEmbedding
 from utils.dmd_utils import fit_dmd
 
 
@@ -98,21 +99,35 @@ def compute_bic_rank(
     return best_rank
 
 
-def gap_ranks(data: NDArray[np.floating]) -> int:
+def gap_ranks(data: NDArray[np.floating], num_delays: int = 1) -> int | float:
     """
     Estimate optimal rank via the largest singular value gap.
 
     Parameters
     ----------
-    data : array
+    data : array (spatial_dim, num_snapshots)
         Data matrix to analyze.
+    num_delays : int, default 1
+        Number of delays for Hankel embedding. If > 1, applies delay
+        embedding before computing singular value gaps.
 
     Returns
     -------
-    int
+    int | float
         Estimated rank based on the largest singular value gap.
+        Returns np.nan if spatial_dim <= 1 and num_delays <= 1.
     """
-    _, singular_values, _ = np.linalg.svd(data, full_matrices=False)
+    # Apply delay embedding if requested
+    if num_delays > 1:
+        embedding = DelayEmbedding(num_delays)
+        data_to_analyze = embedding.transform(data)
+    elif data.shape[0] <= 1:
+        # GAP requires either spatial_dim > 1 or delay embedding
+        return np.nan
+    else:
+        data_to_analyze = data
+
+    _, singular_values, _ = np.linalg.svd(data_to_analyze, full_matrices=False)
     gaps = -np.diff(singular_values)
     largest_gap_index = np.argmax(gaps)
     return largest_gap_index + 1

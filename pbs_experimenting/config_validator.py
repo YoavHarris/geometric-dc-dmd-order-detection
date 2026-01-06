@@ -17,6 +17,7 @@ VALID_METHODS = {
     "ESR-Energy",
     "STC",
     "NestedDMD",
+    "NestedDMD_OnlyRecon",
     "FixedEigenvalueKVFit",
     "NestedDMD+ESR",
     "FixedEigenvalueKVFit+ESR",

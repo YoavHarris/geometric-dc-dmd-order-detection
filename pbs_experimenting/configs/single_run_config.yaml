@@ -44,6 +44,7 @@ methods:
   - STC
   - ESR-Energy
   - NestedDMD
+  - NestedDMD_OnlyRecon
   - FixedEigenvalueKVFit
   # Combination methods (merge features before clustering):
   - NestedDMD+ESR            # Combines NestedDMD features with ESR-Energy
