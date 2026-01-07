@@ -29,7 +29,7 @@ from tqdm import tqdm
 from scipy.linalg import qr  # scipy implementation to allow pivoting
 
 from utils.data_generation import DMDDataGenerator
-from utils.dmd_utils import fit_dmd
+from dmd.dmd_utils import fit_dmd
 from dmd.dmd_tools import DelayEmbedding
 
 
@@ -645,7 +645,7 @@ class SpuriousEigenvalueExperiment:
         X_emb = embedding.transform(X_noisy)
         X_emb_0 = X_emb[:, :-1]
         X_emb_1 = X_emb[:, 1:]
-        
+
         U, S, Vh = np.linalg.svd(X_emb_0, full_matrices=False)
         U_M = U[:, : self.M]
         S_M = S[: self.M]

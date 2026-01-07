@@ -249,7 +249,7 @@ def imshow_complex(im, title=None):
 
 
 def plot_mode_table(eigs: np.ndarray, amps: np.ndarray) -> None:
-    """Standalone figure with a table of ρ, θ (radians), and amplitude b."""
+    """Standalone figure with a table of rho, theta (radians), and amplitude b."""
     rho = np.abs(eigs)
     theta = np.mod(np.angle(eigs), 2 * np.pi)  # 0 … 2π
     b = amps

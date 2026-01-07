@@ -121,7 +121,7 @@ def get_bi_gaussian_noise(
     shape: tuple[int, int],
     p: float = 0.1,  # fraction of "high-mean" component
     total_variance: float = 1.0,
-    q: float = 3.0,  # separation (Δμ in units of σ)
+    q: float = 3.0,  # separation (Delta_mu in units of sigma)
     rng: np.random.Generator | None = None,
 ) -> NDArray[np.floating]:
     rng = rng or np.random.default_rng()

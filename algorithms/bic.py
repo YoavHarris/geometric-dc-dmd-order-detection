@@ -8,8 +8,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
-from dmd.dmd_tools import DelayEmbedding
-from utils.dmd_utils import fit_dmd
+from dmd.dmd_utils import fit_dmd
+from utils.delay_embedding import DelayEmbedding
 
 
 def compute_bic_rank(

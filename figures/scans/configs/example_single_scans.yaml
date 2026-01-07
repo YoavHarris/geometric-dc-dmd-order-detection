@@ -2,7 +2,7 @@
 # Uses relative paths to data/ and outputs/
 
 base:
-  csv_path: figures/scans/data/delay_embedded_combined_results.csv
+  csv_path: figures/scans/data/delay_embedded_combined_results.csv.gz
   metric: order_hit_prob
   methods:
     - BIC

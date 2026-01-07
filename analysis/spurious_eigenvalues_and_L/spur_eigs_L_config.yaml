@@ -1,0 +1,25 @@
+# Config for SNR=10 dataset
+system:
+  spatial_dim: 50
+  num_timesteps: 200
+  num_modes: 3
+  max_rank: 7
+  sample_size_mode: fixed_N_cols
+
+signal:
+  eigenvalue_magnitude: 0.99
+  frequency_separation: 0.02
+  snr_db: 10.0
+  top_amplitude: 1.0
+  noise_mode: gaussian
+  force_mode_orthogonality: true
+
+experiment:
+  L_values: [2, 12, 22, 32, 42, 52, 62, 72, 82, 92, 102, 112, 122]
+  n_mc_iterations: 2000
+  base_random_seed: 196
+
+output:
+  save_csv: true
+  output_dir: 'figures/spurious/outputs'
+  csv_filename: 'spurious_eigs_L_results.csv'

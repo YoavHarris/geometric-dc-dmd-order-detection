@@ -2,7 +2,7 @@
 # Self-contained example using relative paths
 
 base:
-  csv_path: figures/scans/data/no_delays_combined_results.csv
+  csv_path: figures/scans/data/no_delays_combined_results.csv.gz
   metric: order_hit_prob
   methods:
     - BIC

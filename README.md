@@ -80,7 +80,8 @@ Minimal, transparent DMD implementation with delay embedding (Hankel matrices).
 - **Reconstruction**: Time-step reconstruction and full data recovery
 
 ```python
-from dmd.dmd_tools import DMD, DelayEmbedding
+from dmd.dmd_tools import DelayEmbedding
+from dmd.custom_impl_dmd import DMD
 
 # With delay embedding
 embedding = DelayEmbedding(num_delays=5)

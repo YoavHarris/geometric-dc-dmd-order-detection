@@ -29,7 +29,7 @@ from algorithms.bic import (
 
 from dmd.dmd_tools import DelayEmbedding
 from utils.data_generation import DMDDataGenerator
-from utils.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
+from dmd.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
 from utils.visualizations import (
     imshow_complex,
     plot_mode_table,
@@ -340,7 +340,6 @@ class MethodEvaluator:
                 modes=aligned_proj_modes,
                 plot=plot and "STC" in methods,
             )
-
 
         if "NestedDMD" in features_to_compute:
             nested_dmd = NestedDMD(

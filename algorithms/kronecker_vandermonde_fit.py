@@ -8,7 +8,7 @@ from utils.visualizations import (
     scatter_scores_1d,
     scatter_scores_2d,
 )
-from utils.dmd_utils import fit_dmd
+from dmd.dmd_utils import fit_dmd
 
 
 # Helper functions
