@@ -47,7 +47,7 @@ L1_METHODS = [
 ]
 
 # Methods to always exclude
-EXCLUDE_METHODS = {"AIC", "ExactModeNorm", "NestedDMD+ESL", "FixedEigenvalueKVFit+ESL"}
+EXCLUDE_METHODS = {"ExactModeNorm", "NestedDMD+ESR", "FixedEigenvalueKVFit+ESR"}
 
 
 def compute_normalized_auc(

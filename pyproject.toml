@@ -8,6 +8,11 @@ version = "0.1.0"
 description = "Order detection methods for delay-coordinate DMD"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+  {name = "Yoav Harris", email = "yoav.h@campus.technion.ac.il"}
+]
+license = {text = "MIT"}
+urls = {repository = "https://github.com/YoavHarris/dc-dmd-order-detection"}
 
 [tool.setuptools.packages.find]
 include = ["algorithms*", "utils*", "figures*", "pbs_experimenting*", "analysis*"]

@@ -25,11 +25,11 @@ methods:
     color: '#4682B4'
     linestyle: '-'
     marker: 'o'
-  NestedDMD+ESL:
+  NestedDMD+ESR:
     color: '#006400'
     linestyle: '-'
     marker: 'o'
-  FixedEigenvalueKVFit+ESL:
+  FixedEigenvalueKVFit+ESR:
     color: '#228B22'
     linestyle: '-'
     marker: 'o'

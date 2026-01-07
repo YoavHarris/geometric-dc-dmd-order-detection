@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project outputs and data
+spurious_eigs_L_results_w_coupling.csv
+test_coupling_metrics.csv
+outputs/
+experiment_output/
+*.log
+
+# C-output / SO
+*.so
+
+# Environment
+.env
+.venv
+env/
+venv/

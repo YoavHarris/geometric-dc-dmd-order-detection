@@ -1,4 +1,4 @@
-# PBS Experiment Framework (Refactored)
+# PBS Experiment Framework Guide
 
 A modular, YAML-based framework for running large-scale DMD order detection experiments on HPC clusters with PBS job scheduling.
 
@@ -18,17 +18,17 @@ A modular, YAML-based framework for running large-scale DMD order detection expe
 cp example_config.yaml my_experiment.yaml
 # Edit my_experiment.yaml to set parameters
 
-# 2. Generate job configurations
-python experiment_runner.py make_jobs --config=my_experiment.yaml
+# 2. Generate job configs
+python pbs_experimenting/experiment_runner.py make_jobs --config=my_experiment.yaml
 
 # 3. Submit jobs to PBS
-python experiment_runner.py submit --config=my_experiment.yaml
+python pbs_experimenting/experiment_runner.py submit --config=my_experiment.yaml
 
 # 4. Monitor progress
-python experiment_runner.py status --config=my_experiment.yaml
+python pbs_experimenting/experiment_runner.py status --config=my_experiment.yaml
 
 # 5. Combine results
-python experiment_runner.py combine_results --config=my_experiment.yaml
+python pbs_experimenting/experiment_runner.py combine_results --config=my_experiment.yaml
 ```
 
 ## Directory Structure
@@ -57,7 +57,7 @@ experiment_output/
 
 ## Configuration File
 
-See `example_config.yaml` for a complete template. Key sections:
+See `pbs_experimenting/example_config.yaml` for a complete template. Key sections:
 
 ### Experiment Settings
 
@@ -137,7 +137,7 @@ parameters:
 Generate all job configurations and freeze the experiment.
 
 ```bash
-python experiment_runner.py make_jobs --config=my_config.yaml
+python pbs_experimenting/experiment_runner.py make_jobs --config=my_config.yaml
 ```
 
 Creates:
@@ -151,11 +151,11 @@ Submit jobs to PBS queue.
 
 ```bash
 # Submit all pending jobs
-python experiment_runner.py submit --config=my_config.yaml
+python pbs_experimenting/experiment_runner.py submit --config=my_config.yaml
 
 # Submit specific jobs
-python experiment_runner.py submit --config=my_config.yaml --ids="0,5,10"
-python experiment_runner.py submit --config=my_config.yaml --ids="0-99"
+python pbs_experimenting/experiment_runner.py submit --config=my_config.yaml --ids="0,5,10"
+python pbs_experimenting/experiment_runner.py submit --config=my_config.yaml --ids="0-99"
 ```
 
 Skips jobs that have already succeeded or are currently running.
@@ -165,7 +165,7 @@ Skips jobs that have already succeeded or are currently running.
 Check experiment progress.
 
 ```bash
-python experiment_runner.py status --config=my_config.yaml
+python pbs_experimenting/experiment_runner.py status --config=my_config.yaml
 ```
 
 Shows:
@@ -178,7 +178,7 @@ Shows:
 Resubmit all failed jobs.
 
 ```bash
-python experiment_runner.py resubmit --config=my_config.yaml
+python pbs_experimenting/experiment_runner.py resubmit --config=my_config.yaml
 ```
 
 ### `combine_results`
@@ -187,10 +187,10 @@ Merge individual job CSVs into single file.
 
 ```bash
 # Full combine (all finished jobs)
-python experiment_runner.py combine_results --config=my_config.yaml
+python pbs_experimenting/experiment_runner.py combine_results --config=my_config.yaml
 
 # Incremental (only new jobs)
-python experiment_runner.py combine_results --config=my_config.yaml --incremental
+python pbs_experimenting/experiment_runner.py combine_results --config=my_config.yaml --incremental
 ```
 
 Creates:
@@ -221,13 +221,13 @@ For debugging, run a single job manually:
 
 ```bash
 # Run a specific job
-python run_single_job.py run experiment_output/job_configs/job0042.yaml
+python pbs_experimenting/run_single_job.py run experiment_output/job_configs/job0042.yaml
 
 # With plotting
-python run_single_job.py run experiment_output/job_configs/job0042.yaml --plot
+python pbs_experimenting/run_single_job.py run experiment_output/job_configs/job0042.yaml --plot
 
 # Fire also supports this syntax
-python run_single_job.py run --config_path=experiment_output/job_configs/job0042.yaml --plot
+python pbs_experimenting/run_single_job.py run --config_path=experiment_output/job_configs/job0042.yaml --plot
 ```
 
 ## Validation
@@ -235,7 +235,7 @@ python run_single_job.py run --config_path=experiment_output/job_configs/job0042
 Config validation runs automatically during `make_jobs`, but you can validate manually:
 
 ```bash
-python config_validator.py my_config.yaml
+python pbs_experimenting/config_validator.py my_config.yaml
 ```
 
 Checks:
@@ -258,27 +258,11 @@ Checks:
 | `state_manager.py` | Job state tracking |
 | `result_combiner.py` | CSV merging |
 
-## Comparison with Old System
-
-| Feature | Old System | New System |
-|---------|------------|------------|
-| Worker input | Command-line args | YAML config |
-| Random seeds | Not handled | Deterministic per job |
-| Job configs | Generated on-the-fly | Pre-generated, frozen |
-| Methods | Hardcoded | Configurable list |
-| Validation | Runtime errors | Upfront validation |
-| Modularity | Monolithic functions | Class-based design |
-| Reproducibility | Limited | Full provenance |
-
 ## Advanced Usage
 
 ### Custom Method Configuration
 
-To add a new method:
-
-1. Add to `VALID_METHODS` in `config_validator.py`
-2. Add to `methods` list in your config
-3. Implement evaluation in `MethodEvaluator` class in `run_single_job.py`
+To add a new method, see the [Developer Guide](developer_guide.md).
 
 ### Partial Experiments
 
@@ -329,16 +313,3 @@ If `merge_conflicts.csv` is created, different jobs produced different results f
 - Non-deterministic behavior (check random seeds)
 - Parameter hash collision (very rare)
 - Jobs ran with different code versions
-
-## Citation
-
-If you use this framework, please cite:
-
-```
-[Your paper/repo citation here]
-```
-
-## License
-
-[Your license here]
-
