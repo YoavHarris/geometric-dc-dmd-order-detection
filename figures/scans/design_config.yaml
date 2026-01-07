@@ -33,10 +33,6 @@ methods:
     color: '#228B22'
     linestyle: '-'
     marker: 'o'
-  AIC:
-    color: '#8B0000'
-    linestyle: '--'
-    marker: '^'
   BIC:
     color: '#CD5C5C'
     linestyle: '--'
@@ -51,10 +47,6 @@ methods:
     marker: '^'
   STC:
     color: '#FFD700'
-    linestyle: '--'
-    marker: '^'
-  AICc:
-    color: '#FFA500'
     linestyle: '--'
     marker: '^'
 

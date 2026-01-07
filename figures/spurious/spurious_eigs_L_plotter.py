@@ -84,6 +84,33 @@ def validate_and_load_data(config: dict[str, Any], project_root: Path) -> pd.Dat
 
 
 # =============================================================================
+# Helpers
+# =============================================================================
+
+
+def _resolve_L_values(config: dict[str, Any], available_L: list[int]) -> list[int]:
+    """
+    Resolve which L values to plot based on config.
+    Returns sorted list of L values.
+    """
+    requested = config["plotting"].get("L_values_to_plot")
+    if not requested:
+        return sorted(available_L)
+        
+    available_set = set(available_L)
+    valid = sorted([L for L in requested if L in available_set])
+    
+    if len(valid) != len(requested):
+        print(f"Warning: Requested L values missing from data: {set(requested) - available_set}")
+        
+    if not valid:
+        print("Warning: No valid L values found in config. Using all available.")
+        return sorted(available_L)
+        
+    return valid
+
+
+# =============================================================================
 # Figure 1: CDF per L
 # =============================================================================
 
@@ -109,7 +136,7 @@ def plot_cdf_per_L(
     if aggregation_method not in ['pooled', 'trial_averaged']:
         raise ValueError(f"aggregation_method must be 'pooled' or 'trial_averaged', got: {aggregation_method}")
     
-    L_values = sorted(df["L"].unique())
+    L_values = _resolve_L_values(config, df["L"].unique())
     
     try:
         xmin, xmax = config["plotting"]["xlim"]
@@ -363,7 +390,7 @@ def plot_cdf_and_rho_min_combined(df: pd.DataFrame, config: dict[str, Any], outp
         fig, (ax_left, ax_right) = plt.subplots(1, 2)
     
     # LEFT PANEL: Per-L CDFs (color-coded by L)
-    L_values = sorted(df["L"].unique())
+    L_values = _resolve_L_values(config, df["L"].unique())
     
     try:
         xmin, xmax = config["plotting"]["xlim"]

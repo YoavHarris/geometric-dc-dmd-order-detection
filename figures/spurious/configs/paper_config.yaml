@@ -9,6 +9,10 @@ plotting:
   
   # X-axis limits for CDF plots  
   xlim: [0.0, 1.02]
+
+  # Optional: specific L values to plot in the CDF/combined figures (left panel).
+  # If commented out or empty, all available L values will be plotted.
+#  L_values_to_plot: [2, 42, 82, 122]
   
   # Color scheme
   colors:
