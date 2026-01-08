@@ -27,7 +27,7 @@ from algorithms.bic import (
     gap_ranks,
 )
 
-from dmd.dmd_tools import DelayEmbedding
+from utils.delay_embedding import DelayEmbedding
 from utils.data_generation import DMDDataGenerator
 from dmd.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
 from utils.visualizations import (
@@ -266,6 +266,22 @@ class MethodEvaluator:
             if plot:
                 scatter_scores_1d(
                     exact_mode_norms, "Exact-Mode-Norms", "ExactModeNorm", show_id=True
+                )
+
+        if "EigenvalueMagnitude" in self.enabled_methods:
+            epsilon = float(np.finfo(np.float32).eps)
+            magnitudes = np.abs(exact_dmd.eigs)
+            scores = np.log(magnitudes + epsilon)
+
+            labels, order = cluster_scores(
+                {"EigenvalueMagnitude": scores}, self.clustering_config
+            )
+            order_estimates["EigenvalueMagnitude"] = order
+            pred_masks["EigenvalueMagnitude"] = labels
+
+            if plot:
+                scatter_scores_1d(
+                    scores, "Log(Mag)", "EigenvalueMagnitude", show_id=True
                 )
 
         if "ESR-Energy" in self.enabled_methods:

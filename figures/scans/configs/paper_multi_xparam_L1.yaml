@@ -8,6 +8,8 @@ base:
     - BIC
     - GAP
     - ESR-Energy
+    - ExactModeNorm
+    - EigenvalueMagnitude
 
   show: false
 
