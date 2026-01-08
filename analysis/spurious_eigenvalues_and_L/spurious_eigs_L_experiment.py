@@ -30,7 +30,7 @@ from scipy.linalg import qr  # scipy implementation to allow pivoting
 
 from utils.data_generation import DMDDataGenerator
 from dmd.dmd_utils import fit_dmd
-from dmd.dmd_tools import DelayEmbedding
+from utils.delay_embedding import DelayEmbedding
 
 
 # =============================================================================

@@ -14,6 +14,7 @@ VALID_METHODS = {
     "BIC",
     "GAP",
     "ExactModeNorm",
+    "EigenvalueMagnitude",
     "ESR-Energy",
     "STC",
     "NestedDMD",

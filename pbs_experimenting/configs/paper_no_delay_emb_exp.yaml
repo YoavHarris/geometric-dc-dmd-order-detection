@@ -14,6 +14,7 @@ methods:
   - BIC
   - GAP
   - ExactModeNorm
+  - EigenvalueMagnitude
   - STC
   - ESR-Energy
   - NestedDMD
@@ -141,4 +142,3 @@ paths:
 # ──────────────────────────────────────────────────────────────────────────────
 output:
   output_dir: REQUIRED_USER_INPUT
-

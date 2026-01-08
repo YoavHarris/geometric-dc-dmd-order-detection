@@ -41,6 +41,10 @@ methods:
     color: '#FF6347'
     linestyle: '--'
     marker: '^'
+  EigenvalueMagnitude:
+    color: '#8A2BE2'
+    linestyle: '--'
+    marker: '^'
   GAP:
     color: '#FF8C00'
     linestyle: '--'

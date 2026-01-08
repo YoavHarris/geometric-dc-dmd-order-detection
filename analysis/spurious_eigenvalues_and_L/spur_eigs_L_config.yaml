@@ -15,8 +15,8 @@ signal:
   force_mode_orthogonality: true
 
 experiment:
-  L_values: [2, 12, 22, 32, 42, 52, 62, 72, 82, 92, 102, 112, 122]
-  n_mc_iterations: 2000
+  L_values: [2, 4, 6, 8, 10, 12, 22, 32, 42, 52, 62, 72, 82, 92, 102, 112, 122]
+  n_mc_iterations: 1000
   base_random_seed: 196
 
 output:
