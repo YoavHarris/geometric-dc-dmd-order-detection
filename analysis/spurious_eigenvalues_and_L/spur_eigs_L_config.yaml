@@ -3,7 +3,7 @@ system:
   spatial_dim: 50
   num_timesteps: 200
   num_modes: 3
-  max_rank: 7
+  max_rank: 15
   sample_size_mode: fixed_N_cols
 
 signal:

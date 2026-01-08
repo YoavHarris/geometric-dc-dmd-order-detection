@@ -269,12 +269,9 @@ class MethodEvaluator:
                 )
 
         if "EigenvalueMagnitude" in self.enabled_methods:
-            epsilon = float(np.finfo(np.float32).eps)
             magnitudes = np.abs(exact_dmd.eigs)
-            scores = np.log(magnitudes + epsilon)
-
             labels, order = cluster_scores(
-                {"EigenvalueMagnitude": scores}, self.clustering_config
+                {"EigenvalueMagnitude": magnitudes}, self.clustering_config
             )
             order_estimates["EigenvalueMagnitude"] = order
             pred_masks["EigenvalueMagnitude"] = labels
