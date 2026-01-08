@@ -12,8 +12,8 @@ plotting:
 
   # Optional: specific L values to plot in the CDF/combined figures (left panel).
   # If commented out or empty, all available L values will be plotted.
-#  L_values_to_plot: [2, 42, 82, 122]
-  
+  L_values_to_plot: [2, 6, 8, 10, 12, 22, 42, 82, 122]
+
   # Color scheme
   colors:
     colormap: "viridis"

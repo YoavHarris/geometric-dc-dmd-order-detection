@@ -8,7 +8,7 @@ Design:
 - For each L value, run n_mc Monte Carlo iterations
 - Generate data with fixed parameters (SNR, freq_sep, eig_mag, D, N, M, m, etc.)
 - Run DMD with rank M to get M modes (m true + M-m spurious)
-- Identify spurious modes using Signal Subspace Leakage (SSL)
+- Identify spurious modes using Signal Subspace Residual ()
 - Collect spurious eigenvalue magnitudes
 - Save to CSV with all parameters for each row
 
@@ -44,9 +44,9 @@ def classify_modes_by_ssr(
     num_true_modes: int,
 ) -> NDArray[np.str_]:
     """
-    Classify modes as true or spurious using Signal Subspace Leakage (SSL).
+    Classify modes as true or spurious using Signal Subspace Residual (SSR).
 
-    Modes with lowest SSL (most aligned with signal subspace) are classified as true.
+    Modes with lowest SSR (most aligned with signal subspace) are classified as true.
     The remaining modes are classified as spurious.
 
     Args:
@@ -71,10 +71,10 @@ def classify_modes_by_ssr(
     # 3. Residual energy (Difference)
     ssr_energies = np.maximum(0, mode_square_energies - in_signal_subspace_energies)
 
-    # Sort modes by SSL (ascending)
+    # Sort modes by  (ascending)
     sorted_indices = np.argsort(ssr_energies)
 
-    # First num_true_modes with lowest SSL are true, rest are spurious
+    # First num_true_modes with lowest  are true, rest are spurious
     mode_labels = np.array(["spurious"] * M, dtype=object)
     mode_labels[sorted_indices[:num_true_modes]] = "true"
 
@@ -527,7 +527,7 @@ class SpuriousEigenvalueExperiment:
             )
         )
 
-        # Embed true modes for SSL classification
+        # Embed true modes for  classification
         true_modes_embedded = self._create_kv_embedded_modes(
             true_modes, true_eigenvalues, L
         )
@@ -839,19 +839,30 @@ def load_config(config_path: str) -> dict[str, Any]:
 
 
 def main(
-    config: str = "analysis/spurious_eigenvalues_and_L/spurious_eigs_L_config.yaml",
-    output: str = "results/spurious_eigs_L_results.csv",
+    config: str,
+    output: str | None = None,
 ):
     """
     Run spurious eigenvalue magnitude vs embedding length L experiment.
 
     Args:
         config: Path to config YAML file
-        output: Output CSV file path
+        output: Output CSV file path. If None, tries to read from config.
+               If not in config, defaults to 'spurious_eigs_L_results.csv' in CWD.
     """
     # Load config and create experiment
     config_dict = load_config(config)
     experiment = SpuriousEigenvalueExperiment(config_dict)
+
+    # Determine output path
+    if output is None:
+        if "output" in config_dict:
+            out_cfg = config_dict["output"]
+            output_dir = out_cfg.get("output_dir", ".")
+            csv_filename = out_cfg.get("csv_filename", "spurious_eigs_L_results.csv")
+            output = str(Path(output_dir) / csv_filename)
+        else:
+            output = "spurious_eigs_L_results.csv"
 
     # Run experiment
     df = experiment.run()
