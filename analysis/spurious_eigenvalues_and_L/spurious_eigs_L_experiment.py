@@ -38,25 +38,7 @@ from utils.delay_embedding import DelayEmbedding
 # =============================================================================
 
 
-def compute_leakage_projector(
-    basis: NDArray[np.complexfloating],
-) -> NDArray[np.complexfloating]:
-    """
-    Compute the leakage projector: I - P where P projects onto span(basis).
-
-    Args:
-        basis: Basis matrix (columns are basis vectors), shape (DL, rank).
-
-    Returns:
-        Orthogonal complement projector I - basis @ basis^H, shape (DL, DL).
-    """
-    DL = basis.shape[0]
-    projector = basis @ basis.conj().T
-    leakage_projector = np.eye(DL, dtype=complex) - projector
-    return leakage_projector
-
-
-def classify_modes_by_ssl(
+def classify_modes_by_ssr(
     recovered_modes: NDArray[np.complexfloating],
     signal_basis: NDArray[np.complexfloating],
     num_true_modes: int,
@@ -77,22 +59,20 @@ def classify_modes_by_ssl(
         Mode labels array of shape (M,), with values "true" or "spurious".
     """
     M = recovered_modes.shape[1]
+    Q, _ = qr(signal_basis, mode="economic")
 
-    # Compute signal subspace projector (signal basis must be orthonormal for P = Q @ Q^H)
-    signal_basis_orthonormal, _ = qr(signal_basis, mode="economic")
+    # 1. Total energy of the new modes
+    mode_square_energies = np.linalg.norm(recovered_modes, axis=0) ** 2
 
-    # Compute leakage projector: I - P_signal (projects onto signal complement)
-    signal_leakage_projector = compute_leakage_projector(signal_basis_orthonormal)
-
-    # Compute SSL for each recovered mode: ||(I - P_S) @ mode||^2
-    ssl_values = np.zeros(M)
-    for i in range(M):
-        mode = recovered_modes[:, i]
-        leakage = signal_leakage_projector @ mode
-        ssl_values[i] = np.sum(np.abs(leakage) ** 2)
+    # 2. Energy captured by the signal subspace
+    in_signal_subspace_energies = (
+        np.linalg.norm(Q.conj().T @ recovered_modes, axis=0) ** 2
+    )
+    # 3. Residual energy (Difference)
+    ssr_energies = np.maximum(0, mode_square_energies - in_signal_subspace_energies)
 
     # Sort modes by SSL (ascending)
-    sorted_indices = np.argsort(ssl_values)
+    sorted_indices = np.argsort(ssr_energies)
 
     # First num_true_modes with lowest SSL are true, rest are spurious
     mode_labels = np.array(["spurious"] * M, dtype=object)
@@ -682,7 +662,7 @@ class SpuriousEigenvalueExperiment:
             return []
 
         # Classify modes and extract spurious eigenvalues
-        mode_labels = classify_modes_by_ssl(
+        mode_labels = classify_modes_by_ssr(
             recovered_modes, true_modes_embedded, self.m
         )
         spurious_mask = mode_labels == "spurious"
@@ -769,14 +749,15 @@ class SpuriousEigenvalueExperiment:
         self._print_header()
 
         all_results = []
-        total_runs = len(self.L_values) * self.n_mc
 
-        with tqdm(total=total_runs, desc="Running experiment") as pbar:
-            for L in self.L_values:
-                for trial_id in range(self.n_mc):
-                    results = self._run_single_iteration(L, trial_id)
-                    all_results.extend(results)
-                    pbar.update(1)
+        print("\nStarting simulation loops...")
+        for L in self.L_values:
+            # Progress bar for each L value
+            for trial_id in tqdm(
+                range(self.n_mc), desc=f"Simulating L={L}", leave=True
+            ):
+                results = self._run_single_iteration(L, trial_id)
+                all_results.extend(results)
 
         df = pd.DataFrame(all_results)
 
