@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 """
 Generate AUC tables for paper: two wide tables (delay-embedded and L=1).
-
-Usage:
-    python auc_tables.py delay_embedded_combined_results.csv no_delays_combined_results.csv
-
-Outputs:
-    figures/scans/outputs/auc_delay_embedded_allm.tex
-    figures/scans/outputs/auc_L1_allm.tex
 """
 
 from __future__ import annotations
@@ -219,8 +212,6 @@ def main() -> None:
         delay_csv: Path to delay_embedded_combined_results.csv
         l1_csv: Path to no_delays_combined_results.csv
     """
-    delay_path = Path(delay_csv)
-    l1_path = Path(l1_csv)
     # Data path
     l1_path = Path("figures/scans/data/no_delays_combined_results.csv.gz")
 
