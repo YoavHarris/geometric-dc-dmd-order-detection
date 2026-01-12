@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
 Generate AUC tables for paper: two wide tables (delay-embedded and L=1).
+
+Usage:
+    python auc_tables.py delay_embedded_combined_results.csv no_delays_combined_results.csv
+
+Outputs:
+    figures/scans/outputs/auc_delay_embedded_allm.tex
+    figures/scans/outputs/auc_L1_allm.tex
 """
 
 from __future__ import annotations
@@ -17,7 +24,7 @@ import pandas as pd
 PARAM_COLS = ["snr_db", "freq_sep", "eig_mag", "top_amplitude"]
 PARAM_LATEX = {
     "snr_db": "SNR",
-    "freq_sep": "$\\Delta\\theta$",
+    "freq_sep": "$\\Delta\\theta$",  # Changed from \Delta f
     "eig_mag": "$r$",
     "top_amplitude": "$\\kappa_b$",
 }
@@ -204,7 +211,7 @@ def format_wide_latex_table(
     print(f"Generated: {output_path}")
 
 
-def main() -> None:
+def main(delay_csv: str, l1_csv: str) -> None:
     """
     Generate both AUC tables.
 
@@ -212,31 +219,51 @@ def main() -> None:
         delay_csv: Path to delay_embedded_combined_results.csv
         l1_csv: Path to no_delays_combined_results.csv
     """
-    # Data path
-    l1_path = Path("figures/scans/data/no_delays_combined_results.csv.gz")
+    delay_path = Path(delay_csv)
+    l1_path = Path(l1_csv)
 
+    if not delay_path.is_file():
+        print(f"Error: file not found: {delay_path}", file=sys.stderr)
+        sys.exit(1)
     if not l1_path.is_file():
         print(f"Error: file not found: {l1_path}", file=sys.stderr)
         sys.exit(1)
 
     # Load data
+    df_delay = pd.read_csv(delay_path)
     df_l1 = pd.read_csv(l1_path)
 
     # Filter to Gaussian noise if available
+    if "noise_mode" in df_delay.columns:
+        df_delay = df_delay[df_delay["noise_mode"] == "gaussian"].copy()
     if "noise_mode" in df_l1.columns:
         df_l1 = df_l1[df_l1["noise_mode"] == "gaussian"].copy()
 
     # Compute AUCs
+    auc_delay = compute_normalized_auc(df_delay, DELAY_METHODS)
     auc_l1 = compute_normalized_auc(df_l1, L1_METHODS)
 
     # Output directory
     output_dir = Path("figures/scans/outputs")
 
+    # Generate delay-embedded table
+    delay_caption = (
+        "Normalized AUC for delay-embedded experiments across one-dimensional parameter sweeps. "
+        "Columns grouped by number of true modes ($m$) contain AUC values for: "
+        "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
+        "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
+    )
+    format_wide_latex_table(
+        auc_delay,
+        DELAY_METHODS,
+        "auc_delay_embedded",
+        delay_caption,
+        output_dir / "auc_delay_embedded.tex",
+    )
+
     # Generate L=1 table
     l1_caption = (
         "Normalized AUC for standard DMD ($L=1$, no delays) across one-dimensional parameter sweeps. "
-        "Methods include classical approaches (BIC, GAP), energy-based (ESR-Energy), "
-        "and new methods (ExactModeNorm, EigenvalueMagnitude). "
         "Columns grouped by number of true modes ($m$) contain AUC values for: "
         "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
         "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
