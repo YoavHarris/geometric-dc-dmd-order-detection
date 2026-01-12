@@ -278,7 +278,7 @@ class MethodEvaluator:
 
             if plot:
                 scatter_scores_1d(
-                    magnitudes, "Log(Mag)", "EigenvalueMagnitude", show_id=True
+                    magnitudes, "Magnitude", "EigenvalueMagnitude", show_id=True
                 )
 
         if "ESR-Energy" in self.enabled_methods:

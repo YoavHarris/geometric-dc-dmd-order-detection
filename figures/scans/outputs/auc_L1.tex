@@ -7,11 +7,13 @@
  & \multicolumn{4}{c}{$m = 2$} & \multicolumn{4}{c}{$m = 3$} & \multicolumn{4}{c}{$m = 5$} \\
 Method & SNR & $\Delta\theta$ & $r$ & $\kappa_b$ & SNR & $\Delta\theta$ & $r$ & $\kappa_b$ & SNR & $\Delta\theta$ & $r$ & $\kappa_b$ \\
 \hline
-BIC & 0.759 & 0.961 & 0.913 & 0.996 & 0.621 & 0.857 & 0.342 & 0.989 & 0.479 & 0.736 & 0.235 & 0.828 \\
-GAP & 0.455 & 0.628 & 0.140 & 0.066 & 0.223 & 0.592 & 0.131 & 0.034 & 0.136 & 0.575 & 0.127 & 0.018 \\
-ESR-Energy & \textbf{0.988} & \textbf{0.963} & \textbf{0.997} & \textbf{0.998} & \textbf{0.901} & \textbf{0.887} & \textbf{0.493} & \textbf{0.992} & \textbf{0.796} & \textbf{0.814} & \textbf{0.327} & \textbf{0.989} \\
+BIC & 0.759 & 0.961 & 0.913 & 0.996 & 0.621 & 0.857 & 0.342 & 0.989 & 0.479 & 0.736 & 0.235 & 0.820 \\
+GAP & 0.455 & 0.628 & 0.140 & 0.067 & 0.223 & 0.592 & 0.131 & 0.036 & 0.136 & 0.575 & 0.127 & 0.018 \\
+ESR-Energy & 0.987 & 0.963 & 0.997 & 0.998 & 0.902 & 0.887 & 0.495 & 0.992 & 0.796 & 0.814 & 0.327 & 0.989 \\
+ExactModeNorm & \textbf{1.000} & 0.995 & \textbf{1.000} & \textbf{1.000} & 0.986 & \textbf{0.962} & 0.676 & 0.996 & 0.869 & \textbf{0.887} & 0.349 & 0.991 \\
+EigenvalueMagnitude & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{0.994} & \textbf{0.962} & \textbf{0.737} & \textbf{0.997} & \textbf{0.896} & \textbf{0.887} & \textbf{0.374} & \textbf{0.992} \\
 \hline
 \end{tabular}
-\caption{Normalized AUC for standard DMD ($L=1$, no delays) across one-dimensional parameter sweeps. Only methods that do not require delay embedding are shown. Columns grouped by number of true modes ($m$) contain AUC values for: SNR, phase separation ($\Delta\theta$), damping coefficient ($r$), and amplitude ratio ($\kappa_b = b_{\max}/b_{\min}$).}
-\label{tab:auc_L1}
+\caption{Normalized AUC for standard DMD ($L=1$, no delays) across one-dimensional parameter sweeps (new data). Methods include classical approaches (BIC, GAP), energy-based (ESR-Energy), and new methods (ExactModeNorm, EigenvalueMagnitude). Columns grouped by number of true modes ($m$) contain AUC values for: SNR, phase separation ($\Delta\theta$), damping coefficient ($r$), and amplitude ratio ($\kappa_b = b_{\max}/b_{\min}$).}
+\label{tab:auc_L1_new}
 \end{table*}

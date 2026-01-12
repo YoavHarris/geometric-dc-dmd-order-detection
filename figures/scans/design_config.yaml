@@ -38,11 +38,11 @@ methods:
     linestyle: '--'
     marker: '^'
   ExactModeNorm:
-    color: '#FF6347'
+    color: '#611501'
     linestyle: '--'
     marker: '^'
   EigenvalueMagnitude:
-    color: '#8A2BE2'
+    color: '#B5884A'
     linestyle: '--'
     marker: '^'
   GAP:

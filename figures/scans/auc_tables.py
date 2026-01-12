@@ -24,7 +24,7 @@ import pandas as pd
 PARAM_COLS = ["snr_db", "freq_sep", "eig_mag", "top_amplitude"]
 PARAM_LATEX = {
     "snr_db": "SNR",
-    "freq_sep": "$\\Delta\\theta$",  # Changed from \Delta f
+    "freq_sep": "$\\Delta\\theta$",
     "eig_mag": "$r$",
     "top_amplitude": "$\\kappa_b$",
 }
@@ -44,10 +44,12 @@ L1_METHODS = [
     "BIC",
     "GAP",
     "ESR-Energy",
+    "ExactModeNorm",
+    "EigenvalueMagnitude",
 ]
 
 # Methods to always exclude
-EXCLUDE_METHODS = {"ExactModeNorm", "NestedDMD+ESR", "FixedEigenvalueKVFit+ESR"}
+EXCLUDE_METHODS = {"NestedDMD+ESR", "FixedEigenvalueKVFit+ESR"}
 
 
 def compute_normalized_auc(
@@ -182,9 +184,10 @@ def format_wide_latex_table(
                 best_v = max(
                     auc_dict.get((m, mtd, param), -np.inf) for mtd in methods_with_data
                 )
+                best_v_str = f"{best_v:.3f}"
 
                 v_str = f"{v:.3f}"
-                if np.isclose(v, best_v) and best_v > 0:
+                if v_str == best_v_str and best_v > 0:
                     v_str = f"\\textbf{{{v_str}}}"
 
                 row_parts.append(v_str)
@@ -208,7 +211,7 @@ def format_wide_latex_table(
     print(f"Generated: {output_path}")
 
 
-def main(delay_csv: str, l1_csv: str) -> None:
+def main() -> None:
     """
     Generate both AUC tables.
 
@@ -218,50 +221,31 @@ def main(delay_csv: str, l1_csv: str) -> None:
     """
     delay_path = Path(delay_csv)
     l1_path = Path(l1_csv)
+    # Data path
+    l1_path = Path("figures/scans/data/no_delays_combined_results.csv.gz")
 
-    if not delay_path.is_file():
-        print(f"Error: file not found: {delay_path}", file=sys.stderr)
-        sys.exit(1)
     if not l1_path.is_file():
         print(f"Error: file not found: {l1_path}", file=sys.stderr)
         sys.exit(1)
 
     # Load data
-    df_delay = pd.read_csv(delay_path)
     df_l1 = pd.read_csv(l1_path)
 
     # Filter to Gaussian noise if available
-    if "noise_mode" in df_delay.columns:
-        df_delay = df_delay[df_delay["noise_mode"] == "gaussian"].copy()
     if "noise_mode" in df_l1.columns:
         df_l1 = df_l1[df_l1["noise_mode"] == "gaussian"].copy()
 
     # Compute AUCs
-    auc_delay = compute_normalized_auc(df_delay, DELAY_METHODS)
     auc_l1 = compute_normalized_auc(df_l1, L1_METHODS)
 
     # Output directory
     output_dir = Path("figures/scans/outputs")
 
-    # Generate delay-embedded table
-    delay_caption = (
-        "Normalized AUC for delay-embedded experiments across one-dimensional parameter sweeps. "
-        "Columns grouped by number of true modes ($m$) contain AUC values for: "
-        "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
-        "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
-    )
-    format_wide_latex_table(
-        auc_delay,
-        DELAY_METHODS,
-        "auc_delay_embedded",
-        delay_caption,
-        output_dir / "auc_delay_embedded.tex",
-    )
-
     # Generate L=1 table
     l1_caption = (
         "Normalized AUC for standard DMD ($L=1$, no delays) across one-dimensional parameter sweeps. "
-        "Only methods that do not require delay embedding are shown. "
+        "Methods include classical approaches (BIC, GAP), energy-based (ESR-Energy), "
+        "and new methods (ExactModeNorm, EigenvalueMagnitude). "
         "Columns grouped by number of true modes ($m$) contain AUC values for: "
         "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
         "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
