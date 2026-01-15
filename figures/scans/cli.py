@@ -32,6 +32,7 @@ class ScanPlotterCLI:
         methods: list[str] | None = None,
         xscale: str | None = None,
         xlim: tuple[float, float] | None = None,
+        max_ticks: int | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
     ):
@@ -68,6 +69,7 @@ class ScanPlotterCLI:
                 "methods": methods,
                 "xscale": xscale,
                 "xlim": xlim,
+                "max_ticks": max_ticks,
                 "title": title,
                 "xlabel": xlabel,
                 "ylabel": ylabel,
@@ -92,6 +94,7 @@ class ScanPlotterCLI:
         methods: list[str] | None = None,
         xscale: str | None = None,
         xlim: tuple[float, float] | None = None,
+        max_ticks: int | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
     ):
@@ -139,6 +142,7 @@ class ScanPlotterCLI:
                         "methods": methods,
                         "xscale": xscale,
                         "xlim": xlim,
+                        "max_ticks": max_ticks,
                         "title": f"{param_label} = {value_label}",
                         "xlabel": xlabel,
                         "ylabel": ylabel,
@@ -164,6 +168,7 @@ class ScanPlotterCLI:
         show: bool = False,
         methods: list[str] | None = None,
         xlim: tuple[float, float] | None = None,
+        max_ticks: int | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
     ):
@@ -212,6 +217,7 @@ class ScanPlotterCLI:
                     "methods": methods,
                     "xscale": None,  # Auto-detect per panel
                     "xlim": xlim,
+                    "max_ticks": max_ticks,
                     "title": param_label,
                     "xlabel": None,  # Auto from x_param
                     "ylabel": ylabel,
@@ -282,6 +288,7 @@ class ScanPlotterCLI:
                         show=merged.get("show", False),
                         methods=merged.get("methods"),
                         xlim=merged.get("xlim"),
+                        max_ticks=merged.get("max_ticks"),
                         xlabel=merged.get("xlabel"),
                         ylabel=merged.get("ylabel"),
                     )
@@ -300,6 +307,7 @@ class ScanPlotterCLI:
                         methods=merged.get("methods"),
                         xscale=merged.get("xscale"),
                         xlim=merged.get("xlim"),
+                        max_ticks=merged.get("max_ticks"),
                         xlabel=merged.get("xlabel"),
                         ylabel=merged.get("ylabel"),
                     )
@@ -315,6 +323,7 @@ class ScanPlotterCLI:
                         methods=merged.get("methods"),
                         xscale=merged.get("xscale"),
                         xlim=merged.get("xlim"),
+                        max_ticks=merged.get("max_ticks"),
                         xlabel=merged.get("xlabel"),
                         ylabel=merged.get("ylabel"),
                     )

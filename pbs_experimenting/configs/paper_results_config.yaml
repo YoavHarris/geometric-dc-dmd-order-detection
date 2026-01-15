@@ -102,9 +102,9 @@ parameters:
   max_rank:
     type: range
     role: wp
-    start: 7
-    end: 63
-    num_steps: 8
+    start: 6
+    end: 134
+    num_steps: 33
     as_int: true
 
   noise_mode:

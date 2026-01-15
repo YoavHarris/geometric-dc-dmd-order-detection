@@ -79,6 +79,7 @@ class SingleScanPlotter:
         methods: list[str] | None = None,
         xscale: str | None = None,
         xlim: tuple[float, float] | None = None,
+        max_ticks: int | None = None,
         show_legend: bool = True,
         show_ylabel: bool = True,
         show_xlabel: bool = True,
@@ -98,6 +99,7 @@ class SingleScanPlotter:
             methods: List of methods to plot (if None, plot all)
             xscale: Force axis scale ('linear', 'log', 'categorical', or None for auto)
             xlim: X-axis limits as (min, max) tuple (if None, use automatic)
+            max_ticks: Maximum number of ticks (overrides global config if provided)
             show_legend: Show legend
             show_ylabel: Show y-axis label
             show_xlabel: Show x-axis label
@@ -148,16 +150,30 @@ class SingleScanPlotter:
         elif axis_type == "categorical":
             # Set explicit tick positions for categorical data
             unique_vals = sorted(df[x_param].unique())
-            ax.set_xticks(unique_vals)
+
+            # Fallback to linear scaling for dense numerical data to respect max_ticks
+            is_numeric = np.issubdtype(df[x_param].dtype, np.number)
+            if max_ticks is not None:
+                tick_limit = max_ticks
+            else:
+                tick_limit = self.config.get("ticks", {}).get("max_ticks", 6)
+
+            if is_numeric and len(unique_vals) > tick_limit:
+                axis_type = "linear"
+            else:
+                ax.set_xticks(unique_vals)
 
         # Apply tick number limit (for non-categorical axes)
         if axis_type != "categorical":
             from matplotlib.ticker import MaxNLocator
 
-            tick_cfg = self.config.get("ticks", {})
-            max_ticks = tick_cfg.get("max_ticks", 6)
-            ax.xaxis.set_major_locator(MaxNLocator(nbins=max_ticks, integer=False))
-            ax.yaxis.set_major_locator(MaxNLocator(nbins=max_ticks, integer=False))
+            if max_ticks is not None:
+                max_tick_count = max_ticks
+            else:
+                tick_cfg = self.config.get("ticks", {})
+                max_tick_count = tick_cfg.get("max_ticks", 6)
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=max_tick_count, integer=False))
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=max_tick_count, integer=False))
 
         # Add vertical line at working point value (if provided)
         wp_line_cfg = self.config.get("working_point_line", {})
@@ -311,7 +327,9 @@ class PanelComposer:
                 methods=panel_spec.get("methods"),
                 xscale=panel_spec.get("xscale"),
                 xlim=panel_spec.get("xlim"),
+                max_ticks=panel_spec.get("max_ticks"),
                 show_legend=False,
+                show_ylabel=show_ylabel,
                 show_xlabel=show_xlabel,
                 title=panel_spec.get("title"),
                 xlabel=panel_spec.get("xlabel"),

@@ -91,6 +91,7 @@ parameter_labels:
   noise_mode: "Noise Type"
   temporal_dim: "Temporal Dimension"
   spatial_dim: "Spatial Dimension"
+  max_rank: "Truncation rank $M$"
   # Add more parameter mappings as needed
 
 # Parameter value mappings (for displaying specific parameter values)
