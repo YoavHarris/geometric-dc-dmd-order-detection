@@ -83,7 +83,7 @@ def generate_figure():
         % Basis Vectors
         \\addplot3[->, black, line width={c['lw_axis']}] coordinates {{(0,0,0) (1.6,0,0)}}; \\node[anchor=west] at (axis cs:1.6,0,0) {{$u_1$}};
         \\addplot3[->, black, line width={c['lw_axis']}] coordinates {{(0,0,0) (0,1.6,0)}}; \\node[anchor=south] at (axis cs:0,1.6,0) {{$u_2$}};
-        \\addplot3[->, black, line width={c['lw_axis']}] coordinates {{(0,0,0) (0,0,1.5)}}; \\node[anchor=south] at (axis cs:0,0,1.5) {{$u_3$}};
+        \\addplot3[->, black, line width={c['lw_axis']}] coordinates {{(0,0,0) (0,0,0.92)}}; \\node[anchor=south] at (axis cs:0,0,0.88) {{$u_3$}};
         \\fill[black] (axis cs:0,0,0) circle (1pt);
     """
 
@@ -172,7 +172,7 @@ def generate_figure():
       height={c['height']},
       xmin=0, xmax=1.6,
       ymin=0, ymax=1.6,
-      zmin=0, zmax=1.5,
+      zmin=0, zmax=0.92,
       axis lines=none,
       ticks=none,
       clip=false,
