@@ -178,7 +178,8 @@ def scatter_scores_1d(
         y = scores
         labels = None
 
-    plt.scatter(x=x, y=y, marker="+", alpha=0.8, s=10)
+    plt.scatter(x=x, y=y, marker="+", alpha=0.8, s=20)
+    plt.xticks(range(n_candidates))
 
     if labels is not None:
         for i, label in enumerate(labels):
