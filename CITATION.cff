@@ -1,12 +1,30 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: "If you use this software, please cite the accompanying paper."
 authors:
 - family-names: "Harris"
   given-names: "Yoav"
   email: "yoav.h@campus.technion.ac.il"
   orcid: "https://orcid.org/0000-0001-8172-5895"
 title: "DC-DMD Order Detection"
-version: 0.1.0
-date-released: 2026-01-07
+version: 1.0.0
+date-released: 2026-01-28
 url: "https://github.com/YoavHarris/dc-dmd-order-detection"
 license: MIT
+repository-code: "https://github.com/YoavHarris/dc-dmd-order-detection"
+keywords:
+  - dynamic-mode-decomposition
+  - DMD
+  - order-detection
+  - delay-coordinates
+  - signal-processing
+# Uncomment and update once paper is published:
+# preferred-citation:
+#   type: article
+#   authors:
+#     - family-names: "Harris"
+#       given-names: "Yoav"
+#       orcid: "https://orcid.org/0000-0001-8172-5895"
+#   title: "Your Paper Title Here"
+#   journal: "Journal Name"
+#   year: 2026
+#   doi: "10.xxxx/xxxxx"
