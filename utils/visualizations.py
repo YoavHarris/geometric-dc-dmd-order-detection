@@ -135,36 +135,6 @@ def plot_matrices_list(
     plt.show()
 
 
-def scatter_scores(score_dict: dict[str, NDArray[np.floating]]) -> None:
-    """
-    Scatter plot of mode scores with a multi-row legend.
-    """
-    n_scores = len(score_dict)
-    n_modes = len(next(iter(score_dict.values())))
-    fig, ax = plt.subplots(figsize=(8, 10))
-    colors = plt.get_cmap("tab10", n_scores)
-
-    for i, (score_name, score_values) in enumerate(score_dict.items()):
-        ax.scatter(
-            range(len(score_values)),
-            score_values,
-            color=colors(i),
-            label=score_name,
-            alpha=0.8,
-            s=10,
-            marker="+",
-        )
-
-    ax.set_xticks(range(n_modes))
-    ax.set_xlabel("Mode Index")
-    ax.set_ylabel("Score Value")
-    ax.set_title("Mode Scores (Scatter)")
-    plt.subplots_adjust(bottom=0.25)
-    ncol = min(3, n_scores)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=ncol)
-    plt.show()
-
-
 def scatter_scores_2d(
     score_mat: NDArray[np.floating],
     score_names: list[str],
