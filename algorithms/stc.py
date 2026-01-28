@@ -6,8 +6,8 @@ class STC:
     """
     Spatiotemporal Coupling (STC) quotient-consistency feature extractor.
 
-    Based on Bronstein et al., Chaos 32, 123127 (2022), included for comparison with the new BV-fit methods
-    (NestedDMD, FixedEigenvalueBVFit).
+    Based on Bronstein et al., Chaos 32, 123127 (2022), included for comparison with the new KV-fit methods
+    (NestedDMD, FixedEigenvalueKVFit).
 
     For each mode, constructs per-delay quotients relative to the first sub-mode,
     estimates an effective eigenvalue via geometric means across valid lags, and
@@ -25,13 +25,12 @@ class STC:
         dt: float = 1.0,
         epsilon: float = 1e-12,
         numerical_inf: float = 1e12,
-        use_nyquist_cap: bool = False,
     ) -> None:
         self.num_delays = num_delays
         self.dt = dt
         self.epsilon = epsilon
         self.numerical_inf = numerical_inf
-        self.use_nyquist_cap = use_nyquist_cap
+        self.use_nyquist_cap = True
 
     def compute_features(
         self,

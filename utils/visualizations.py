@@ -1,4 +1,3 @@
-from typing import Optional, List
 import numpy as np
 from numpy.typing import NDArray
 from matplotlib import pyplot as plt
@@ -61,12 +60,12 @@ def plot_power_spectrum(
 
 def plot_matrices_list(
     matrices: NDArray[np.complexfloating],
-    row_mask: Optional[NDArray[np.bool_]] = None,
+    row_mask: NDArray[np.bool_] | None = None,
     title: str = "Matrix",
     show_imag: bool = True,
     x_label: str = "",
     y_label: str = "",
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> None:
     """
     Plot a batch of 2D matrices (M, D, L) using imshow.
@@ -136,39 +135,9 @@ def plot_matrices_list(
     plt.show()
 
 
-def scatter_scores(score_dict: dict[str, NDArray[np.floating]]) -> None:
-    """
-    Scatter plot of mode scores with a multi-row legend.
-    """
-    n_scores = len(score_dict)
-    n_modes = len(next(iter(score_dict.values())))
-    fig, ax = plt.subplots(figsize=(8, 10))
-    colors = plt.get_cmap("tab10", n_scores)
-
-    for i, (score_name, score_values) in enumerate(score_dict.items()):
-        ax.scatter(
-            range(len(score_values)),
-            score_values,
-            color=colors(i),
-            label=score_name,
-            alpha=0.8,
-            s=10,
-            marker="+",
-        )
-
-    ax.set_xticks(range(n_modes))
-    ax.set_xlabel("Mode Index")
-    ax.set_ylabel("Score Value")
-    ax.set_title("Mode Scores (Scatter)")
-    plt.subplots_adjust(bottom=0.25)
-    ncol = min(3, n_scores)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=ncol)
-    plt.show()
-
-
 def scatter_scores_2d(
     score_mat: NDArray[np.floating],
-    score_names: List[str],
+    score_names: list[str],
     title: str = "",
     show_id: bool = False,
 ):
@@ -209,7 +178,8 @@ def scatter_scores_1d(
         y = scores
         labels = None
 
-    plt.scatter(x=x, y=y, marker="+", alpha=0.8, s=10)
+    plt.scatter(x=x, y=y, marker="+", alpha=0.8, s=20)
+    plt.xticks(range(n_candidates))
 
     if labels is not None:
         for i, label in enumerate(labels):
@@ -250,7 +220,7 @@ def imshow_complex(im, title=None):
 
 
 def plot_mode_table(eigs: np.ndarray, amps: np.ndarray) -> None:
-    """Standalone figure with a table of ρ, θ (radians), and amplitude b."""
+    """Standalone figure with a table of rho, theta (radians), and amplitude b."""
     rho = np.abs(eigs)
     theta = np.mod(np.angle(eigs), 2 * np.pi)  # 0 … 2π
     b = amps

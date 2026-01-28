@@ -1,0 +1,25 @@
+project_root: "../../.."
+
+plotting:
+  mplstyle_path: "figures/mplstyle_files/chaos_single.mplstyle"
+  mplstyle_double_path: "figures/mplstyle_files/chaos_double.mplstyle"
+  
+  # Path to CSV data (relative to project root)
+  data_csv_path: "figures/spurious/data/spurious_eigenvalues_results.csv.gz"
+  
+  # X-axis limits for CDF plots  
+  xlim: [0.0, 1.02]
+
+  # Optional: specific L values to plot in the CDF/combined figures (left panel).
+  # If commented out or empty, all available L values will be plotted.
+  L_values_to_plot: [2, 6, 8, 10, 12, 22, 42, 82, 122]
+
+  # Color scheme
+  colors:
+    colormap: "viridis"
+  
+  # Confidence interval percentiles (for percentile bands)
+  confidence_percentiles: [2.5, 97.5]
+
+output:
+  output_dir: 'figures/spurious/outputs'

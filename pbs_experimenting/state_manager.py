@@ -6,18 +6,18 @@ Tracks succeeded, failed, and combined jobs.
 
 import json
 import os
-from typing import Iterable, List, Set, Dict, Any
+from typing import Iterable, Any
 from pathlib import Path
 
 
-DEFAULT_STATE: Dict[str, Any] = {
+DEFAULT_STATE: dict[str, Any] = {
     "succeeded": [],
     "failed": [],
     "combined": [],
 }
 
 
-def load_state(state_path: str) -> Dict[str, Any]:
+def load_state(state_path: str) -> dict[str, Any]:
     """Load state from JSON file."""
     if not os.path.exists(state_path):
         return DEFAULT_STATE.copy()
@@ -26,7 +26,7 @@ def load_state(state_path: str) -> Dict[str, Any]:
         return json.load(f)
 
 
-def save_state(state: Dict[str, Any], state_path: str) -> None:
+def save_state(state: dict[str, Any], state_path: str) -> None:
     """Save state to JSON file."""
     path = Path(state_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +45,7 @@ def mark_succeeded(ids: Iterable[int], state_path: str) -> None:
     save_state(st, state_path)
 
 
-def get_succeeded(state_path: str) -> List[int]:
+def get_succeeded(state_path: str) -> list[int]:
     """Get list of succeeded job IDs."""
     return load_state(state_path).get("succeeded", [])
 
@@ -60,7 +60,7 @@ def mark_failed(ids: Iterable[int], state_path: str) -> None:
     save_state(st, state_path)
 
 
-def get_failed(state_path: str) -> List[int]:
+def get_failed(state_path: str) -> list[int]:
     """Get list of failed job IDs."""
     return load_state(state_path).get("failed", [])
 
@@ -75,7 +75,7 @@ def mark_combined(ids: Iterable[int], state_path: str) -> None:
     save_state(st, state_path)
 
 
-def get_combined(state_path: str) -> List[int]:
+def get_combined(state_path: str) -> list[int]:
     """Get list of combined job IDs."""
     return load_state(state_path).get("combined", [])
 
@@ -83,7 +83,7 @@ def get_combined(state_path: str) -> List[int]:
 # ────────────────────────────── UTILITIES ───────────────────────────────────
 
 
-def find_finished_jobs(output_dir: str, total_jobs: int) -> Set[int]:
+def find_finished_jobs(output_dir: str, total_jobs: int) -> set[int]:
     """
     Find which jobs have finished by checking for results.csv files.
 
@@ -108,7 +108,7 @@ def find_finished_jobs(output_dir: str, total_jobs: int) -> Set[int]:
     return finished
 
 
-def find_attempted_jobs(output_dir: str) -> Set[int]:
+def find_attempted_jobs(output_dir: str) -> set[int]:
     """
     Find which jobs have been attempted (output directory exists).
 

@@ -1,16 +1,16 @@
 import numpy as np
 from numpy.typing import NDArray
-from typing import Optional, Tuple, Union, Sequence
+from typing import Sequence
 
 
 def get_ar1_noise(
-    shape: Tuple[int, int],
+    shape: tuple[int, int],
     total_variance: float,
     phi: float = 0.8,
     tol: float = 0.05,
     max_tries: int = 100,
     burn_in: int | None = None,  # None → 5×time constant
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> NDArray[np.floating]:
     """
     Zero-mean AR(1):  w[n] = phi*w[n-1] + eps[n],  eps ~ N(0,1).
@@ -50,11 +50,11 @@ def get_ar1_noise(
 
 
 def get_heteroscedastic_noise(
-    shape: Tuple[int, int],
+    shape: tuple[int, int],
     total_variance: float = 1.0,
     sigma_min: float = 0.5,
     sigma_max: float = 1.5,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ):
     """
     Gaussian noise with variance ramping smoothly from sigma_min
@@ -72,12 +72,12 @@ def get_heteroscedastic_noise(
 
 
 def get_student_t_noise(
-    shape: Tuple[int, int],
+    shape: tuple[int, int],
     df: float = 2.01,
     total_variance: float = 1.0,
     tol: float = 0.05,  # ±5 % variance window
     max_tries: int = 100,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> NDArray[np.floating]:
     """
     Student-t noise whose *empirical* variance is within `tol`
@@ -118,11 +118,11 @@ def get_student_t_noise(
 
 
 def get_bi_gaussian_noise(
-    shape: Tuple[int, int],
+    shape: tuple[int, int],
     p: float = 0.1,  # fraction of "high-mean" component
     total_variance: float = 1.0,
-    q: float = 3.0,  # separation (Δμ in units of σ)
-    rng: Optional[np.random.Generator] = None,
+    q: float = 3.0,  # separation (Delta_mu in units of sigma)
+    rng: np.random.Generator | None = None,
 ) -> NDArray[np.floating]:
     rng = rng or np.random.default_rng()
 
@@ -144,16 +144,16 @@ class DMDDataGenerator:
 
     def __init__(
         self,
-        eigenvalue_magnitude: Union[float, Sequence[float]],
+        eigenvalue_magnitude: float | Sequence[float],
         frequency_separation: float,
         snr_db: float,
-        eigenvalue_magnitude_spread: Optional[float] = None,
+        eigenvalue_magnitude_spread: float | None = None,
         rho_mode: str = "linspace",
         top_amplitude: float = 1.0,
         dt: float = 1.0,
         noise_mode: str = "gaussian",
         force_mode_orthogonality: bool = False,
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
     ) -> None:
         self.rho_spec = eigenvalue_magnitude  # scalar or sequence
         self.rho_spread = eigenvalue_magnitude_spread  # None → 0
@@ -325,23 +325,35 @@ class DMDDataGenerator:
             return (real + 1j * imag).astype(np.complex128)
 
         if self.noise_mode == "ar1":
-            real_noise = get_ar1_noise((ns, nt), total_variance=var / 2, phi=0.8)
-            imag_noise = get_ar1_noise((ns, nt), total_variance=var / 2, phi=0.8)
+            real_noise = get_ar1_noise(
+                (ns, nt), total_variance=var / 2, phi=0.8, rng=self.rng
+            )
+            imag_noise = get_ar1_noise(
+                (ns, nt), total_variance=var / 2, phi=0.8, rng=self.rng
+            )
             return (real_noise + 1j * imag_noise).astype(np.complex128)
 
         if self.noise_mode == "hetero":
             real_noise = get_heteroscedastic_noise(
-                (ns, nt), total_variance=var / 2, sigma_min=0.5, sigma_max=1.5
+                (ns, nt),
+                total_variance=var / 2,
+                sigma_min=0.5,
+                sigma_max=1.5,
+                rng=self.rng,
             )
             imag_noise = get_heteroscedastic_noise(
-                (ns, nt), total_variance=var / 2, sigma_min=0.5, sigma_max=1.5
+                (ns, nt),
+                total_variance=var / 2,
+                sigma_min=0.5,
+                sigma_max=1.5,
+                rng=self.rng,
             )
             return (real_noise + 1j * imag_noise).astype(np.complex128)
 
         raise ValueError(f"Unsupported noise_mode: {self.noise_mode}")
 
     # ─────────────────────────── public interface ─────────────────────────────
-    def generate(self, n_spatial: int, n_timesteps: int, n_modes: int) -> Tuple[
+    def generate(self, n_spatial: int, n_timesteps: int, n_modes: int) -> tuple[
         NDArray[np.complexfloating],
         NDArray[np.complexfloating],
         NDArray[np.complexfloating],

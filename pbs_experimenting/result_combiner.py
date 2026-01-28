@@ -4,7 +4,6 @@ Result combiner for merging individual job CSVs into combined results.
 """
 
 from pathlib import Path
-from typing import List, Set
 import pandas as pd
 from tqdm import tqdm
 
@@ -102,7 +101,7 @@ def validate_and_deduplicate(df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
 
 def combine_results(
     output_dir: str,
-    job_ids: List[int] | None = None,
+    job_ids: list[int] | None = None,
     incremental: bool = False,
     combined_filename: str = "combined_results.csv",
     conflict_filename: str = "merge_conflicts.csv",

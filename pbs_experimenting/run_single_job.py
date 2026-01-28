@@ -8,7 +8,7 @@ import sys
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Tuple, Optional, Union, Any
+from typing import Any
 import yaml
 
 import numpy as np
@@ -18,22 +18,18 @@ from scipy import optimize
 from tqdm import tqdm
 import fire
 
-from algorithms.estimated_subspace_leakage import EstimatedSubspaceLeakage
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from algorithms.block_vandermonde_fit import FixedEigenvalueBVFit, NestedDMD
+from algorithms.estimated_subspace_residual import EstimatedSubspaceResidual
+from algorithms.kronecker_vandermonde_fit import FixedEigenvalueKVFit, NestedDMD
 from algorithms.clustering import ModeClustering
 from algorithms.stc import STC
-from algorithms.info_criteria import (
-    InformationCriteriaOrderEstimator,
+from algorithms.bic import (
+    compute_bic_rank,
     gap_ranks,
 )
 
-from dmd.dmd_tools import DelayEmbedding
+from utils.delay_embedding import DelayEmbedding
 from utils.data_generation import DMDDataGenerator
-from utils.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
+from dmd.dmd_utils import fit_dmd, align_modes_and_amplitudes_phases
 from utils.visualizations import (
     imshow_complex,
     plot_mode_table,
@@ -46,19 +42,19 @@ from analysis.subspace_analysis import compute_subspace_principal_angles
 DELAY_EMBEDDING_METHODS = {
     "STC",
     "NestedDMD",
-    "FixedEigenvalueBVFit",
+    "FixedEigenvalueKVFit",
+    "NestedDMD+ESR",
+    "FixedEigenvalueKVFit+ESR",
 }
 
 # Information criteria methods
 INFO_CRITERIA_METHODS = {
-    "AIC",
-    "AICc",
     "BIC",
 }
 
 
 def _skip_run_with_empty_csv(
-    output_path: Union[str, Path],
+    output_path: str | Path,
     reason: str,
 ) -> None:
     """Abort the run and write a header-only CSV."""
@@ -127,15 +123,15 @@ def get_gt_eigs_indices(gt_eigs: np.ndarray, pred_eigs: np.ndarray) -> np.ndarra
 
 
 def cluster_scores(
-    scores: Dict[str, np.ndarray],
-    clustering_config: Dict[str, Any],
-) -> Tuple[np.ndarray, int]:
+    scores: dict[str, np.ndarray],
+    clustering_config: dict[str, Any],
+) -> tuple[np.ndarray, int]:
     """Cluster scores and return labels and order estimate."""
     """
     normalization: str | None = "min_mafx",
         strategy: str = "vote",
         pilot_feature: str = "",
-        weights: Dict[str, float] | None = None,
+        weights: dict[str, float] | None = None,
         algorithm: str = "kmeans",
         gmm_covariance: str = "full",
         random_state: int | None = None,
@@ -152,7 +148,7 @@ def cluster_scores(
 def compute_subspace_proximity_stats(
     clean_angles: np.ndarray,
     practical_angles: np.ndarray,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Compute summary statistics from principal angle arrays.
 
@@ -177,7 +173,7 @@ def compute_subspace_proximity_analysis(
     true_eigenvalues: np.ndarray,
     num_modes: int,
     num_delays: int,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Compute subspace proximity summary statistics.
 
@@ -229,7 +225,7 @@ class MethodEvaluator:
         exact_dmd,
         max_rank: int,
         plot: bool = False,
-    ) -> Tuple[Dict[str, int], Dict[str, np.ndarray]]:
+    ) -> tuple[dict[str, int], dict[str, np.ndarray]]:
         """
         Evaluate all methods and return order estimates and masks.
 
@@ -239,6 +235,7 @@ class MethodEvaluator:
         """
         order_estimates = {}
         pred_masks = {}
+        scores_cache = {}  # Cache for feature scores
 
         # Align modes
         aligned_proj_modes, _ = align_modes_and_amplitudes_phases(
@@ -248,18 +245,15 @@ class MethodEvaluator:
             exact_dmd.modes, exact_dmd.amplitudes
         )
 
-        # Information criteria methods
-        info_methods = [m for m in self.enabled_methods if m in INFO_CRITERIA_METHODS]
-        if info_methods:
-            info_est = InformationCriteriaOrderEstimator(num_delays=self.num_delays)
-            info_orders = info_est.fit(signal, max_rank=max_rank, plot=plot)
-            for method in info_methods:
-                if method in info_orders:
-                    order_estimates[method] = info_orders[method]
+        # BIC method
+        if "BIC" in self.enabled_methods:
+            order_estimates["BIC"] = compute_bic_rank(
+                signal, max_rank=max_rank, num_delays=self.num_delays, plot=plot
+            )
 
         # GAP statistic
         if "GAP" in self.enabled_methods:
-            order_estimates["GAP"] = gap_ranks(signal).item()
+            order_estimates["GAP"] = gap_ranks(signal, num_delays=self.num_delays)
 
         # ExactModeNorm
         if "ExactModeNorm" in self.enabled_methods:
@@ -274,16 +268,30 @@ class MethodEvaluator:
                     exact_mode_norms, "Exact-Mode-Norms", "ExactModeNorm", show_id=True
                 )
 
-        if "ESL-Norm" in self.enabled_methods:
-            esl = EstimatedSubspaceLeakage()
-            scores = esl.compute_features(
+        if "EigenvalueMagnitude" in self.enabled_methods:
+            magnitudes = np.abs(exact_dmd.eigs)
+            labels, order = cluster_scores(
+                {"EigenvalueMagnitude": magnitudes}, self.clustering_config
+            )
+            order_estimates["EigenvalueMagnitude"] = order
+            pred_masks["EigenvalueMagnitude"] = labels
+
+            if plot:
+                scatter_scores_1d(
+                    magnitudes, "Magnitude", "EigenvalueMagnitude", show_id=True
+                )
+
+        if "ESR-Energy" in self.enabled_methods:
+            esr = EstimatedSubspaceResidual()
+            scores = esr.compute_features(
                 exact_modes=aligned_ex_modes,  # shape (D*L, M)
                 eigenvalues=exact_dmd.eigs,  # match exact modes
                 plot=plot,
             )
+            scores_cache["ESR"] = scores  # Save to cache
             labels, order = cluster_scores(scores, self.clustering_config)
-            order_estimates["ESL-Norm"] = order
-            pred_masks["ESL-Norm"] = labels
+            order_estimates["ESR-Energy"] = order
+            pred_masks["ESR-Energy"] = labels
 
         # Delay embedding methods
         if self.num_delays > 1:
@@ -296,6 +304,7 @@ class MethodEvaluator:
                     proj_dmd.eigs,
                     aligned_proj_modes,
                     aligned_ex_modes,
+                    scores_cache,
                     order_estimates,
                     pred_masks,
                     plot,
@@ -315,57 +324,103 @@ class MethodEvaluator:
         eigenvalues: np.ndarray,
         aligned_proj_modes: np.ndarray,
         aligned_ex_modes: np.ndarray,
+        scores_cache: dict,
         order_estimates: dict,
         pred_masks: dict,
         plot: bool,
     ):
         """Evaluate delay-embedding-based methods."""
 
-        # STC
-        if "STC" in methods:
+        # --- Determine what features need to be computed ---
+        features_to_compute = set()
+        for method in methods:
+            if "+" in method:
+                # Combination method: add all components
+                features_to_compute.update(method.split("+"))
+            else:
+                # Individual method
+                features_to_compute.add(method)
+
+        # --- Compute all needed features and save to cache ---
+
+        if "STC" in features_to_compute:
             stc = STC(
                 num_delays=self.num_delays,
                 dt=self.dt,
-                use_nyquist_cap=self.options_config.get("use_nyquist_cap", True),
             )
-            scores = stc.compute_features(
+            scores_cache["STC"] = stc.compute_features(
                 eigenvalues=eigenvalues,
                 modes=aligned_proj_modes,
-                plot=plot,
+                plot=plot and "STC" in methods,
             )
-            labels, order = cluster_scores(scores, self.clustering_config)
-            order_estimates["STC"] = order
-            pred_masks["STC"] = labels
 
-        # NestedDMD
-        if "NestedDMD" in methods:
+        if "NestedDMD" in features_to_compute:
             nested_dmd = NestedDMD(
                 num_delays=self.num_delays,
                 spatial_dim=self.spatial_dim,
             )
-            scores = nested_dmd.compute_features(
+            scores_cache["NestedDMD"] = nested_dmd.compute_features(
                 modes=aligned_proj_modes,
                 eigenvalues=eigenvalues,
-                plot=plot,
+                plot=plot and "NestedDMD" in methods,
             )
-            labels, order = cluster_scores(scores, self.clustering_config)
-            order_estimates["NestedDMD"] = order
-            pred_masks["NestedDMD"] = labels
 
-        # FixedEigenvalueBVFit
-        if "FixedEigenvalueBVFit" in methods:
-            febvf = FixedEigenvalueBVFit(
+        if "FixedEigenvalueKVFit" in features_to_compute:
+            febvf = FixedEigenvalueKVFit(
                 num_delays=self.num_delays,
                 spatial_dim=self.spatial_dim,
             )
-            scores = febvf.compute_features(
+            scores_cache["FixedEigenvalueKVFit"] = febvf.compute_features(
                 modes=aligned_proj_modes,
                 eigenvalues=eigenvalues,
-                plot=plot,
+                plot=plot and "FixedEigenvalueKVFit" in methods,
             )
-            labels, order = cluster_scores(scores, self.clustering_config)
-            order_estimates["FixedEigenvalueBVFit"] = order
-            pred_masks["FixedEigenvalueBVFit"] = labels
+
+        if "ESR" in features_to_compute and "ESR" not in scores_cache:
+            esr = EstimatedSubspaceResidual()
+            scores_cache["ESR"] = esr.compute_features(
+                exact_modes=aligned_ex_modes,
+                eigenvalues=eigenvalues,
+                plot=False,
+            )
+
+        # --- Cluster individual methods ---
+
+        if "STC" in methods:
+            labels, order = cluster_scores(scores_cache["STC"], self.clustering_config)
+            order_estimates["STC"] = order
+            pred_masks["STC"] = labels
+
+        if "NestedDMD" in methods:
+            labels, order = cluster_scores(
+                scores_cache["NestedDMD"], self.clustering_config
+            )
+            order_estimates["NestedDMD"] = order
+            pred_masks["NestedDMD"] = labels
+
+        if "FixedEigenvalueKVFit" in methods:
+            labels, order = cluster_scores(
+                scores_cache["FixedEigenvalueKVFit"], self.clustering_config
+            )
+            order_estimates["FixedEigenvalueKVFit"] = order
+            pred_masks["FixedEigenvalueKVFit"] = labels
+
+        # --- Cluster combinations (features guaranteed in cache) ---
+
+        if "NestedDMD+ESR" in methods:
+            combined_scores = {**scores_cache["NestedDMD"], **scores_cache["ESR"]}
+            labels, order = cluster_scores(combined_scores, self.clustering_config)
+            order_estimates["NestedDMD+ESR"] = order
+            pred_masks["NestedDMD+ESR"] = labels
+
+        if "FixedEigenvalueKVFit+ESR" in methods:
+            combined_scores = {
+                **scores_cache["FixedEigenvalueKVFit"],
+                **scores_cache["ESR"],
+            }
+            labels, order = cluster_scores(combined_scores, self.clustering_config)
+            order_estimates["FixedEigenvalueKVFit+ESR"] = order
+            pred_masks["FixedEigenvalueKVFit+ESR"] = labels
 
 
 class MetricsTracker:
@@ -389,7 +444,7 @@ class MetricsTracker:
         self,
         method: str,
         pred_order: int,
-        pred_mask: Optional[np.ndarray],
+        pred_mask: np.ndarray | None,
         true_mask: np.ndarray,
         true_order: int,
     ):
@@ -407,7 +462,7 @@ class MetricsTracker:
             rec["fn"] += int((~p & t).sum())
             rec["tn"] += int((~p & ~t).sum())
 
-    def add_subspace_proximity_stats(self, stats: Dict[str, float]):
+    def add_subspace_proximity_stats(self, stats: dict[str, float]):
         """Add subspace proximity statistics from current iteration."""
         for key, value in stats.items():
             self.subspace_stats[key].append(value)
@@ -489,7 +544,7 @@ def compute_dmd_and_ground_truth(
     max_rank: int,
     num_delays: int,
     gt_eigs: np.ndarray,
-) -> Tuple:
+) -> tuple:
     """Compute DMD results and ground truth matching."""
     proj_dmd = fit_dmd(
         signal, svd_rank=max_rank, mode="projected", num_delays=num_delays
@@ -503,7 +558,7 @@ def compute_dmd_and_ground_truth(
     return proj_dmd, exact_dmd, true_mask
 
 
-def run_experiment(job_config: Dict, plot: bool = False) -> None:
+def run_experiment(job_config: dict, plot: bool = False) -> None:
     """
     Run the experiment for a single job configuration.
 
@@ -604,7 +659,7 @@ def run_experiment(job_config: Dict, plot: bool = False) -> None:
             sig, max_rank, num_delays, gt_eigs
         )
 
-        # Subspace proximity analysis
+        # Subspace proximity results
         proximity_stats = compute_subspace_proximity_analysis(
             sig, sig_clean, modes, gt_eigs, num_modes, num_delays
         )

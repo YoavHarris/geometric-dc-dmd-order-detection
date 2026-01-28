@@ -7,15 +7,15 @@ Creates individual YAML configuration files for each job.
 import os
 import stat
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 import yaml
 
 
 def build_job_config(
     job_id: int,
-    params: Dict[str, Any],
-    config: Dict[str, Any],
-) -> Dict[str, Any]:
+    params: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[str, Any]:
     """
     Build a complete job configuration.
 
@@ -54,8 +54,8 @@ def build_job_config(
 
 
 def write_job_configs(
-    param_combinations: List[Dict[str, Any]],
-    config: Dict[str, Any],
+    param_combinations: list[dict[str, Any]],
+    config: dict[str, Any],
     output_dir: Path,
 ) -> int:
     """
@@ -86,7 +86,7 @@ def write_job_configs(
     return len(param_combinations)
 
 
-def load_job_config(config_path: str) -> Dict[str, Any]:
+def load_job_config(config_path: str) -> dict[str, Any]:
     """
     Load a job configuration file.
 

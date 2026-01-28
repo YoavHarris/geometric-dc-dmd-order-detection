@@ -5,36 +5,39 @@ Validates all configuration parameters before job generation.
 """
 
 import os
+import sys
 from typing import Any
 import numpy as np
+
+# Constants
+VALID_METHODS = {
+    "BIC",
+    "GAP",
+    "ExactModeNorm",
+    "EigenvalueMagnitude",
+    "ESR-Energy",
+    "STC",
+    "NestedDMD",
+    "FixedEigenvalueKVFit",
+    "NestedDMD+ESR",
+    "FixedEigenvalueKVFit+ESR",
+}
+
+VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}
+VALID_CLUSTERING_STRATEGIES = {"mean", "distance"}
+VALID_CLUSTERING_NORMALIZATIONS = {"min_max", "standard", "null", None}
+
+VALID_PARAMETER_TYPES = {"range", "list", "const"}
+VALID_ROLES = {"wp", "cartesian"}
+VALID_SCALES = {"lin", "log"}
+VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "student_t", "hetero"}
+VALID_RHO_MODES = {"random", "fixed"}
 
 
 class ConfigValidationError(Exception):
     """Raised when configuration validation fails."""
 
     pass
-
-
-VALID_METHODS = {
-    "AIC",
-    "AICc",
-    "BIC",
-    "GAP",
-    "ExactModeNorm",
-    "ESL-Norm",
-    "STC",
-    "NestedDMD",
-    "FixedEigenvalueBVFit",
-}
-
-VALID_CLUSTERING_ALGORITHMS = {"gmm", "kmeans"}
-VALID_CLUSTERING_DECIDERS = {"mean", "distance"}
-VALID_CLUSTERING_NORMALIZATIONS = {"min_max", "standard", "null", None}
-VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "uniform", "student_t", "hetero", "ar1"}
-VALID_RHO_MODES = {"random", "linspace"}
-VALID_PARAMETER_TYPES = {"range", "list", "const"}
-VALID_SCALES = {"lin", "log"}
-VALID_ROLES = {"wp", "cartesian"}
 
 
 def validate_config(config: dict[str, Any]) -> None:
@@ -107,11 +110,11 @@ def _validate_clustering_section(config: dict[str, Any]) -> None:
             f"Invalid clustering.algorithm: {algo}. Valid: {VALID_CLUSTERING_ALGORITHMS}"
         )
 
-    # Validate decider
-    decider = clustering.get("decider")
-    if decider not in VALID_CLUSTERING_DECIDERS:
+    # Validate strategy
+    strategy = clustering.get("strategy")
+    if strategy not in VALID_CLUSTERING_STRATEGIES:
         raise ConfigValidationError(
-            f"Invalid clustering.decider: {decider}. Valid: {VALID_CLUSTERING_DECIDERS}"
+            f"Invalid clustering.strategy: {strategy}. Valid: {VALID_CLUSTERING_STRATEGIES}"
         )
 
     # Validate normalization
@@ -424,16 +427,22 @@ def validate_config_file(config_path: str) -> dict[str, Any]:
     return config
 
 
-if __name__ == "__main__":
-    import sys
+def main(config_path: str):
+    """
+    Validate a configuration file.
 
-    if len(sys.argv) != 2:
-        print("Usage: python config_validator.py <config.yaml>")
-        sys.exit(1)
-
+    Args:
+        config_path: Path to YAML config file
+    """
     try:
-        validate_config_file(sys.argv[1])
+        validate_config_file(config_path)
         print("✓ Configuration is valid")
     except ConfigValidationError as e:
         print(f"✗ Configuration validation failed: {e}")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    import fire
+
+    fire.Fire(main)

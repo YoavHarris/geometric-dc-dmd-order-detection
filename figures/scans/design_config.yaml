@@ -1,0 +1,107 @@
+# Design Configuration - Static styling choices
+# This file is rarely touched
+
+# Project root for path resolution
+project_root: "../.."
+
+# Plotting configuration
+plotting:
+  mplstyle:
+    style_mode: "double"  # "single" | "double" | "custom"
+    custom_style_path: null  # used only if style_mode == "custom"
+
+# Method styling (fixed colors, linestyles, and markers)
+# Convention: Our methods use circles (o), comparison methods use triangles (^)
+methods:
+  ESR-Energy:
+    color: '#00008B'
+    linestyle: '-'
+    marker: 'o'
+  FixedEigenvalueKVFit:
+    color: '#5DADE2'
+    linestyle: '-'
+    marker: 'o'
+  NestedDMD:
+    color: '#4682B4'
+    linestyle: '-'
+    marker: 'o'
+  NestedDMD+ESR:
+    color: '#006400'
+    linestyle: '-'
+    marker: 'o'
+  FixedEigenvalueKVFit+ESR:
+    color: '#228B22'
+    linestyle: '-'
+    marker: 'o'
+  BIC:
+    color: '#CD5C5C'
+    linestyle: '--'
+    marker: '^'
+  ExactModeNorm:
+    color: '#611501'
+    linestyle: '--'
+    marker: '^'
+  EigenvalueMagnitude:
+    color: '#B5884A'
+    linestyle: '--'
+    marker: '^'
+  GAP:
+    color: '#FF8C00'
+    linestyle: '--'
+    marker: '^'
+  STC:
+    color: '#FFD700'
+    linestyle: '--'
+    marker: '^'
+
+# Figure dimensions
+figure:
+  total_width: 7.0  # Full text width from chaos_double.mplstyle
+  panel_height: 3.0
+
+# Working point vertical line styling
+working_point_line:
+  color: black
+  linestyle: '--'
+  linewidth: 0.6
+  alpha: 0.7
+  show: false
+
+# Tick settings
+ticks:
+  max_ticks: 5  # Maximum number of ticks on axes (approximate)
+
+# Defaults for unknown methods
+defaults:
+  color: '#999999'
+  linestyle: ':'
+  marker: 'o'
+
+# Parameter label mappings (overrides auto-formatting)
+# Define consistent, proper labels for your parameters globally
+# Supports LaTeX notation with $ delimiters
+# These are used automatically unless overridden in individual plots
+parameter_labels:
+  snr_db: "SNR (dB)"
+  eig_mag: "Damping parameter $\\rho$"
+  freq_sep: "$\\Delta \\theta$"
+  top_amplitude: "$\\kappa_b$"
+  order_hit_prob: "$P_{\\mathrm{hit}}$"
+  num_modes: "# True modes"
+  noise_mode: "Noise Type"
+  temporal_dim: "Temporal Dimension"
+  spatial_dim: "Spatial Dimension"
+  max_rank: "Truncation rank $M$"
+  # Add more parameter mappings as needed
+
+# Parameter value mappings (for displaying specific parameter values)
+# Maps raw data values to display-friendly names
+# Useful for categorical parameters in panel titles
+parameter_value_labels:
+  noise_mode:
+    gaussian: "Gaussian"
+    student_t: "Student-T"
+    hetero: "Heteroscedastic"
+    bi_gaussian: "Bi-Gaussian"
+  # Add more value mappings as needed
+
