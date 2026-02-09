@@ -1,0 +1,111 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Max Rank Sensitivity Scan (Hard/Easy/WP)
+# Focus: num_modes=5
+# ══════════════════════════════════════════════════════════════════════════════
+
+experiment:
+  base_random_seed: 196  # Base seed for reproducibility; each job gets base + job_id*1000
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Methods to evaluate (comment out to disable)
+# ──────────────────────────────────────────────────────────────────────────────
+methods:
+  - BIC
+  - GAP
+  - ExactModeNorm
+  - STC
+  - ESR-Energy
+  - NestedDMD
+  - FixedEigenvalueKVFit
+  # Combination methods (merge features before clustering):
+  - NestedDMD+ESR            # Combines NestedDMD features with ESR-Energy
+  - FixedEigenvalueKVFit+ESR # Combines FixedEigenvalueKVFit features with ESR-Energy
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Clustering configuration (shared by all clustering-based methods)
+# ──────────────────────────────────────────────────────────────────────────────
+clustering:
+  algorithm: gmm        # Options: gmm, kmeans
+  strategy: mean         # Options: mean, distance
+  normalization: min_max  # Options: min_max, standard, null
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Parameter Sweep
+# ──────────────────────────────────────────────────────────────────────────────
+generator:
+  working_point:
+    eig_mag: 0.98
+    eig_mag_spread: 0.0
+    delays_over_timesteps: 0.32
+    spatial_dim: 45
+    temporal_dim: 200
+    top_amplitude: 1.0
+    max_rank: 15
+    noise_mode: "gaussian" # Default, filtered later by sweep list
+
+parameters:
+  # --- Sweep Parameter ---
+  max_rank:
+    type: range
+    role: wp
+    start: 6
+    end: 134
+    num_steps: 33
+    as_int: true
+
+  # --- Condition Parameters (Cartesian) ---
+  snr_db:
+    type: list
+    role: cartesian
+    values: [8.5, 9.0, 9.5]
+
+  freq_sep:
+    type: list
+    role: cartesian
+    values: [0.0094375, 0.009625, 0.0098125]
+
+  eig_mag:
+    type: list
+    role: cartesian
+    values: [0.965, 0.97, 0.975]
+
+  num_modes:
+    type: list
+    role: cartesian
+    values: [2,3,5]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Static Arguments (constant across all jobs)
+# ──────────────────────────────────────────────────────────────────────────────
+static_args:
+  n_iter: 500
+  dt: 1.0
+  rho_mode: random
+  eig_mag_spread: 0.0
+  artificial_damping: 1.0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PBS Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+pbs:
+  queue: REQUIRED_USER_INPUT
+  mem: 1000MB
+  ncpus: 1
+  mpiprocs: 1
+  walltime: "02:30:00"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Paths
+# ──────────────────────────────────────────────────────────────────────────────
+paths:
+  interpreter: REQUIRED_USER_INPUT
+  code_dir: REQUIRED_USER_INPUT
+  worker_script: pbs_experimenting/run_single_job.py
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Output Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+output:
+  output_dir: REQUIRED_USER_INPUT
+
