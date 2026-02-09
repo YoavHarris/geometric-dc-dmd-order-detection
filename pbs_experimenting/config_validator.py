@@ -309,15 +309,16 @@ def _validate_paths_section(config: dict[str, Any]) -> None:
             raise ConfigValidationError(f"Missing 'paths.{field}'")
 
     # Check interpreter exists (if local path)
+    # Check interpreter exists (if local path)
     interp = paths["interpreter"]
-    if not interp.startswith("/"):
+    if not (interp.startswith("/") or (len(interp) > 1 and interp[1] == ":")):
         raise ConfigValidationError(
             f"'paths.interpreter' must be absolute path, got {interp}"
         )
 
     # Check code_dir exists (if local path)
     code_dir = paths["code_dir"]
-    if not code_dir.startswith("/"):
+    if not (code_dir.startswith("/") or (len(code_dir) > 1 and code_dir[1] == ":")):
         raise ConfigValidationError(
             f"'paths.code_dir' must be absolute path, got {code_dir}"
         )

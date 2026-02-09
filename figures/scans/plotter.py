@@ -431,7 +431,11 @@ def filter_data(
     exclude_params = exclude_params or []
     filtered = df.copy()
 
-    for param, value in working_point.items():
+    # Process filters
+    params = list(working_point.keys())
+
+    for param in params:
+        value = working_point[param]
         if param in exclude_params or param not in df.columns:
             continue
 
@@ -440,5 +444,7 @@ def filter_data(
             filtered = filtered[mask]
         else:
             filtered = filtered[filtered[param] == value]
+
+
 
     return filtered
