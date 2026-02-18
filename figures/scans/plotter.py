@@ -172,7 +172,16 @@ class SingleScanPlotter:
             else:
                 tick_cfg = self.config.get("ticks", {})
                 max_tick_count = tick_cfg.get("max_ticks", 6)
-            ax.xaxis.set_major_locator(MaxNLocator(nbins=max_tick_count, integer=False))
+            
+            # Check if values are integers to force integer ticks (e.g. num_modes)
+            try:
+                is_integer_data = np.all(np.mod(df[x_param].dropna(), 1) == 0)
+            except Exception:
+                is_integer_data = False
+            
+            ax.xaxis.set_major_locator(
+                MaxNLocator(nbins=max_tick_count, integer=is_integer_data)
+            )
             ax.yaxis.set_major_locator(MaxNLocator(nbins=max_tick_count, integer=False))
 
         # Add vertical line at working point value (if provided)
@@ -278,6 +287,7 @@ class PanelComposer:
         overall_title: str | None = None,
         output_path: str | None = None,
         show: bool = False,
+        style_mode: str | None = None,
     ):
         """
         Compose multiple scan panels into one figure.
@@ -292,13 +302,30 @@ class PanelComposer:
             overall_title: Title for entire figure
             output_path: Path to save
             show: Display figure?
+            style_mode: Override style ("single", "double", "custom").
         """
         n_panels = len(panels)
 
-        # Create figure
-        fig_cfg = self.config["figure"]
-        total_width = fig_cfg["total_width"]
-        panel_height = fig_cfg["panel_height"]
+        # Apply per-plot style override if requested
+        if style_mode is not None:
+            project_root = self.config.get("_project_root")
+            if project_root is None:
+                raise ValueError(
+                    "Cannot override style_mode: config missing _project_root "
+                    "(was it loaded via load_config()?)"
+                )
+            plot_cfg = {"mplstyle": {"style_mode": style_mode}}
+            apply_style(plot_cfg, project_root)
+
+        # Determine figure dimensions
+        if style_mode is not None:
+            # Use dimensions from the just-applied style
+            total_width, panel_height = plt.rcParams["figure.figsize"]
+        else:
+            # Use dimensions from config (default behavior)
+            fig_cfg = self.config["figure"]
+            total_width = fig_cfg["total_width"]
+            panel_height = fig_cfg["panel_height"]
 
         if layout == "horizontal":
             figsize = (total_width, panel_height)
@@ -357,7 +384,7 @@ class PanelComposer:
                 handles,
                 labels,
                 loc="lower center",
-                bbox_to_anchor=(0.5, -0.1),  # Position below xlabel
+                bbox_to_anchor=(0.5, -0.18),  # Position below xlabel
                 ncol=ncol,
                 frameon=True,
             )
@@ -402,6 +429,7 @@ def load_config(path: str | None = None) -> dict[str, Any]:
 
     # Resolve project root and apply style
     project_root = resolve_project_root(config, path)
+    config["_project_root"] = project_root  # Store for per-plot style overrides
 
     # Apply style if plotting config exists
     if "plotting" in config:
@@ -440,7 +468,7 @@ def filter_data(
             continue
 
         if isinstance(value, (float, np.floating)):
-            mask = np.isclose(filtered[param], value, rtol=1e-5, atol=1e-8)
+            mask = np.isclose(filtered[param], value, rtol=1e-5, atol=1e-5)
             filtered = filtered[mask]
         else:
             filtered = filtered[filtered[param] == value]

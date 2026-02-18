@@ -3,8 +3,8 @@ job_id: 1
 output_path: results/example_job.csv
 
 # Reproducibility
-base_random_seed: 1234
-random_seed: 1235
+base_random_seed: 196
+random_seed: 1196
 
 # ---- Parameters for this single job ----
 parameters:
