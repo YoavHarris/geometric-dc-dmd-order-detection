@@ -68,7 +68,7 @@ parameters:
     role: wp
     start: 0.85
     end: 1.0
-    num_steps: 11
+    num_steps: 16
     scale: lin
 
   spatial_dim:
@@ -123,7 +123,7 @@ static_args:
 # PBS Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 pbs:
-  queue: REQUIRED_USER_INPUT
+  queue: zeus_comb_short 
   mem: 1000MB
   ncpus: 1
   mpiprocs: 1
@@ -133,12 +133,12 @@ pbs:
 # Paths
 # ──────────────────────────────────────────────────────────────────────────────
 paths:
-  interpreter: REQUIRED_USER_INPUT
-  code_dir: REQUIRED_USER_INPUT
+  interpreter: /home/yoav.h/miniconda/envs/zeus-dmd/bin/python3.11
+  code_dir: /home/yoav.h/dcdmd_11_25/dc-dmd-order-detection
   worker_script: pbs_experimenting/run_single_job.py
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Output Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 output:
-  output_dir: REQUIRED_USER_INPUT
+  output_dir: /home/yoav.h/dcdmd_11_25/final_paper_runs/no_dc

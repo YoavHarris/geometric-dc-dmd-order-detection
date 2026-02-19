@@ -242,9 +242,9 @@ class ScanPlotterCLI:
             style_mode=style_mode,
         )
 
-    def batch(self, config_path: str):
+    def plot_config(self, config_path: str):
         """
-        Run batch of plots from YAML config.
+        Run plots from YAML config.
 
         Config should have:
             base: (common settings)
