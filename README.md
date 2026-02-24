@@ -29,12 +29,27 @@ Full documentation is available in the `docs/` directory:
     from utils.data_generation import DMDDataGenerator
 
     # Generate synthetic data
-    X, _, _, _, _ = DMDDataGenerator(snr_db=10).generate(50, 200, 3)
+    X, _, _, _, _ = DMDDataGenerator(
+        eigenvalue_magnitude=0.98,
+        frequency_separation=0.03,
+        snr_db=10.0,
+        noise_mode="gaussian",
+        random_seed=0,
+    ).generate(50, 200, 3)
 
     # Fit DMD with delay embedding
     dmd = fit_dmd(X, svd_rank=10, num_delays=5)
-    print(f"Found {len(dmd.eigenvalues)} eigenvalues")
+    print(f"Found {len(dmd.eigs)} eigenvalues")
     ```
+
+## Running CLIs (recommended)
+
+All repository CLIs can be run from the repo root using module execution:
+
+```bash
+python -m pbs_experimenting.experiment_runner --help
+python -m figures.scans.cli --help
+```
 
 ## Citation
 

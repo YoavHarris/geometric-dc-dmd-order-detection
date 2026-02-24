@@ -35,6 +35,7 @@ class ScanPlotterCLI:
         max_ticks: int | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
+        style_mode: str | None = None,
     ):
         """
         Create a single scan plot.
@@ -77,7 +78,8 @@ class ScanPlotterCLI:
         ]
 
         self.composer.compose(
-            panels=panels, overall_title=title, output_path=output_path, show=show
+            panels=panels, overall_title=title, output_path=output_path, show=show,
+            style_mode=style_mode,
         )
 
     def multi(
@@ -97,6 +99,7 @@ class ScanPlotterCLI:
         max_ticks: int | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
+        style_mode: str | None = None,
     ):
         """
         Create multi-panel plot varying panel_param.
@@ -155,6 +158,7 @@ class ScanPlotterCLI:
             overall_title=title,
             output_path=output_path,
             show=show,
+            style_mode=style_mode,
         )
 
     def multi_xparam(
@@ -171,6 +175,7 @@ class ScanPlotterCLI:
         max_ticks: int | None = None,
         xlabel: str | None = None,
         ylabel: str | None = None,
+        style_mode: str | None = None,
     ):
         """
         Create multi-panel plot with different x-axis parameter per panel.
@@ -234,11 +239,12 @@ class ScanPlotterCLI:
             overall_title=title,
             output_path=output_path,
             show=show,
+            style_mode=style_mode,
         )
 
-    def batch(self, config_path: str):
+    def plot_config(self, config_path: str):
         """
-        Run batch of plots from YAML config.
+        Run plots from YAML config.
 
         Config should have:
             base: (common settings)
@@ -291,6 +297,7 @@ class ScanPlotterCLI:
                         max_ticks=merged.get("max_ticks"),
                         xlabel=merged.get("xlabel"),
                         ylabel=merged.get("ylabel"),
+                        style_mode=merged.get("style_mode"),
                     )
                 elif "panel_param" in merged:
                     # Multi-panel mode (same x-axis, varying panel_param)
@@ -310,6 +317,7 @@ class ScanPlotterCLI:
                         max_ticks=merged.get("max_ticks"),
                         xlabel=merged.get("xlabel"),
                         ylabel=merged.get("ylabel"),
+                        style_mode=merged.get("style_mode"),
                     )
                 else:
                     self.single(
@@ -326,6 +334,7 @@ class ScanPlotterCLI:
                         max_ticks=merged.get("max_ticks"),
                         xlabel=merged.get("xlabel"),
                         ylabel=merged.get("ylabel"),
+                        style_mode=merged.get("style_mode"),
                     )
 
                 print("  [OK]")

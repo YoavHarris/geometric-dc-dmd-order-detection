@@ -38,14 +38,14 @@ dmd.fit(data)  # (spatial_dim, num_snapshots)
 ```
 
 **Attributes after fitting:**
-- `eigenvalues`: `(M,)` - DMD eigenvalues
+- `eigs`: `(M,)` - DMD eigenvalues
 - `modes`: `(spatial_dim, M)` - DMD modes
 - `amplitudes`: `(M,)` - Mode amplitudes
-- `reconstructed_data`: Full reconstruction of training data
+- `reconstructed_data`: Full reconstruction of training data (PyDMD attribute)
 
 **Methods:**
 - `reconstruct(timesteps)`: Reconstruct at specific timesteps
-- `reconstructed_data()`: Property returning full reconstruction
+- `reconstructed_data()`: Reconstruct full training sequence (custom DMD helper)
 
 ---
 
@@ -81,7 +81,7 @@ generator = DMDDataGenerator(
     frequency_separation=0.03,        # Frequency spacing
     snr_db=10.0,                      # Signal-to-noise ratio
     eigenvalue_magnitude_spread=None, # Heterogeneity in magnitudes
-    rho_mode='linspace',              # 'linspace', 'random', or 'logspace'
+    rho_mode='linspace',              # 'linspace' or 'random'
     noise_mode='gaussian',            # Noise type
     random_seed=None
 )
@@ -95,6 +95,7 @@ X, X_clean, eigs, modes, amps = generator.generate(
 
 **Noise modes:**
 - `'gaussian'`: Standard Gaussian noise
+- `'uniform'`: Uniform noise, rescaled to match target variance
 - `'student_t'`: Heavy-tailed Student-t noise (df=2.01)
 - `'hetero'`: Heteroscedastic (time-varying variance)
 - `'bi_gaussian'`: Bi-modal Gaussian mixture

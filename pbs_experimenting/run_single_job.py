@@ -125,7 +125,7 @@ def get_gt_eigs_indices(gt_eigs: np.ndarray, pred_eigs: np.ndarray) -> np.ndarra
 def cluster_scores(
     scores: dict[str, np.ndarray],
     clustering_config: dict[str, Any],
-) -> tuple[np.ndarray, int]:
+) -> tuple[np.ndarray, int | float]:
     """Cluster scores and return labels and order estimate."""
     """
     normalization: str | None = "min_mafx",
@@ -136,13 +136,18 @@ def cluster_scores(
         gmm_covariance: str = "full",
         random_state: int | None = None,
     """
-    clustering = ModeClustering(
-        algorithm=clustering_config.get("algorithm", "gmm"),
-        strategy=clustering_config.get("strategy", "mean"),
-        normalization=clustering_config.get("normalization", "min_max"),
-    )
-    labels = clustering.fit(scores).labels_
-    return labels.astype(int), int(labels.sum())
+    try:
+        clustering = ModeClustering(
+            algorithm=clustering_config.get("algorithm", "gmm"),
+            strategy=clustering_config.get("strategy", "mean"),
+            normalization=clustering_config.get("normalization", "min_max"),
+        )
+        labels = clustering.fit(scores).labels_
+        return labels.astype(int), int(labels.sum())
+    except ValueError:
+        # Clustering failed (e.g. empty cluster)
+        n_modes = len(next(iter(scores.values())))
+        return np.zeros(n_modes, dtype=int), np.nan
 
 
 def compute_subspace_proximity_stats(

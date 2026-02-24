@@ -77,10 +77,10 @@ def compute_bic_rank(
         ) + num_parameters * np.log(num_observations)
 
         ranks.append(rank)
-        bic_values.append(bic)
+        bic_values.append(bic.item())
 
     # Locate minimum
-    best_idx = int(np.argmin(bic_values))
+    best_idx = np.argmin(bic_values).item()
     best_rank = ranks[best_idx]
 
     if plot:

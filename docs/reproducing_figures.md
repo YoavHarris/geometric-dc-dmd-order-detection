@@ -20,7 +20,7 @@ pip install -r figures/scans/requirements.txt
 **Single Scan:**
 
 ```bash
-python figures/scans/cli.py single \
+python -m figures.scans.cli single \
   --csv_path=results.csv \
   --x_param=snr_db \
   --metric=order_hit_prob \
@@ -32,7 +32,7 @@ python figures/scans/cli.py single \
 **Multi-Panel (Parameter Variation):**
 
 ```bash
-python figures/scans/cli.py multi \
+python -m figures.scans.cli multi \
   --csv_path=results.csv \
   --x_param=snr_db \
   --metric=order_hit_prob \
@@ -46,7 +46,7 @@ python figures/scans/cli.py multi \
 **Batch Processing (Recommended):**
 
 ```bash
-python figures/scans/cli.py batch --config_path=examples/simple_batch.yaml
+python -m figures.scans.cli plot_config --config_path=figures/scans/configs/paper_num_modes.yaml
 ```
 
 ### Configuration
@@ -63,18 +63,18 @@ Generates detailed figures showing the distribution of spurious eigenvalues and 
 ### Usage
 
 ```bash
-python figures/spurious/spurious_eigs_L_plotter.py path/to/config.yaml
+python -m figures.spurious.spurious_eigs_L_plotter path/to/config.yaml
 ```
 
 ### Experiment Workflow
 
 1.  Run the experiment to generate data:
     ```bash
-    python analysis/spurious_eigenvalues_and_L/spurious_eigs_L_experiment.py analysis/spurious_eigenvalues_and_L/spurious_eigs_L_config.yaml
+    python -m analysis.spurious_eigenvalues_and_L.spurious_eigs_L_experiment --config=analysis/spurious_eigenvalues_and_L/spur_eigs_L_config.yaml
     ```
 2.  Run the plotter:
     ```bash
-    python figures/spurious/spurious_eigs_L_plotter.py analysis/spurious_eigenvalues_and_L/spurious_eigs_L_config.yaml
+    python -m figures.spurious.spurious_eigs_L_plotter figures/spurious/configs/paper_config.yaml
     ```
 
 ### Generated Figures
@@ -98,5 +98,5 @@ To reproduce the exact figures from the paper:
 
 ```bash
 # Example: Paper scans
-python figures/scans/cli.py batch --config_path=figures/scans/configs/paper_plots.yaml
+python -m figures.scans.cli plot_config --config_path=figures/scans/configs/paper_num_modes.yaml
 ```

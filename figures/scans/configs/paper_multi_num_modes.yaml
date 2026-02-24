@@ -2,7 +2,7 @@
 # Uses baseline_working_point to avoid repetition
 
 base:
-  csv_path: figures/scans/data/delay_embedded_combined_results.csv.gz
+  csv_path: figures/scans/data/paper_dc.csv.gz
   metric: order_hit_prob
   methods:
     - BIC
@@ -55,9 +55,3 @@ plots:
     x_param: top_amplitude
     output_path: figures/scans/outputs/multi_num_modes_top_amplitude.pdf
     title: "Order Hit Probability vs. Top Amplitude (Gaussian Noise)"
-
-  - working_point: {snr_db: 10.0, freq_sep: 0.01, eig_mag: 0.98, top_amplitude: 1.0}
-    x_param: max_rank
-    output_path: figures/scans/outputs/multi_num_modes_max_rank.pdf
-    title: "Order Hit Probability vs. Max Rank (Gaussian Noise)"
-    max_ticks: 8
