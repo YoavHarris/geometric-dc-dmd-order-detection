@@ -1,9 +1,8 @@
-fire
-PyYAML
 numpy
 pandas
-tqdm
-matplotlib
-scikit-learn
 scipy
-pydmd
+matplotlib
+fire
+pyyaml
+tqdm
+scikit-learn
