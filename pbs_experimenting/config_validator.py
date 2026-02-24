@@ -7,7 +7,8 @@ Validates all configuration parameters before job generation.
 import os
 import sys
 from typing import Any
-import numpy as np
+
+from .param_generator import generate_job_parameters
 
 # Constants
 VALID_METHODS = {
@@ -31,7 +32,7 @@ VALID_PARAMETER_TYPES = {"range", "list", "const"}
 VALID_ROLES = {"wp", "cartesian"}
 VALID_SCALES = {"lin", "log"}
 VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "student_t", "hetero"}
-VALID_RHO_MODES = {"random", "fixed"}
+VALID_RHO_MODES = {"random", "linspace"}
 
 
 class ConfigValidationError(Exception):
@@ -309,7 +310,6 @@ def _validate_paths_section(config: dict[str, Any]) -> None:
             raise ConfigValidationError(f"Missing 'paths.{field}'")
 
     # Check interpreter exists (if local path)
-    # Check interpreter exists (if local path)
     interp = paths["interpreter"]
     if not (interp.startswith("/") or (len(interp) > 1 and interp[1] == ":")):
         raise ConfigValidationError(
@@ -338,68 +338,48 @@ def _validate_output_section(config: dict[str, Any]) -> None:
 def _validate_parameter_compatibility(config: dict[str, Any]) -> None:
     """
     Validate that parameter combinations are compatible.
-    Specifically: N * (1 - tau) >= M for all configurations.
+    Specifically: N * (1 - tau) >= M for all ACTUAL configurations.
     """
-    params = config["parameters"]
-
-    # Extract parameter ranges
-    def get_values(param_name):
-        if param_name not in params:
-            # Use working point or default
-            wp = config.get("generator", {}).get("working_point", {})
-            if param_name in wp:
-                return [wp[param_name]]
-            return None
-
-        spec = params[param_name]
-        ptype = spec["type"]
-
-        if ptype == "range":
-            start, end, steps = spec["start"], spec["end"], spec["num_steps"]
-            scale = spec.get("scale", "lin")
-            if scale == "log":
-                vals = np.logspace(np.log10(start), np.log10(end), steps)
-            else:
-                vals = np.linspace(start, end, steps)
-            if spec.get("as_int", False):
-                vals = np.round(vals).astype(int)
-            return vals
-        elif ptype == "list":
-            return spec["values"]
-        elif ptype == "const":
-            return [spec["value"]]
-
-    temporal_dims = get_values("temporal_dim")
-    delays_ratios = get_values("delays_over_timesteps")
-    max_ranks = get_values("max_rank")
-
-    if temporal_dims is None or delays_ratios is None or max_ranks is None:
-        # Can't validate without these
-        return
-
-    N_min = np.min(temporal_dims)
-    N_max = np.max(temporal_dims)
-    tau_max = np.max(delays_ratios)
-    M_max = np.max(max_ranks)
-
-    # Check dimension limit
-    L_max = int(tau_max * N_max)
-    D_max = np.max(get_values("spatial_dim"))
-    MAX_LD = 15_000
-    if L_max * D_max > MAX_LD:
+    # Generate all actual job parameters to check compatibility
+    # This avoids false positives from checking worst-case combinations that never occur
+    try:
+        jobs = generate_job_parameters(config)
+    except Exception as e:
         raise ConfigValidationError(
-            f"num_delays * spatial_dim would exceed {MAX_LD}. "
-            f"L_max={L_max}, check parameters."
+            f"Failed to generate parameters for validation: {e}"
         )
 
-    # Check rank compatibility: N * (1 - tau) >= M
-    min_available = N_min * (1 - tau_max)
-    if min_available < M_max:
-        raise ConfigValidationError(
-            f"Parameter compatibility check failed: "
-            f"temporal_dim * (1 - delays_over_timesteps) must be >= max_rank for all configs. "
-            f"Worst case: {N_min} * (1 - {tau_max}) = {min_available:.1f} < {M_max}"
-        )
+    for i, job in enumerate(jobs):
+        # Extract parameters for this specific job
+        # Fallback to working point or defaults if not in job dict (should be there though)
+        N = job.get("temporal_dim")
+        tau = job.get("delays_over_timesteps")
+        M = job.get("max_rank")
+        D = job.get("spatial_dim")
+
+        # Skip if any required param is missing (should be caught by other validators)
+        if N is None or tau is None or M is None or D is None:
+            continue
+
+        # Check dimension limit
+        L = int(tau * N)
+        MAX_LD = 15_000
+        if L * D > MAX_LD:
+            raise ConfigValidationError(
+                f"Job {i}: num_delays * spatial_dim would exceed {MAX_LD}. "
+                f"Parameters: temporal_dim={N}, delays={tau:.3f}, spatial_dim={D}. "
+                f"Result: {L} * {D} = {L*D}"
+            )
+
+        # Check rank compatibility: N * (1 - tau) >= M
+        min_available = N * (1 - tau)
+        if min_available < M:
+            raise ConfigValidationError(
+                f"Job {i}: Parameter compatibility check failed. "
+                f"temporal_dim * (1 - delays_over_timesteps) must be >= max_rank. "
+                f"Job parameters: N={N}, delays={tau:.3f}, max_rank={M}. "
+                f"Check: {N} * (1 - {tau:.3f}) = {min_available:.1f} < {M}"
+            )
 
 
 def validate_config_file(config_path: str) -> dict[str, Any]:

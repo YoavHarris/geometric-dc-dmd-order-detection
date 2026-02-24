@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Generate AUC tables for paper: two wide tables (delay-embedded and L=1).
+Generate AUC tables for paper: two wide tables (DC and No-DC).
 
 Usage:
-    python auc_tables.py delay_embedded_combined_results.csv no_delays_combined_results.csv
+    python auc_tables.py dc_combined_results.csv no_dc_combined_results.csv
 
 Outputs:
-    figures/scans/outputs/auc_delay_embedded_allm.tex
-    figures/scans/outputs/auc_L1_allm.tex
+    figures/scans/outputs/auc_dc.tex
+    figures/scans/outputs/auc_no_dc.tex
 """
 
 from __future__ import annotations
@@ -18,19 +18,27 @@ from pathlib import Path
 import fire
 import numpy as np
 import pandas as pd
+from scipy.integrate import trapezoid
 
 
-# Parameters we want to summarize
-PARAM_COLS = ["snr_db", "freq_sep", "eig_mag", "top_amplitude"]
+# Parameters for No-DC table
+PARAM_COLS_NO_DC = ["snr_db", "freq_sep", "eig_mag", "top_amplitude"]
+
+# Parameters for DC table (includes extra sweeps)
+# User requested to omit num_modes from this table
+PARAM_COLS_DC = PARAM_COLS_NO_DC + ["max_rank"]
+
 PARAM_LATEX = {
     "snr_db": "SNR",
-    "freq_sep": "$\\Delta\\theta$",  # Changed from \Delta f
+    "freq_sep": "$\\Delta\\theta$",
     "eig_mag": "$r$",
     "top_amplitude": "$\\kappa_b$",
+    "max_rank": "$M$",
+    "num_modes": "$m_{\\text{sweep}}$",
 }
 
-# Methods for delay-embedded table
-DELAY_METHODS = [
+# Methods for DC table
+DC_METHODS = [
     "BIC",
     "GAP",
     "STC",
@@ -39,8 +47,8 @@ DELAY_METHODS = [
     "FixedEigenvalueKVFit",
 ]
 
-# Methods for L=1 table (only those that work without delays)
-L1_METHODS = [
+# Methods for No-DC table (only those that work without delays)
+NO_DC_METHODS = [
     "BIC",
     "GAP",
     "ESR-Energy",
@@ -53,7 +61,7 @@ EXCLUDE_METHODS = {"NestedDMD+ESR", "FixedEigenvalueKVFit+ESR"}
 
 
 def compute_normalized_auc(
-    df: pd.DataFrame, methods_to_include: list[str]
+    df: pd.DataFrame, methods_to_include: list[str], param_cols: list[str]
 ) -> dict[tuple[int, str, str], float]:
     """
     Compute normalized AUC of order_hit_prob for each (num_modes, method, param).
@@ -61,6 +69,7 @@ def compute_normalized_auc(
     Args:
         df: DataFrame with experimental results
         methods_to_include: List of methods to compute AUCs for
+        param_cols: List of parameters to compute AUC for
 
     Returns:
         dict keyed by (num_modes, method, param_col) -> auc_norm
@@ -70,10 +79,12 @@ def compute_normalized_auc(
 
     auc_dict: dict[tuple[int, str, str], float] = {}
 
-    for param in PARAM_COLS:
+    for param in param_cols:
         if param not in df.columns:
             continue
 
+        # Standard logic for parameters (snr, max_rank, etc)
+        # These are calculated PER true num_modes (m)
         for m in sorted(df["num_modes"].unique()):
             df_m = df[df["num_modes"] == m]
 
@@ -103,7 +114,7 @@ def compute_normalized_auc(
                 if span <= 0:
                     continue
 
-                auc = float(np.trapz(y, x))
+                auc = float(trapezoid(y, x))
                 auc_norm = auc / span
 
                 auc_dict[(m, method, param)] = auc_norm
@@ -114,6 +125,7 @@ def compute_normalized_auc(
 def format_wide_latex_table(
     auc_dict: dict[tuple[int, str, str], float],
     methods: list[str],
+    param_cols: list[str],
     table_label: str,
     caption: str,
     output_path: Path,
@@ -123,7 +135,7 @@ def format_wide_latex_table(
 
     Structure:
     - Rows: methods
-    - Columns: grouped by m, each group has 4 params (SNR, Δθ, r, κ_b)
+    - Columns: grouped by m, each group has len(param_cols) params
     """
     lines: list[str] = []
 
@@ -145,8 +157,8 @@ def format_wide_latex_table(
     lines.append("\\small")
     lines.append("\\setlength{\\tabcolsep}{3pt}")
 
-    # Tabular environment: 1 col for method names + 4*len(all_ms) for data
-    num_data_cols = 4 * len(all_ms)
+    # Tabular environment: 1 col for method names + len(param_cols)*len(all_ms) for data
+    num_data_cols = len(param_cols) * len(all_ms)
     col_spec = "l" + "c" * num_data_cols
     lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
 
@@ -156,12 +168,12 @@ def format_wide_latex_table(
     # First header row: m groups
     header1_parts = [""]  # Empty for method column
     for m in all_ms:
-        header1_parts.append(f"\\multicolumn{{4}}{{c}}{{$m = {m}$}}")
+        header1_parts.append(f"\\multicolumn{{{len(param_cols)}}}{{c}}{{$m = {m}$}}")
     lines.append(" & ".join(header1_parts) + " \\\\")
 
     # Second header row: parameter labels (repeated for each m)
     header2_parts = ["Method"]
-    param_headers = [PARAM_LATEX[p] for p in PARAM_COLS]
+    param_headers = [PARAM_LATEX[p] for p in param_cols]
     for _ in all_ms:
         header2_parts.extend(param_headers)
     lines.append(" & ".join(header2_parts) + " \\\\")
@@ -172,7 +184,7 @@ def format_wide_latex_table(
         row_parts = [method]
 
         for m in all_ms:
-            for param in PARAM_COLS:
+            for param in param_cols:
                 key = (m, method, param)
                 if key not in auc_dict:
                     row_parts.append("--")
@@ -211,69 +223,74 @@ def format_wide_latex_table(
     print(f"Generated: {output_path}")
 
 
-def main(delay_csv: str, l1_csv: str) -> None:
+def main(dc_csv: str, no_dc_csv: str) -> None:
     """
     Generate both AUC tables.
 
     Args:
-        delay_csv: Path to delay_embedded_combined_results.csv
-        l1_csv: Path to no_delays_combined_results.csv
+        dc_csv: Path to dc_combined_results.csv
+        no_dc_csv: Path to no_dc_combined_results.csv
     """
-    delay_path = Path(delay_csv)
-    l1_path = Path(l1_csv)
+    dc_path = Path(dc_csv)
+    no_dc_path = Path(no_dc_csv)
 
-    if not delay_path.is_file():
-        print(f"Error: file not found: {delay_path}", file=sys.stderr)
+    if not dc_path.is_file():
+        print(f"Error: file not found: {dc_path}", file=sys.stderr)
         sys.exit(1)
-    if not l1_path.is_file():
-        print(f"Error: file not found: {l1_path}", file=sys.stderr)
+    if not no_dc_path.is_file():
+        print(f"Error: file not found: {no_dc_path}", file=sys.stderr)
         sys.exit(1)
 
     # Load data
-    df_delay = pd.read_csv(delay_path)
-    df_l1 = pd.read_csv(l1_path)
+    df_dc = pd.read_csv(dc_path)
+    df_no_dc = pd.read_csv(no_dc_path)
 
     # Filter to Gaussian noise if available
-    if "noise_mode" in df_delay.columns:
-        df_delay = df_delay[df_delay["noise_mode"] == "gaussian"].copy()
-    if "noise_mode" in df_l1.columns:
-        df_l1 = df_l1[df_l1["noise_mode"] == "gaussian"].copy()
+    if "noise_mode" in df_dc.columns:
+        df_dc = df_dc[df_dc["noise_mode"] == "gaussian"].copy()
+    if "noise_mode" in df_no_dc.columns:
+        df_no_dc = df_no_dc[df_no_dc["noise_mode"] == "gaussian"].copy()
 
     # Compute AUCs
-    auc_delay = compute_normalized_auc(df_delay, DELAY_METHODS)
-    auc_l1 = compute_normalized_auc(df_l1, L1_METHODS)
+    auc_dc = compute_normalized_auc(df_dc, DC_METHODS, PARAM_COLS_DC)
+    auc_no_dc = compute_normalized_auc(df_no_dc, NO_DC_METHODS, PARAM_COLS_NO_DC)
 
     # Output directory
     output_dir = Path("figures/scans/outputs")
 
-    # Generate delay-embedded table
-    delay_caption = (
-        "Normalized AUC for delay-embedded experiments across one-dimensional parameter sweeps. "
+    # Generate DC table
+    dc_caption = (
+        "Normalized AUC for DC experiments "
+        "(delay-embedded) across one-dimensional parameter sweeps. "
         "Columns grouped by number of true modes ($m$) contain AUC values for: "
         "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
-        "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
+        "amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$), and "
+        "order-overestimation ($M$)."
     )
     format_wide_latex_table(
-        auc_delay,
-        DELAY_METHODS,
-        "auc_delay_embedded",
-        delay_caption,
-        output_dir / "auc_delay_embedded.tex",
+        auc_dc,
+        DC_METHODS,
+        PARAM_COLS_DC,
+        "auc_dc",
+        dc_caption,
+        output_dir / "auc_dc.tex",
     )
 
-    # Generate L=1 table
-    l1_caption = (
-        "Normalized AUC for standard DMD ($L=1$, no delays) across one-dimensional parameter sweeps. "
+    # Generate No-DC table
+    no_dc_caption = (
+        "Normalized AUC for No-DC experiments "
+        "($L=1$, no delays) across one-dimensional parameter sweeps. "
         "Columns grouped by number of true modes ($m$) contain AUC values for: "
         "SNR, phase separation ($\\Delta\\theta$), damping coefficient ($r$), "
         "and amplitude ratio ($\\kappa_b = b_{\\max}/b_{\\min}$)."
     )
     format_wide_latex_table(
-        auc_l1,
-        L1_METHODS,
-        "auc_L1",
-        l1_caption,
-        output_dir / "auc_L1.tex",
+        auc_no_dc,
+        NO_DC_METHODS,
+        PARAM_COLS_NO_DC,
+        "auc_no_dc",
+        no_dc_caption,
+        output_dir / "auc_no_dc.tex",
     )
 
 

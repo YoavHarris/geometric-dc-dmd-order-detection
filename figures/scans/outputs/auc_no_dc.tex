@@ -1,0 +1,19 @@
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccccccccc}
+\hline
+ & \multicolumn{4}{c}{$m = 2$} & \multicolumn{4}{c}{$m = 3$} & \multicolumn{4}{c}{$m = 5$} \\
+Method & SNR & $\Delta\theta$ & $r$ & $\kappa_b$ & SNR & $\Delta\theta$ & $r$ & $\kappa_b$ & SNR & $\Delta\theta$ & $r$ & $\kappa_b$ \\
+\hline
+BIC & 0.759 & 0.961 & 0.910 & 0.995 & 0.619 & 0.856 & 0.356 & 0.987 & 0.476 & 0.735 & 0.214 & 0.819 \\
+GAP & 0.453 & 0.627 & 0.132 & 0.069 & 0.222 & 0.592 & 0.119 & 0.033 & 0.135 & 0.575 & 0.113 & 0.015 \\
+ESR-Energy & 0.988 & 0.963 & 0.996 & 0.998 & 0.899 & 0.886 & 0.498 & 0.991 & 0.793 & 0.812 & 0.291 & 0.987 \\
+ExactModeNorm & \textbf{1.000} & 0.996 & \textbf{1.000} & \textbf{1.000} & 0.984 & \textbf{0.961} & 0.677 & \textbf{0.996} & 0.867 & \textbf{0.885} & 0.363 & \textbf{0.990} \\
+EigenvalueMagnitude & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{0.992} & \textbf{0.961} & \textbf{0.726} & \textbf{0.996} & \textbf{0.894} & \textbf{0.885} & \textbf{0.378} & \textbf{0.990} \\
+\hline
+\end{tabular}
+\caption{Normalized AUC for No-DC experiments ($L=1$, no delays) across one-dimensional parameter sweeps. Columns grouped by number of true modes ($m$) contain AUC values for: SNR, phase separation ($\Delta\theta$), damping coefficient ($r$), and amplitude ratio ($\kappa_b = b_{\max}/b_{\min}$).}
+\label{tab:auc_no_dc}
+\end{table*}

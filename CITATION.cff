@@ -1,10 +1,14 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the accompanying paper."
 authors:
-- family-names: "Harris"
-  given-names: "Yoav"
-  email: "yoav.h@campus.technion.ac.il"
-  orcid: "https://orcid.org/0000-0001-8172-5895"
+  - family-names: Harris
+    given-names: Yoav
+  - family-names: Talmon
+    given-names: Ronen
+  - family-names: Benisty
+    given-names: Hadas
+email: "yoav.h@campus.technion.ac.il"
+orcid: "https://orcid.org/0000-0001-8172-5895"
 title: "DC-DMD Order Detection"
 version: 1.0.0
 date-released: 2026-02-25
@@ -24,7 +28,7 @@ keywords:
 #     - family-names: "Harris"
 #       given-names: "Yoav"
 #       orcid: "https://orcid.org/0000-0001-8172-5895"
-#   title: "Your Paper Title Here"
+#   title: "Geometric framework for robust order detection in delay-coordinates Dynamic Mode Decomposition"
 #   journal: "Journal Name"
 #   year: 2026
 #   doi: "10.xxxx/xxxxx"

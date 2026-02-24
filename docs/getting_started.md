@@ -4,7 +4,7 @@
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/dc-dmd-order-detection.git
+    git clone https://github.com/YoavHarris/dc-dmd-order-detection.git
     cd dc-dmd-order-detection
     ```
 
@@ -36,7 +36,7 @@ X, X_clean, eigs_true, modes_true, amps = generator.generate(
 dmd = fit_dmd(data=X, svd_rank=10, num_delays=5)
 
 # 3. Inspect results
-print(f"Computed {len(dmd.eigenvalues)} eigenvalues")
+print(f"Computed {len(dmd.eigs)} eigenvalues")
 print(f"Reconstruction shape: {dmd.reconstructed_data.shape}")
 ```
 
@@ -50,7 +50,7 @@ from algorithms.clustering import ModeClustering
 
 # Extract features
 stc = STC(num_delays=5)
-features = stc.compute_features(dmd.eigenvalues, dmd.modes)
+features = stc.compute_features(dmd.eigs, dmd.modes)
 
 # Classify modes (True vs Spurious)
 clusterer = ModeClustering(algorithm='gmm', strategy='vote')

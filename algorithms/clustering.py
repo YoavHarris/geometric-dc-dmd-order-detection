@@ -78,6 +78,8 @@ def choose_true_cluster(
     cluster_0 = base_labels == 0
     cluster_1 = base_labels == 1
     feature_names = list(features.keys())
+    if cluster_0.sum() == 0 or cluster_1.sum() == 0:
+        raise ValueError("Clustering resulted in an empty cluster.")
 
     if strategy == "single":
         values = features[pilot_feature]
