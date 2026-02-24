@@ -78,6 +78,8 @@ def choose_true_cluster(
     cluster_0 = base_labels == 0
     cluster_1 = base_labels == 1
     feature_names = list(features.keys())
+    if cluster_0.sum() == 0 or cluster_1.sum() == 0:
+        raise ValueError("Clustering resulted in an empty cluster.")
 
     if strategy == "single":
         values = features[pilot_feature]
@@ -92,9 +94,6 @@ def choose_true_cluster(
 
     elif strategy == "mean":
         weight_array = np.array([weights.get(k, 1.0) for k in feature_names])
-        if cluster_0.sum() == 0 or cluster_1.sum() == 0:
-            raise ValueError("Clustering resulted in an empty cluster.")
-            
         mean_0 = (feature_matrix[cluster_0] * weight_array).mean()
         mean_1 = (feature_matrix[cluster_1] * weight_array).mean()
         true_is_cluster_0 = mean_0 > mean_1

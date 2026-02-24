@@ -32,7 +32,7 @@ VALID_PARAMETER_TYPES = {"range", "list", "const"}
 VALID_ROLES = {"wp", "cartesian"}
 VALID_SCALES = {"lin", "log"}
 VALID_NOISE_MODES = {"gaussian", "bi_gaussian", "student_t", "hetero"}
-VALID_RHO_MODES = {"random", "fixed"}
+VALID_RHO_MODES = {"random", "linspace"}
 
 
 class ConfigValidationError(Exception):
@@ -309,7 +309,6 @@ def _validate_paths_section(config: dict[str, Any]) -> None:
         if field not in paths:
             raise ConfigValidationError(f"Missing 'paths.{field}'")
 
-    # Check interpreter exists (if local path)
     # Check interpreter exists (if local path)
     interp = paths["interpreter"]
     if not (interp.startswith("/") or (len(interp) > 1 and interp[1] == ":")):

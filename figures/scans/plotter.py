@@ -172,13 +172,13 @@ class SingleScanPlotter:
             else:
                 tick_cfg = self.config.get("ticks", {})
                 max_tick_count = tick_cfg.get("max_ticks", 6)
-            
+
             # Check if values are integers to force integer ticks (e.g. num_modes)
             try:
                 is_integer_data = np.all(np.mod(df[x_param].dropna(), 1) == 0)
             except Exception:
                 is_integer_data = False
-            
+
             ax.xaxis.set_major_locator(
                 MaxNLocator(nbins=max_tick_count, integer=is_integer_data)
             )
@@ -472,7 +472,5 @@ def filter_data(
             filtered = filtered[mask]
         else:
             filtered = filtered[filtered[param] == value]
-
-
 
     return filtered

@@ -26,5 +26,5 @@ To add a new order detection method to the framework:
 Individual experiments can be run manually for debugging:
 
 ```bash
-python pbs_experimenting/run_single_job.py run pbs_experimenting/job_configs/test_job.yaml --plot
+python -m pbs_experimenting.run_single_job run pbs_experimenting/job_configs/test_job.yaml --plot
 ```

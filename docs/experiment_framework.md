@@ -15,20 +15,20 @@ A modular, YAML-based framework for running large-scale DMD order detection expe
 
 ```bash
 # 1. Configure your experiment
-cp example_config.yaml my_experiment.yaml
+cp pbs_experimenting/configs/paper_dc.yaml my_experiment.yaml
 # Edit my_experiment.yaml to set parameters
 
 # 2. Generate job configs
-python pbs_experimenting/experiment_runner.py make_jobs --config=my_experiment.yaml
+python -m pbs_experimenting.experiment_runner make_jobs my_experiment.yaml
 
 # 3. Submit jobs to PBS
-python pbs_experimenting/experiment_runner.py submit --config=my_experiment.yaml
+python -m pbs_experimenting.experiment_runner submit my_experiment.yaml
 
 # 4. Monitor progress
-python pbs_experimenting/experiment_runner.py status --config=my_experiment.yaml
+python -m pbs_experimenting.experiment_runner status my_experiment.yaml
 
 # 5. Combine results
-python pbs_experimenting/experiment_runner.py combine_results --config=my_experiment.yaml
+python -m pbs_experimenting.experiment_runner combine_results my_experiment.yaml
 ```
 
 ## Directory Structure
@@ -57,7 +57,7 @@ experiment_output/
 
 ## Configuration File
 
-See `pbs_experimenting/example_config.yaml` for a complete template. Key sections:
+See `pbs_experimenting/configs/` for ready-to-edit templates (used for the paper runs). Key sections:
 
 ### Experiment Settings
 
@@ -91,7 +91,7 @@ Shared configuration for all clustering-based methods:
 ```yaml
 clustering:
   algorithm: gmm        # Options: gmm, kmeans
-  decider: mean         # Options: mean, distance
+  strategy: mean        # Options: mean, distance
   normalization: min_max  # Options: min_max, standard, null
 ```
 
@@ -118,7 +118,7 @@ parameters:
   noise_mode:
     type: list
     role: cartesian   # Full Cartesian product
-    values: ["gaussian", "uniform", "student_t"]
+    values: ["gaussian", "bi_gaussian", "student_t", "hetero"]
 ```
 
 **Parameter Roles:**
@@ -137,7 +137,7 @@ parameters:
 Generate all job configurations and freeze the experiment.
 
 ```bash
-python pbs_experimenting/experiment_runner.py make_jobs --config=my_config.yaml
+python -m pbs_experimenting.experiment_runner make_jobs my_config.yaml
 ```
 
 Creates:
@@ -151,11 +151,11 @@ Submit jobs to PBS queue.
 
 ```bash
 # Submit all pending jobs
-python pbs_experimenting/experiment_runner.py submit --config=my_config.yaml
+python -m pbs_experimenting.experiment_runner submit my_config.yaml
 
 # Submit specific jobs
-python pbs_experimenting/experiment_runner.py submit --config=my_config.yaml --ids="0,5,10"
-python pbs_experimenting/experiment_runner.py submit --config=my_config.yaml --ids="0-99"
+python -m pbs_experimenting.experiment_runner submit my_config.yaml --ids="0,5,10"
+python -m pbs_experimenting.experiment_runner submit my_config.yaml --ids="0 1 2 3 4 5 6 7 8 9"
 ```
 
 Skips jobs that have already succeeded or are currently running.
@@ -165,7 +165,7 @@ Skips jobs that have already succeeded or are currently running.
 Check experiment progress.
 
 ```bash
-python pbs_experimenting/experiment_runner.py status --config=my_config.yaml
+python -m pbs_experimenting.experiment_runner status my_config.yaml
 ```
 
 Shows:
@@ -178,7 +178,7 @@ Shows:
 Resubmit all failed jobs.
 
 ```bash
-python pbs_experimenting/experiment_runner.py resubmit --config=my_config.yaml
+python -m pbs_experimenting.experiment_runner resubmit my_config.yaml
 ```
 
 ### `combine_results`
@@ -187,10 +187,10 @@ Merge individual job CSVs into single file.
 
 ```bash
 # Full combine (all finished jobs)
-python pbs_experimenting/experiment_runner.py combine_results --config=my_config.yaml
+python -m pbs_experimenting.experiment_runner combine_results my_config.yaml
 
 # Incremental (only new jobs)
-python pbs_experimenting/experiment_runner.py combine_results --config=my_config.yaml --incremental
+python -m pbs_experimenting.experiment_runner combine_results my_config.yaml --incremental
 ```
 
 Creates:
@@ -221,13 +221,13 @@ For debugging, run a single job manually:
 
 ```bash
 # Run a specific job
-python pbs_experimenting/run_single_job.py run experiment_output/job_configs/job0042.yaml
+python -m pbs_experimenting.run_single_job run experiment_output/job_configs/job0042.yaml
 
 # With plotting
-python pbs_experimenting/run_single_job.py run experiment_output/job_configs/job0042.yaml --plot
+python -m pbs_experimenting.run_single_job run experiment_output/job_configs/job0042.yaml --plot
 
 # Fire also supports this syntax
-python pbs_experimenting/run_single_job.py run --config_path=experiment_output/job_configs/job0042.yaml --plot
+python -m pbs_experimenting.run_single_job run --config_path=experiment_output/job_configs/job0042.yaml --plot
 ```
 
 ## Validation
@@ -235,7 +235,7 @@ python pbs_experimenting/run_single_job.py run --config_path=experiment_output/j
 Config validation runs automatically during `make_jobs`, but you can validate manually:
 
 ```bash
-python pbs_experimenting/config_validator.py my_config.yaml
+python -m pbs_experimenting.config_validator my_config.yaml
 ```
 
 Checks:
@@ -304,7 +304,7 @@ The system requires `qsub` and `qstat` commands. Run on an HPC login node.
 
 Check PBS logs in `experiment_output/logs/`:
 ```bash
-tail experiment_output/logs/job_0042.err
+python -c "from pathlib import Path; print(Path('experiment_output/logs/job_0042.err').read_text(encoding='utf-8', errors='replace')[-4000:])"
 ```
 
 ### Results conflicts
