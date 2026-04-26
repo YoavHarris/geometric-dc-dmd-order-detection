@@ -42,6 +42,7 @@ DC_METHODS = [
     "BIC",
     "GAP",
     "STC",
+    "ResDMDResidual",
     "ESR-Energy",
     "NestedDMD",
     "FixedEigenvalueKVFit",
@@ -51,6 +52,7 @@ DC_METHODS = [
 NO_DC_METHODS = [
     "BIC",
     "GAP",
+    "ResDMDResidual",
     "ESR-Energy",
     "ExactModeNorm",
     "EigenvalueMagnitude",
