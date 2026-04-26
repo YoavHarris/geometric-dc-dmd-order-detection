@@ -53,6 +53,10 @@ methods:
     color: '#FFD700'
     linestyle: '--'
     marker: '^'
+  ResDMDResidual:
+    color: '#C9A227'
+    linestyle: '--'
+    marker: '^'
 
 # Figure dimensions
 figure:

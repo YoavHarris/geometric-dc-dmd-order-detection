@@ -15,6 +15,7 @@ methods:
   - GAP
   - ExactModeNorm
   - EigenvalueMagnitude
+  - ResDMDResidual
   - STC
   - ESR-Energy
   - NestedDMD

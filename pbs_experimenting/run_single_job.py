@@ -20,6 +20,7 @@ import fire
 
 from algorithms.estimated_subspace_residual import EstimatedSubspaceResidual
 from algorithms.kronecker_vandermonde_fit import FixedEigenvalueKVFit, NestedDMD
+from algorithms.res_dmd import ResDMDResidual
 from algorithms.clustering import ModeClustering
 from algorithms.stc import STC
 from algorithms.bic import (
@@ -285,7 +286,6 @@ class MethodEvaluator:
                 scatter_scores_1d(
                     magnitudes, "Magnitude", "EigenvalueMagnitude", show_id=True
                 )
-
         if "ESR-Energy" in self.enabled_methods:
             esr = EstimatedSubspaceResidual()
             scores = esr.compute_features(
@@ -297,6 +297,17 @@ class MethodEvaluator:
             labels, order = cluster_scores(scores, self.clustering_config)
             order_estimates["ESR-Energy"] = order
             pred_masks["ESR-Energy"] = labels
+
+        if "ResDMDResidual" in self.enabled_methods:
+            resdmd = ResDMDResidual(num_delays=self.num_delays)
+            scores = resdmd.compute_features(
+                signal=signal,
+                exact_dmd=exact_dmd,
+                plot=plot,
+            )
+            labels, order = cluster_scores(scores, self.clustering_config)
+            order_estimates["ResDMDResidual"] = order
+            pred_masks["ResDMDResidual"] = labels
 
         # Delay embedding methods
         if self.num_delays > 1:

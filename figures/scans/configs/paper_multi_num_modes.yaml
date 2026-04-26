@@ -9,6 +9,7 @@ base:
     - GAP
 #    - ExactModeNorm
     - STC
+    - ResDMDResidual
     - ESR-Energy
     - NestedDMD
     - FixedEigenvalueKVFit

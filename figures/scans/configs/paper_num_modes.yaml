@@ -8,6 +8,7 @@ base:
     - BIC
     - GAP
     - STC
+    - ResDMDResidual
     - ESR-Energy
     - NestedDMD
     - FixedEigenvalueKVFit

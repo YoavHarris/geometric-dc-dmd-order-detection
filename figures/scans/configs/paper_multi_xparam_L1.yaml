@@ -8,6 +8,7 @@ base:
     - BIC
     - GAP
     - ESR-Energy
+    - ResDMDResidual
     - ExactModeNorm
     - EigenvalueMagnitude
 
