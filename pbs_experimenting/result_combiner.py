@@ -20,6 +20,7 @@ UNIQUE_FIELDS = [
     "temporal_dim",
     "spatial_dim",
     "num_modes",
+    "n_independent_modes",
     "top_amplitude",
     "max_rank",
     "method",

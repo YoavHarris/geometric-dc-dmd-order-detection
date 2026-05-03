@@ -248,6 +248,45 @@ class DMDDataGenerator:
         return eigenvalues
 
     def _build_unit_modes(
+        self, n_spatial: int, n_modes: int, n_independent_modes: int
+    ) -> NDArray[np.complexfloating]:
+        if n_independent_modes == n_modes:
+            return self._build_independent_unit_modes(n_spatial, n_modes)
+
+        independent_modes = self._build_independent_unit_modes(
+            n_spatial,
+            n_independent_modes,
+        )
+        mode_groups = np.array_split(np.arange(n_modes), n_independent_modes)
+        unit_modes = np.empty((n_spatial, n_modes), dtype=independent_modes.dtype)
+        for independent_idx, component_indices in enumerate(mode_groups):
+            unit_modes[:, component_indices] = independent_modes[:, [independent_idx]]
+        return unit_modes
+
+    @staticmethod
+    def _resolve_n_independent_modes(
+        n_modes: int, n_independent_modes: int | float | None
+    ) -> int:
+        error_msg = (
+            "n_independent_modes must be None, an integer count, "
+            "or a float fraction in (0, 1)"
+        )
+        if n_independent_modes is None:
+            return n_modes
+        elif type(n_independent_modes) is int:
+            if n_independent_modes < 1:
+                raise ValueError(error_msg)
+        elif isinstance(n_independent_modes, (float, np.floating)):
+            if not 0.0 < n_independent_modes < 1.0:
+                raise ValueError(error_msg)
+            n_independent_modes = max(1, int(round(n_modes * n_independent_modes)))
+        else:
+            raise ValueError(error_msg)
+
+        assert n_independent_modes <= n_modes, "n_independent_modes must be <= n_modes"
+        return n_independent_modes
+
+    def _build_independent_unit_modes(
         self, n_spatial: int, n_modes: int
     ) -> NDArray[np.complexfloating]:
         M_real = self.rng.standard_normal((n_spatial, n_modes))
@@ -353,7 +392,13 @@ class DMDDataGenerator:
         raise ValueError(f"Unsupported noise_mode: {self.noise_mode}")
 
     # ─────────────────────────── public interface ─────────────────────────────
-    def generate(self, n_spatial: int, n_timesteps: int, n_modes: int) -> tuple[
+    def generate(
+        self,
+        n_spatial: int,
+        n_timesteps: int,
+        n_modes: int,
+        n_independent_modes: int | float | None = None,
+    ) -> tuple[
         NDArray[np.complexfloating],
         NDArray[np.complexfloating],
         NDArray[np.complexfloating],
@@ -369,9 +414,18 @@ class DMDDataGenerator:
             disc_time_eigs -- eigenvalues (n_modes,)
             modes -- modes * amplitudes  (n_spatial, n_modes)
             amplitudes -- (n_modes,)
+
+        If ``n_independent_modes`` is an integer smaller than ``n_modes``,
+        components are grouped so each group shares the same unit spatial
+        mode. If it is a float in ``(0, 1)``, it is interpreted as a fraction
+        of ``n_modes`` and rounded.
         """
+        n_independent_modes = self._resolve_n_independent_modes(
+            n_modes,
+            n_independent_modes,
+        )
         eigs = self._build_eigenvalues(n_modes)
-        unit_modes = self._build_unit_modes(n_spatial, n_modes)
+        unit_modes = self._build_unit_modes(n_spatial, n_modes, n_independent_modes)
         amps = self._build_amplitudes(n_modes)
         modes = unit_modes * amps[None, :]
         dynamics = self._build_time_dynamics(eigs, n_timesteps)

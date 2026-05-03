@@ -128,7 +128,7 @@ static_args:
 # PBS Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 pbs:
-  queue: REQUIRED_USER_INPUT
+  queue: zeus_comb_short
   mem: 1000MB
   ncpus: 1
   mpiprocs: 1
@@ -138,8 +138,8 @@ pbs:
 # Paths
 # ──────────────────────────────────────────────────────────────────────────────
 paths:
-  interpreter: REQUIRED_USER_INPUT
-  code_dir: REQUIRED_USER_INPUT
+  interpreter: /home/yoav.h/miniconda/envs/zeus-dmd/bin/python3.11
+  code_dir: /home/yoav.h/dcdmd_11_25/dc-dmd-order-detection
   worker_script: pbs_experimenting/run_single_job.py
 
 # ──────────────────────────────────────────────────────────────────────────────
