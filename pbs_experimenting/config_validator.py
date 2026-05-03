@@ -41,6 +41,26 @@ class ConfigValidationError(Exception):
     pass
 
 
+def _is_valid_n_independent_modes_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return value >= 1
+    if isinstance(value, float):
+        return 0.0 < value < 1.0
+    return False
+
+
+def _resolve_n_independent_modes_value(value: Any, num_modes: int) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, float):
+        return max(1, int(round(num_modes * value)))
+    return int(value)
+
+
 def validate_config(config: dict[str, Any]) -> None:
     """
     Validate entire configuration.
@@ -214,6 +234,21 @@ def _validate_range_spec(name: str, spec: dict[str, Any]) -> None:
             f"Parameter '{name}': log scale requires positive start and end"
         )
 
+    if name == "n_independent_modes":
+        if start <= 0:
+            raise ConfigValidationError(
+                "Parameter 'n_independent_modes' range must start above 0"
+            )
+        if start < 1 <= end:
+            raise ConfigValidationError(
+                "Parameter 'n_independent_modes' ranges cannot mix fractional "
+                "percentages with absolute counts"
+            )
+        if start >= 1 and not spec.get("as_int", False):
+            raise ConfigValidationError(
+                "Absolute-count 'n_independent_modes' ranges must set as_int: true"
+            )
+
 
 def _validate_list_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate list-type parameter."""
@@ -234,11 +269,27 @@ def _validate_list_spec(name: str, spec: dict[str, Any]) -> None:
                 f"Parameter 'noise_mode' has invalid values: {invalid}. Valid: {VALID_NOISE_MODES}"
             )
 
+    if name == "n_independent_modes" and not all(
+        _is_valid_n_independent_modes_value(v) for v in values
+    ):
+        raise ConfigValidationError(
+            "Parameter 'n_independent_modes' values must be positive integer counts, "
+            "fractions in (0, 1), or null"
+        )
+
 
 def _validate_const_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate const-type parameter."""
     if "value" not in spec:
         raise ConfigValidationError(f"Parameter '{name}' missing 'value'")
+
+    if name == "n_independent_modes":
+        value = spec["value"]
+        if not _is_valid_n_independent_modes_value(value):
+            raise ConfigValidationError(
+                "Parameter 'n_independent_modes' value must be a positive integer "
+                "count, a fraction in (0, 1), or null"
+            )
 
 
 def _validate_static_args_section(config: dict[str, Any]) -> None:
@@ -356,10 +407,25 @@ def _validate_parameter_compatibility(config: dict[str, Any]) -> None:
         tau = job.get("delays_over_timesteps")
         M = job.get("max_rank")
         D = job.get("spatial_dim")
+        num_modes = job.get("num_modes")
+        n_independent_modes = job.get("n_independent_modes")
 
         # Skip if any required param is missing (should be caught by other validators)
         if N is None or tau is None or M is None or D is None:
             continue
+
+        if n_independent_modes is not None and num_modes is not None:
+            n_independent_modes = _resolve_n_independent_modes_value(
+                n_independent_modes,
+                num_modes,
+            )
+
+        if n_independent_modes is not None and n_independent_modes > num_modes:
+            raise ConfigValidationError(
+                f"Job {i}: n_independent_modes must be <= num_modes. "
+                f"Job parameters: n_independent_modes={n_independent_modes}, "
+                f"num_modes={num_modes}"
+            )
 
         # Check dimension limit
         L = int(tau * N)

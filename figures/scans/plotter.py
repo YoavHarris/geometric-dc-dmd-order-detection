@@ -470,6 +470,8 @@ def filter_data(
         if isinstance(value, (float, np.floating)):
             mask = np.isclose(filtered[param], value, rtol=1e-5, atol=1e-5)
             filtered = filtered[mask]
+        elif value is None:
+            filtered = filtered[filtered[param].isna()]
         else:
             filtered = filtered[filtered[param] == value]
 

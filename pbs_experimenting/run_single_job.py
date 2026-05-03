@@ -71,6 +71,7 @@ def _skip_run_with_empty_csv(
         "temporal_dim",
         "spatial_dim",
         "num_modes",
+        "n_independent_modes",
         "top_amplitude",
         "max_rank",
         "artificial_damping",
@@ -608,6 +609,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
     temporal_dim = params["temporal_dim"]
     spatial_dim = params["spatial_dim"]
     num_modes = params["num_modes"]
+    n_independent_modes = params.get("n_independent_modes")
     top_amplitude = params["top_amplitude"]
     max_rank = params["max_rank"]
     artificial_damping = params.get("artificial_damping", 1.0)
@@ -658,7 +660,10 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
             random_seed=iter_seed,
         )
         sig, sig_clean, gt_eigs, modes, amps = gen.generate(
-            spatial_dim, temporal_dim, num_modes
+            spatial_dim,
+            temporal_dim,
+            num_modes,
+            n_independent_modes=n_independent_modes,
         )
 
         # Apply artificial damping if needed
@@ -715,6 +720,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
         temporal_dim=temporal_dim,
         spatial_dim=spatial_dim,
         num_modes=num_modes,
+        n_independent_modes=n_independent_modes,
         top_amplitude=top_amplitude,
         max_rank=max_rank,
         artificial_damping=artificial_damping,

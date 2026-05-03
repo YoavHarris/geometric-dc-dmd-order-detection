@@ -49,7 +49,7 @@ def apply_style(plot_cfg: Mapping[str, Any], project_root: Path) -> None:
     Apply matplotlib style based on configuration.
 
     Supports:
-    - style_mode: "single" | "double" | "custom"
+    - style_mode: "single" | "double" | "presentation" | "custom"
     - custom_style_path: path (used if style_mode == "custom")
     - mplstyle_path: path (legacy/direct support)
     """
@@ -78,6 +78,10 @@ def apply_style(plot_cfg: Mapping[str, Any], project_root: Path) -> None:
     elif mode == "double":
         style_path = resolve_path(
             project_root, "figures/mplstyle_files/chaos_double.mplstyle"
+        )
+    elif mode == "presentation":
+        style_path = resolve_path(
+            project_root, "figures/mplstyle_files/presentation.mplstyle"
         )
     else:
         raise ValueError(f"Unknown style_mode: {mode}")
