@@ -65,6 +65,8 @@ ROC_AUC_METHODS = {
     "FixedEigenvalueKVFit",
     "STC",
     "ResDMDResidual",
+    "EigenvalueMagnitude",
+    "ExactModeNorm",
 }
 
 
@@ -451,7 +453,9 @@ class MethodEvaluator:
             )
             order_estimates["FixedEigenvalueKVFit"] = order
             pred_masks["FixedEigenvalueKVFit"] = labels
-            pred_scores["FixedEigenvalueKVFit"] = scores_cache["FixedEigenvalueKVFit"]["KV-Fit"]
+            pred_scores["FixedEigenvalueKVFit"] = scores_cache["FixedEigenvalueKVFit"][
+                "KV-Fit"
+            ]
 
         # --- Cluster combinations (features guaranteed in cache) ---
 
