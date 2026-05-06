@@ -27,6 +27,7 @@ formulation to the standard DMD pipeline used here.
 
 import numpy as np
 
+from dmd.dmd_utils import align_by_eigs
 from utils.delay_embedding import DelayEmbedding
 from utils.visualizations import scatter_scores_1d
 
@@ -58,15 +59,16 @@ class ResDMDResidual:
 
     Notes
     -----
-    The eigenvalues returned by the internal eig solve match
-    `exact_dmd.eigs` as a set (modulo conjugation for complex spectra),
-    but their ordering is determined by `np.linalg.eig` and is not
-    guaranteed to align entry-wise with `exact_dmd.eigs`. For order
-    detection via clustering this is irrelevant, since clustering
-    operates on the score values alone. If a per-eigenvalue alignment
-    against another method's ordering is needed (e.g. for diagnostic
-    plots), match via `scipy.optimize.linear_sum_assignment` on
-    |lambda_resdmd - lambda_other|.
+    The eigenvalues coming out of the internal `np.linalg.eig(A_M^H)`
+    solve are the conjugates of `A_M`'s eigenvalues, in an order
+    determined by LAPACK that does not in general align entry-wise with
+    `exact_dmd.eigs`. ``compute_features`` therefore reorders its output
+    via Hungarian matching against `exact_dmd.eigs` so that the returned
+    scores are keyed to the same eigenpair ordering as `exact_dmd.eigs`
+    (and, by extension, `proj_dmd.eigs` from the same fit). This is
+    required by downstream code that compares per-eigenpair predicted
+    labels against a per-eigenpair ground-truth mask (see
+    `pbs_experimenting/run_single_job.py::MetricsTracker.update`).
     """
 
     def __init__(self, num_delays: int = 1, eps: float = 1e-12):
@@ -97,7 +99,9 @@ class ResDMDResidual:
         -------
         dict[str, np.ndarray]
             {"ResDMDResidual": residuals}, where `residuals` has length M
-            (the number of DMD eigenpairs / truncation rank).
+            (the number of DMD eigenpairs / truncation rank). Entries are
+            ordered to match ``exact_dmd.eigs``: ``residuals[i]`` is the
+            score of the eigenpair ``(exact_dmd.eigs[i], ...)``.
         """
         # 1. Delay-embed if needed; build snapshot matrices X0, X1.
         if self.num_delays > 1:
@@ -170,6 +174,17 @@ class ResDMDResidual:
         # Numerator can pick up a tiny negative value from roundoff;
         # clamp at zero. Denominator is floor-protected by eps.
         residuals = np.maximum(num, 0.0) / np.maximum(den, self.eps)
+
+        # 7. Reorder to match exact_dmd.eigs ordering. eigvals are
+        # eigenvalues of A_M^H, i.e. conjugates of eigenvalues of A_M;
+        # we match the conjugates against exact_dmd.eigs (which are
+        # eigenvalues of A_M).
+        residuals = align_by_eigs(
+            residuals,
+            source_eigs=eigvals.conj(),
+            target_eigs=exact_dmd.eigs,
+            name="ResDMDResidual",
+        )
 
         scores = -np.log(residuals + self.eps)
 

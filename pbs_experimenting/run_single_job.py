@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import scipy
 from scipy import optimize
+from sklearn.metrics import average_precision_score, roc_auc_score
 from tqdm import tqdm
 import fire
 
@@ -51,6 +52,19 @@ DELAY_EMBEDDING_METHODS = {
 # Information criteria methods
 INFO_CRITERIA_METHODS = {
     "BIC",
+}
+
+# Methods whose per-mode scores are reported as ROC-AUC / PR-AUC.
+# Excludes BIC and GAP (no per-mode scalar score) and the combination
+# methods (no single scalar without an extra fusion hyperparameter).
+# ROC/PR-AUC are rank-based, so the score's scale is irrelevant — only
+# its orientation ("higher = more likely true mode").
+ROC_AUC_METHODS = {
+    "ESR-Energy",
+    "NestedDMD",
+    "FixedEigenvalueKVFit",
+    "STC",
+    "ResDMDResidual",
 }
 
 
@@ -97,6 +111,10 @@ def _skip_run_with_empty_csv(
         "fp",
         "fn",
         "tn",
+        "roc_auc_mean",
+        "roc_auc_std",
+        "pr_auc_mean",
+        "pr_auc_std",
         # subspace proximity
         "max_pa_clean_mean",
         "max_pa_clean_std",
@@ -232,16 +250,22 @@ class MethodEvaluator:
         exact_dmd,
         max_rank: int,
         plot: bool = False,
-    ) -> tuple[dict[str, int], dict[str, np.ndarray]]:
+    ) -> tuple[dict[str, int], dict[str, np.ndarray], dict[str, np.ndarray]]:
         """
-        Evaluate all methods and return order estimates and masks.
+        Evaluate all methods and return order estimates, masks, and scores.
 
         Returns:
             order_estimates: {method_name: order}
             pred_masks: {method_name: binary_labels}
+            pred_scores: {method_name: per_mode_scalar_score} for methods in
+                ROC_AUC_METHODS only. Score is oriented "higher = more likely
+                true mode"; ROC/PR-AUC are rank-based so scaling is irrelevant.
+                Score order matches proj_dmd.eigs / true_mask ordering (see
+                `compute_dmd_and_ground_truth` invariant).
         """
         order_estimates = {}
         pred_masks = {}
+        pred_scores: dict[str, np.ndarray] = {}
         scores_cache = {}  # Cache for feature scores
 
         # Align modes
@@ -298,6 +322,7 @@ class MethodEvaluator:
             labels, order = cluster_scores(scores, self.clustering_config)
             order_estimates["ESR-Energy"] = order
             pred_masks["ESR-Energy"] = labels
+            pred_scores["ESR-Energy"] = scores["Estimated-Subspace-Residual"]
 
         if "ResDMDResidual" in self.enabled_methods:
             resdmd = ResDMDResidual(num_delays=self.num_delays)
@@ -309,6 +334,7 @@ class MethodEvaluator:
             labels, order = cluster_scores(scores, self.clustering_config)
             order_estimates["ResDMDResidual"] = order
             pred_masks["ResDMDResidual"] = labels
+            pred_scores["ResDMDResidual"] = scores["ResDMDResidual"]
 
         # Delay embedding methods
         if self.num_delays > 1:
@@ -324,6 +350,7 @@ class MethodEvaluator:
                     scores_cache,
                     order_estimates,
                     pred_masks,
+                    pred_scores,
                     plot,
                 )
         else:
@@ -333,7 +360,7 @@ class MethodEvaluator:
                     order_estimates[method] = np.nan
                     pred_masks[method] = np.full(max_rank, np.nan)
 
-        return order_estimates, pred_masks
+        return order_estimates, pred_masks, pred_scores
 
     def _evaluate_delay_methods(
         self,
@@ -344,6 +371,7 @@ class MethodEvaluator:
         scores_cache: dict,
         order_estimates: dict,
         pred_masks: dict,
+        pred_scores: dict,
         plot: bool,
     ):
         """Evaluate delay-embedding-based methods."""
@@ -407,6 +435,7 @@ class MethodEvaluator:
             labels, order = cluster_scores(scores_cache["STC"], self.clustering_config)
             order_estimates["STC"] = order
             pred_masks["STC"] = labels
+            pred_scores["STC"] = scores_cache["STC"]["STC"]
 
         if "NestedDMD" in methods:
             labels, order = cluster_scores(
@@ -414,6 +443,7 @@ class MethodEvaluator:
             )
             order_estimates["NestedDMD"] = order
             pred_masks["NestedDMD"] = labels
+            pred_scores["NestedDMD"] = scores_cache["NestedDMD"]["Reconstruction"]
 
         if "FixedEigenvalueKVFit" in methods:
             labels, order = cluster_scores(
@@ -421,6 +451,7 @@ class MethodEvaluator:
             )
             order_estimates["FixedEigenvalueKVFit"] = order
             pred_masks["FixedEigenvalueKVFit"] = labels
+            pred_scores["FixedEigenvalueKVFit"] = scores_cache["FixedEigenvalueKVFit"]["KV-Fit"]
 
         # --- Cluster combinations (features guaranteed in cache) ---
 
@@ -445,7 +476,16 @@ class MetricsTracker:
 
     def __init__(self, methods: list[str]):
         self.metrics = defaultdict(
-            lambda: dict(tp=0, fp=0, fn=0, tn=0, order_diffs=[], order_hits=[])
+            lambda: dict(
+                tp=0,
+                fp=0,
+                fn=0,
+                tn=0,
+                order_diffs=[],
+                order_hits=[],
+                roc_aucs=[],  # per-iteration roc_auc_score; only filled for ROC_AUC_METHODS
+                pr_aucs=[],  # per-iteration average_precision_score
+            )
         )
         # Subspace proximity stats (collected per iteration)
         self.subspace_stats = {
@@ -464,8 +504,17 @@ class MetricsTracker:
         pred_mask: np.ndarray | None,
         true_mask: np.ndarray,
         true_order: int,
+        pred_score: np.ndarray | None = None,
     ):
-        """Update metrics for a method."""
+        """Update metrics for a method.
+
+        Per-iteration ROC-AUC and PR-AUC are computed and accumulated only
+        when ``method`` is in ``ROC_AUC_METHODS`` and ``pred_score`` is given;
+        the average over iterations is reported in ``to_dataframe``. ROC/PR-AUC
+        are rank-based, so the score's scale is irrelevant — only its
+        orientation ("higher = more likely true mode"), which the score-key
+        map (`_ROC_AUC_SCORE_KEY`) is responsible for guaranteeing.
+        """
         rec = self.metrics[method]
         rec["order_diffs"].append(pred_order - true_order)
         rec["order_hits"].append(int(pred_order == true_order))
@@ -478,6 +527,16 @@ class MetricsTracker:
             rec["fp"] += int((p & ~t).sum())
             rec["fn"] += int((~p & t).sum())
             rec["tn"] += int((~p & ~t).sum())
+
+        if method in ROC_AUC_METHODS and pred_score is not None:
+            L = min(len(pred_score), len(true_mask))
+            t = true_mask[:L].astype(int)
+            s = pred_score[:L]
+            # roc_auc / pr_auc are undefined if only one class is present
+            # in the truth or if scores contain NaN; skip silently in that case.
+            if 0 < t.sum() < t.size and np.all(np.isfinite(s)):
+                rec["roc_aucs"].append(float(roc_auc_score(t, s)))
+                rec["pr_aucs"].append(float(average_precision_score(t, s)))
 
     def add_subspace_proximity_stats(self, stats: dict[str, float]):
         """Add subspace proximity statistics from current iteration."""
@@ -520,7 +579,28 @@ class MetricsTracker:
                 fp=np.nan,
                 fn=np.nan,
                 tn=np.nan,
+                roc_auc_mean=np.nan,
+                roc_auc_std=np.nan,
+                pr_auc_mean=np.nan,
+                pr_auc_std=np.nan,
             )
+
+            # ROC-AUC / PR-AUC averaged across Monte Carlo iterations
+            # (per-iteration AUC, then mean/std across iterations). Only
+            # populated for methods in ROC_AUC_METHODS.
+            roc_aucs = np.asarray(rec["roc_aucs"], dtype=float)
+            pr_aucs = np.asarray(rec["pr_aucs"], dtype=float)
+            if roc_aucs.size > 0:
+                summary.update(
+                    roc_auc_mean=float(roc_aucs.mean()),
+                    roc_auc_std=(
+                        float(roc_aucs.std(ddof=1)) if roc_aucs.size > 1 else 0.0
+                    ),
+                    pr_auc_mean=float(pr_aucs.mean()),
+                    pr_auc_std=(
+                        float(pr_aucs.std(ddof=1)) if pr_aucs.size > 1 else 0.0
+                    ),
+                )
 
             # Add binary classification metrics if available
             if rec["tp"] + rec["fp"] + rec["fn"] + rec["tn"] > 0:
@@ -567,6 +647,19 @@ def compute_dmd_and_ground_truth(
         signal, svd_rank=max_rank, mode="projected", num_delays=num_delays
     )
     exact_dmd = fit_dmd(signal, svd_rank=max_rank, mode="exact", num_delays=num_delays)
+
+    # Per-eigenpair classification metrics (TP/FP/FN/TN/accuracy/precision/
+    # recall/F1 in MetricsTracker.update) compare pred_mask[i] against
+    # true_mask[i] elementwise. true_mask is built in proj_dmd.eigs order
+    # below; for that comparison to be meaningful, every method's pred_mask
+    # must be in the same ordering. Methods scored off exact_dmd (e.g.
+    # ESR-Energy, ResDMDResidual after align_by_eigs) rely on this assertion.
+    if not np.allclose(proj_dmd.eigs, exact_dmd.eigs, rtol=1e-10, atol=1e-12):
+        raise AssertionError(
+            "proj_dmd.eigs and exact_dmd.eigs differ in ordering or value; "
+            "per-eigenpair classification metrics for methods scored off "
+            "exact_dmd would be misaligned with true_mask."
+        )
 
     true_idx = get_gt_eigs_indices(gt_eigs, proj_dmd.eigs)
     true_mask = np.zeros(max_rank, dtype=int)
@@ -687,7 +780,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
         metrics_tracker.add_subspace_proximity_stats(proximity_stats)
 
         # Evaluate all methods
-        order_estimates, pred_masks = method_evaluator.evaluate(
+        order_estimates, pred_masks, pred_scores = method_evaluator.evaluate(
             signal=sig,
             proj_dmd=proj_dmd,
             exact_dmd=exact_dmd,
@@ -704,6 +797,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
                     pred_mask=pred_masks.get(method),
                     true_mask=true_mask,
                     true_order=num_modes,
+                    pred_score=pred_scores.get(method),
                 )
 
     # Compute aggregated results
@@ -755,6 +849,8 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
                 "accuracy",
                 "precision",
                 "recall",
+                "roc_auc_mean",
+                "pr_auc_mean",
             ]
         ]
     )

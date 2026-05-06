@@ -4,6 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 from pydmd import DMD
 from pydmd.preprocessing import hankel_preprocessing
+from scipy.optimize import linear_sum_assignment
 
 from pydmd.utils import pseudo_hankel_matrix
 
@@ -97,6 +98,78 @@ def warn_if_rank_mismatch(
         )
 
     return practical_rank
+
+
+def align_by_eigs(
+    values: NDArray,
+    source_eigs: NDArray[np.complexfloating],
+    target_eigs: NDArray[np.complexfloating],
+    *,
+    tol: float = 1e-6,
+    name: str = "values",
+) -> NDArray:
+    """
+    Reorder a per-eigenpair array so it follows ``target_eigs`` ordering.
+
+    The ``source_eigs`` and ``target_eigs`` are assumed to be the same set of
+    eigenvalues (modulo floating-point error and possibly a permutation), and
+    ``values`` is keyed to ``source_eigs`` order. Returns ``values`` reordered
+    so that ``out[j]`` corresponds to ``target_eigs[j]``.
+
+    Matching is done via Hungarian assignment on ``|source - target|``, which
+    is robust to small numerical error and unique up to ties. Raises a
+    ``RuntimeWarning`` if the worst matched pair differs by more than
+    ``tol * max(|target_eigs|, 1)``, which would indicate that the two sets
+    are not actually the same eigenvalues.
+
+    Parameters
+    ----------
+    values : ndarray, shape (M, ...)
+        Per-eigenpair quantity to reorder. The first axis is the eigenpair
+        axis; trailing axes are preserved.
+    source_eigs : complex ndarray, shape (M,)
+        Eigenvalues that ``values`` is currently keyed to.
+    target_eigs : complex ndarray, shape (M,)
+        Desired eigenvalue ordering.
+    tol : float
+        Relative tolerance for the alignment-quality warning.
+    name : str
+        Name of the quantity being aligned (used in the warning message only).
+
+    Returns
+    -------
+    ndarray
+        ``values`` reordered to the order of ``target_eigs``.
+    """
+    source_eigs = np.asarray(source_eigs)
+    target_eigs = np.asarray(target_eigs)
+    if source_eigs.shape != target_eigs.shape:
+        raise ValueError(
+            f"align_by_eigs: source/target shape mismatch "
+            f"({source_eigs.shape} vs {target_eigs.shape})"
+        )
+    if values.shape[0] != source_eigs.shape[0]:
+        raise ValueError(
+            f"align_by_eigs: leading axis of values ({values.shape[0]}) "
+            f"must match source_eigs length ({source_eigs.shape[0]})"
+        )
+
+    diff = np.abs(source_eigs[:, None] - target_eigs[None, :])
+    row_ind, col_ind = linear_sum_assignment(diff)
+
+    worst = float(diff[row_ind, col_ind].max())
+    scale = max(float(np.abs(target_eigs).max()), 1.0)
+    if worst > tol * scale:
+        warnings.warn(
+            f"align_by_eigs: poor alignment for {name!r}: worst matched pair "
+            f"differs by {worst:.3e} (tol={tol * scale:.3e}). source and "
+            f"target eigenvalues do not appear to be the same set.",
+            RuntimeWarning,
+        )
+
+    out = np.empty_like(values)
+    out[col_ind] = values[row_ind]
+    return out
 
 
 def align_modes_and_amplitudes_phases(
