@@ -117,6 +117,8 @@ def _skip_run_with_empty_csv(
         "roc_auc_std",
         "pr_auc_mean",
         "pr_auc_std",
+        "recall_at_num_modes_mean",
+        "recall_at_num_modes_std",
         # subspace proximity
         "max_pa_clean_mean",
         "max_pa_clean_std",
@@ -489,6 +491,7 @@ class MetricsTracker:
                 order_hits=[],
                 roc_aucs=[],  # per-iteration roc_auc_score; only filled for ROC_AUC_METHODS
                 pr_aucs=[],  # per-iteration average_precision_score
+                recall_at_num_modes=[],  # top-num_modes score recall; ROC_AUC_METHODS only
             )
         )
         # Subspace proximity stats (collected per iteration)
@@ -512,30 +515,32 @@ class MetricsTracker:
     ):
         """Update metrics for a method.
 
-        Per-iteration ROC-AUC and PR-AUC are computed and accumulated only
-        when ``method`` is in ``ROC_AUC_METHODS`` and ``pred_score`` is given;
-        the average over iterations is reported in ``to_dataframe``. ROC/PR-AUC
-        are rank-based, so the score's scale is irrelevant — only its
-        orientation ("higher = more likely true mode"), which the score-key
-        map (`_ROC_AUC_SCORE_KEY`) is responsible for guaranteeing.
+        Per-iteration ROC-AUC, PR-AUC, and recall@num_modes are computed and
+        accumulated only when ``method`` is in ``ROC_AUC_METHODS`` and
+        ``pred_score`` is given; the average over iterations is reported in
+        ``to_dataframe``. ROC/PR-AUC are rank-based, so the score's scale is
+        irrelevant — only its orientation ("higher = more likely true mode").
         """
         rec = self.metrics[method]
         rec["order_diffs"].append(pred_order - true_order)
         rec["order_hits"].append(int(pred_order == true_order))
 
         if pred_mask is not None:
-            L = min(len(pred_mask), len(true_mask))
-            p = pred_mask[:L].astype(bool)
-            t = true_mask[:L].astype(bool)
+            n_rank_modes = min(len(pred_mask), len(true_mask))
+            p = pred_mask[:n_rank_modes].astype(bool)
+            t = true_mask[:n_rank_modes].astype(bool)
             rec["tp"] += int((p & t).sum())
             rec["fp"] += int((p & ~t).sum())
             rec["fn"] += int((~p & t).sum())
             rec["tn"] += int((~p & ~t).sum())
 
         if method in ROC_AUC_METHODS and pred_score is not None:
-            L = min(len(pred_score), len(true_mask))
-            t = true_mask[:L].astype(int)
-            s = pred_score[:L]
+            n_rank_modes = min(len(pred_score), len(true_mask))
+            t = true_mask[:n_rank_modes].astype(int)
+            s = pred_score[:n_rank_modes]
+            if np.all(np.isfinite(s)):
+                top_idx = np.argsort(-s)[:true_order]
+                rec["recall_at_num_modes"].append(float(t[top_idx].sum()) / true_order)
             # roc_auc / pr_auc are undefined if only one class is present
             # in the truth or if scores contain NaN; skip silently in that case.
             if 0 < t.sum() < t.size and np.all(np.isfinite(s)):
@@ -587,6 +592,8 @@ class MetricsTracker:
                 roc_auc_std=np.nan,
                 pr_auc_mean=np.nan,
                 pr_auc_std=np.nan,
+                recall_at_num_modes_mean=np.nan,
+                recall_at_num_modes_std=np.nan,
             )
 
             # ROC-AUC / PR-AUC averaged across Monte Carlo iterations
@@ -594,6 +601,7 @@ class MetricsTracker:
             # populated for methods in ROC_AUC_METHODS.
             roc_aucs = np.asarray(rec["roc_aucs"], dtype=float)
             pr_aucs = np.asarray(rec["pr_aucs"], dtype=float)
+            recall_at_k = np.asarray(rec["recall_at_num_modes"], dtype=float)
             if roc_aucs.size > 0:
                 summary.update(
                     roc_auc_mean=float(roc_aucs.mean()),
@@ -603,6 +611,13 @@ class MetricsTracker:
                     pr_auc_mean=float(pr_aucs.mean()),
                     pr_auc_std=(
                         float(pr_aucs.std(ddof=1)) if pr_aucs.size > 1 else 0.0
+                    ),
+                )
+            if recall_at_k.size > 0:
+                summary.update(
+                    recall_at_num_modes_mean=float(recall_at_k.mean()),
+                    recall_at_num_modes_std=(
+                        float(recall_at_k.std(ddof=1)) if recall_at_k.size > 1 else 0.0
                     ),
                 )
 
@@ -711,6 +726,12 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
     max_rank = params["max_rank"]
     artificial_damping = params.get("artificial_damping", 1.0)
     noise_mode = params["noise_mode"]
+    pure_real_oscillations = params.get(
+        "pure_real_oscillations",
+        static.get("pure_real_oscillations", False),
+    )
+    if pure_real_oscillations:
+        n_independent_modes = num_modes // 2
 
     n_iter = static["n_iter"]
     dt = static["dt"]
@@ -754,6 +775,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
             top_amplitude=top_amplitude,
             dt=dt,
             noise_mode=noise_mode,
+            pure_real_oscillations=pure_real_oscillations,
             random_seed=iter_seed,
         )
         sig, sig_clean, gt_eigs, modes, amps = gen.generate(
@@ -819,6 +841,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
         spatial_dim=spatial_dim,
         num_modes=num_modes,
         n_independent_modes=n_independent_modes,
+        pure_real_oscillations=pure_real_oscillations,
         top_amplitude=top_amplitude,
         max_rank=max_rank,
         artificial_damping=artificial_damping,
@@ -855,6 +878,7 @@ def run_experiment(job_config: dict, plot: bool = False) -> None:
                 "recall",
                 "roc_auc_mean",
                 "pr_auc_mean",
+                "recall_at_num_modes_mean",
             ]
         ]
     )
