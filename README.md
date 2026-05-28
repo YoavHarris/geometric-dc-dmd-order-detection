@@ -2,9 +2,12 @@
 
 Research codebase for **Dynamic Mode Decomposition (DMD) order detection** using delay-coordinate embeddings and mode classification algorithms.
 
+**Public repository:** [YoavHarris/geometric-dc-dmd-order-detection](https://github.com/YoavHarris/geometric-dc-dmd-order-detection)  
+**Current release:** v1.1.0
+
 ## Overview
 
-This repository implements methods for automatically identifying the correct number of modes in DMD analysis, particularly in the presence of noise. It includes a complete delay-coordinate DMD implementation, various order detection algorithms (NestedDMD, STC, BIC), and a framework for large-scale experiments.
+This repository implements methods for automatically identifying the correct number of modes in DMD analysis, particularly in the presence of noise. It includes a complete delay-coordinate DMD implementation, order detection algorithms (NestedDMD, STC, BIC, ResDMD, ESR-Energy, and others), bundled paper scan data, and a PBS framework for large-scale experiments.
 
 ## Documentation
 
@@ -20,6 +23,8 @@ Full documentation is available in the `docs/` directory:
 
 1.  **Install**:
     ```bash
+    git clone https://github.com/YoavHarris/geometric-dc-dmd-order-detection.git
+    cd geometric-dc-dmd-order-detection
     pip install -r requirements.txt
     ```
 
@@ -49,6 +54,7 @@ All repository CLIs can be run from the repo root using module execution:
 ```bash
 python -m pbs_experimenting.experiment_runner --help
 python -m figures.scans.cli --help
+python figures/scans/make_auc_table.py --help
 ```
 
 ## Citation

@@ -15,16 +15,42 @@ Config-driven system for plotting parameter scans.
 pip install -r figures/scans/requirements.txt
 ```
 
+### Bundled Paper Data
+
+Pre-computed scan results are included under `figures/scans/data/paper/`:
+
+| File | Description |
+|------|-------------|
+| `paper.csv.gz` | Main paper parameter scans |
+| `paper_mechanical_system.csv.gz` | Mechanical-system (real-oscillation) scans |
+| `paper_num_modes.csv.gz` | Num-modes-only scan data |
+
+You can regenerate all paper scan figures from these files without re-running PBS jobs.
+
+### Active Batch Configs
+
+Configs in `figures/scans/configs/`:
+
+**Main paper (`paper.csv.gz`), multi-axis scans by spatial dimension:**
+- `paper_multi_num_modes_d1.yaml`
+- `paper_multi_num_modes_d2.yaml`
+- `paper_multi_num_modes_d3.yaml`
+
+**Mechanical system (`paper_mechanical_system.csv.gz`), multi-parameter scans:**
+- `paper_multi_xparam_mechanical_system_d1.yaml`
+- `paper_multi_xparam_mechanical_system_d2.yaml`
+- `paper_multi_xparam_mechanical_system_d3.yaml`
+
 ### Basic Usage
 
 **Single Scan:**
 
 ```bash
 python -m figures.scans.cli single \
-  --csv_path=results.csv \
+  --csv_path=figures/scans/data/paper/paper.csv.gz \
   --x_param=snr_db \
-  --metric=order_hit_prob \
-  --working_point="{'num_modes': 2, 'noise_mode': 'gaussian'}" \
+  --metric=pr_auc_mean \
+  --working_point="{'num_modes': 3, 'spatial_dim': 2, 'noise_mode': 'gaussian'}" \
   --output_path=output.png \
   --title="SNR Scan"
 ```
@@ -33,12 +59,12 @@ python -m figures.scans.cli single \
 
 ```bash
 python -m figures.scans.cli multi \
-  --csv_path=results.csv \
+  --csv_path=figures/scans/data/paper/paper.csv.gz \
   --x_param=snr_db \
-  --metric=order_hit_prob \
-  --working_point="{'num_modes': 2}" \
+  --metric=pr_auc_mean \
+  --working_point="{'num_modes': 3, 'spatial_dim': 2}" \
   --panel_param=noise_mode \
-  --panel_values="['gaussian', 'student_t', 'hetero', 'bi_gaussian']" \
+  --panel_values="['gaussian', 'bi_gaussian', 'hetero']" \
   --output_path=output.png \
   --title="SNR Scan by Noise Type"
 ```
@@ -46,8 +72,21 @@ python -m figures.scans.cli multi \
 **Batch Processing (Recommended):**
 
 ```bash
-python -m figures.scans.cli plot_config --config_path=figures/scans/configs/paper_num_modes.yaml
+python -m figures.scans.cli plot_config \
+  --config_path=figures/scans/configs/paper_multi_num_modes_d2.yaml
 ```
+
+### AUC Tables (LaTeX)
+
+Generate normalized PR-AUC summary tables with:
+
+```bash
+python figures/scans/make_auc_table.py \
+  --csv_path=figures/scans/data/paper/paper.csv.gz \
+  --output_dir=figures/scans/outputs/paper
+```
+
+This writes `auc_d1.tex`, `auc_d2.tex`, `auc_d3.tex`, and `auc_unified.tex`.
 
 ### Configuration
 
@@ -87,16 +126,35 @@ python -m figures.spurious.spurious_eigs_L_plotter path/to/config.yaml
 
 ## Reproducing Paper Figures
 
-To reproduce the exact figures from the paper:
-
-1.  **Generate Data**:
-    *   Run the large-scale parameter scan using the [PBS Framework](experiment_framework.md).
-    *   Run the spurious eigenvalue experiment.
-2.  **Generate Plots**:
-    *   For scans: Use the batch configs in `figures/scans/configs/`.
-    *   For spurious analysis: Use the config in `analysis/spurious_eigenvalues_and_L/`.
+### From bundled data (fast path)
 
 ```bash
-# Example: Paper scans
-python -m figures.scans.cli plot_config --config_path=figures/scans/configs/paper_num_modes.yaml
+# Main paper scan figures (12 PDFs across D=1,2,3)
+for d in 1 2 3; do
+  python -m figures.scans.cli plot_config \
+    --config_path=figures/scans/configs/paper_multi_num_modes_d${d}.yaml
+done
+
+# Mechanical-system multi-parameter figures
+for d in 1 2 3; do
+  python -m figures.scans.cli plot_config \
+    --config_path=figures/scans/configs/paper_multi_xparam_mechanical_system_d${d}.yaml
+done
+
+# PR-AUC summary tables
+python figures/scans/make_auc_table.py \
+  --csv_path=figures/scans/data/paper/paper.csv.gz \
+  --output_dir=figures/scans/outputs/paper
 ```
+
+Outputs are written under `figures/scans/outputs/` (gitignored by default).
+
+### From scratch (full regeneration)
+
+1.  **Generate Data**:
+    *   Configure and run the large-scale parameter scan using the [PBS Framework](experiment_framework.md).
+    *   Copy combined CSVs into `figures/scans/data/paper/`.
+    *   Run the spurious eigenvalue experiment for spurious-eigenvalue figures.
+2.  **Generate Plots**:
+    *   For scans: use the batch configs in `figures/scans/configs/`.
+    *   For spurious analysis: use the config in `analysis/spurious_eigenvalues_and_L/`.

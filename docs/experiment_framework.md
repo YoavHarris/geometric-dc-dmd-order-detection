@@ -15,8 +15,8 @@ A modular, YAML-based framework for running large-scale DMD order detection expe
 
 ```bash
 # 1. Configure your experiment
-cp pbs_experimenting/configs/paper_dc.yaml my_experiment.yaml
-# Edit my_experiment.yaml to set parameters
+cp pbs_experimenting/configs/paper.yaml my_experiment.yaml
+# Edit my_experiment.yaml: replace every <USER_INPUT> with your cluster settings
 
 # 2. Generate job configs
 python -m pbs_experimenting.experiment_runner make_jobs my_experiment.yaml
@@ -57,7 +57,17 @@ experiment_output/
 
 ## Configuration File
 
-See `pbs_experimenting/configs/` for ready-to-edit templates (used for the paper runs). Key sections:
+See `pbs_experimenting/configs/` for ready-to-edit templates (used for the paper runs):
+
+| Config | Purpose |
+|--------|---------|
+| `paper.yaml` | Main paper parameter scans |
+| `paper_mechanical_system.yaml` | Mechanical-system scans with `pure_real_oscillations: true` |
+| `single_run.yaml` | Single-job debug template |
+
+Before submitting jobs, replace every `<USER_INPUT>` placeholder with your PBS queue, Python interpreter, repository path, and output directory.
+
+Key sections:
 
 ### Experiment Settings
 
@@ -75,6 +85,8 @@ methods:
   - BIC
   - GAP
   - ExactModeNorm
+  - EigenvalueMagnitude
+  - ResDMDResidual
   - STC                      # Spatiotemporal Coupling
   - ESR-Energy               # Estimated Subspace Residual Energy
   - NestedDMD                # Nested rank-1 DMD strategy

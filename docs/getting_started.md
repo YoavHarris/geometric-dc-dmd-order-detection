@@ -4,14 +4,20 @@
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/YoavHarris/dc-dmd-order-detection.git
-    cd dc-dmd-order-detection
+    git clone https://github.com/YoavHarris/geometric-dc-dmd-order-detection.git
+    cd geometric-dc-dmd-order-detection
     ```
 
 2.  Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
+
+For figure generation, also install scan-specific dependencies:
+
+```bash
+pip install -r figures/scans/requirements.txt
+```
 
 ## Basic Example
 
@@ -42,7 +48,7 @@ print(f"Reconstruction shape: {dmd.reconstructed_data.shape}")
 
 ## Running an Experiment
 
-To evaluate order detection methods (like STC, BIC, or NestedDMD), use the `algorithms` module:
+To evaluate order detection methods (like STC, BIC, ResDMD, or NestedDMD), use the `algorithms` module:
 
 ```python
 from algorithms.stc import STC

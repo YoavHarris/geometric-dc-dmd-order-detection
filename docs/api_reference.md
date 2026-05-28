@@ -83,15 +83,22 @@ generator = DMDDataGenerator(
     eigenvalue_magnitude_spread=None, # Heterogeneity in magnitudes
     rho_mode='linspace',              # 'linspace' or 'random'
     noise_mode='gaussian',            # Noise type
+    pure_real_oscillations=False,     # Conjugate eigenvalue/mode pairs
     random_seed=None
 )
 
 X, X_clean, eigs, modes, amps = generator.generate(
     n_spatial=50,
     n_timesteps=200,
-    n_modes=3
+    n_modes=4,
+    n_independent_modes=None,         # int, fraction in (0,1), or None
 )
 ```
+
+When `pure_real_oscillations=True`, `n_modes` must be even. The generator forces
+conjugate eigenvalue/mode pairs with equal amplitudes and sets
+`n_independent_modes = n_modes // 2`, producing purely real time series
+(mechanical-system / standing-wave setup).
 
 **Noise modes:**
 - `'gaussian'`: Standard Gaussian noise
