@@ -12,6 +12,7 @@ orcid: "https://orcid.org/0000-0001-8172-5895"
 title: "DC-DMD Order Detection"
 version: 1.1.0
 date-released: 2026-05-28
+doi: 10.5281/zenodo.20425999
 url: "https://github.com/YoavHarris/geometric-dc-dmd-order-detection"
 license: MIT
 repository-code: "https://github.com/YoavHarris/geometric-dc-dmd-order-detection"
