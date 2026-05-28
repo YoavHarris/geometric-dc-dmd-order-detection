@@ -3,10 +3,6 @@ message: "If you use this software, please cite the accompanying paper."
 authors:
   - family-names: Harris
     given-names: Yoav
-  - family-names: Talmon
-    given-names: Ronen
-  - family-names: Benisty
-    given-names: Hadas
 email: "yoav.h@campus.technion.ac.il"
 orcid: "https://orcid.org/0000-0001-8172-5895"
 title: "DC-DMD Order Detection"
