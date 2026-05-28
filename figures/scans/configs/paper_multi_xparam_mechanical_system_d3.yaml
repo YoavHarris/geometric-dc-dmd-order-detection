@@ -1,0 +1,32 @@
+# Multi-parameter PR-AUC scan — paper mechanical system, spatial_dim = 3
+
+base:
+  csv_path: figures/scans/data/paper/paper_mechanical_system.csv.gz
+  metric: pr_auc_mean
+  methods:
+    - STC
+    - ResDMDResidual
+    - ESR-Energy
+    - NestedDMD
+    - FixedEigenvalueKVFit
+  show: false
+
+baseline_working_point:
+  snr_db: 0.0
+  freq_sep: 0.007
+  eig_mag: 1.0
+  eig_mag_spread: 0.0
+  delays_over_timesteps: 0.33
+  spatial_dim: 3
+  temporal_dim: 200
+  top_amplitude: 2.5
+  max_rank: 15
+  artificial_damping: 1.0
+  num_modes: 4
+  noise_mode: gaussian
+  n_independent_modes: null
+
+plots:
+  - x_params: [snr_db, freq_sep, top_amplitude, eig_mag]
+    output_path: figures/scans/outputs/paper_mechanical_system/spatial_dim_3/multi_xparam_scan.pdf
+    title: "PR-AUC Parameter Scans (Gaussian Noise, D=3)"

@@ -1,0 +1,52 @@
+# Multi-axis scans from 180526 combined data (PR-AUC), spatial_dim = 1
+
+base:
+  csv_path: figures/scans/data/paper/paper.csv.gz
+  metric: pr_auc_mean
+  methods:
+    - STC
+    - ResDMDResidual
+    - ESR-Energy
+    - NestedDMD
+    - FixedEigenvalueKVFit
+
+  panel_param: num_modes
+  panel_values: [2, 3, 5]
+
+  show: false
+
+
+baseline_working_point:
+  snr_db: 0.0
+  freq_sep: 0.007
+  eig_mag: 1.0
+  eig_mag_spread: 0.0
+  delays_over_timesteps: 0.33
+  spatial_dim: 1
+  temporal_dim: 200
+  top_amplitude: 2.5
+  max_rank: 15
+  artificial_damping: 1.0
+  noise_mode: gaussian
+  n_independent_modes: null
+
+plots:
+  - working_point: {freq_sep: 0.007, eig_mag: 1.0, top_amplitude: 2.5}
+    x_param: snr_db
+    output_path: figures/scans/outputs/paper/spatial_dim_1/multi_num_modes_snr.pdf
+    title: "PR-AUC vs. SNR (Gaussian Noise, D=1)"
+
+  - working_point: {snr_db: 0.0, eig_mag: 1.0, top_amplitude: 2.5}
+    x_param: freq_sep
+    output_path: figures/scans/outputs/paper/spatial_dim_1/multi_num_modes_freq_sep.pdf
+    title: "PR-AUC vs. Frequency Separation (Gaussian Noise, D=1)"
+
+  - working_point: {snr_db: 0.0, freq_sep: 0.007, top_amplitude: 2.5}
+    x_param: eig_mag
+    output_path: figures/scans/outputs/paper/spatial_dim_1/multi_num_modes_eig_mag.pdf
+    title: "PR-AUC vs. Eigenvalue Magnitude (Gaussian Noise, D=1)"
+
+  - working_point: {snr_db: 0.0, freq_sep: 0.007, eig_mag: 1.0}
+    x_param: top_amplitude
+    output_path: figures/scans/outputs/paper/spatial_dim_1/multi_num_modes_top_amplitude.pdf
+    title: "PR-AUC vs. Top Amplitude (Gaussian Noise, D=1)"

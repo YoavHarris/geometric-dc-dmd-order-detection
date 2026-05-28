@@ -1,0 +1,144 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# PBS Experiment Configuration Template
+# NOTE: You must replace all instances of 'REQUIRED_USER_INPUT' with your
+# specific environment settings before running this experiment.
+# ══════════════════════════════════════════════════════════════════════════════
+
+experiment:
+  base_random_seed: 196  # Base seed for reproducibility; each job gets base + job_id*1000
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Methods to evaluate (comment out to disable)
+# ──────────────────────────────────────────────────────────────────────────────
+methods:
+  - BIC
+  - GAP
+  - ExactModeNorm
+  - ResDMDResidual
+  - STC
+  - ESR-Energy
+  - NestedDMD
+  - FixedEigenvalueKVFit
+  # Combination methods (merge features before clustering)
+
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Clustering configuration (shared by all clustering-based methods)
+# ──────────────────────────────────────────────────────────────────────────────
+clustering:
+  algorithm: gmm        # Options: gmm, kmeans
+  strategy: mean         # Options: mean, distance
+  normalization: min_max  # Options: min_max, standard, null
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Parameter Sweep Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+generator:
+  working_point:
+    snr_db: 0.0
+    freq_sep: 0.007
+    eig_mag: 1.0
+    eig_mag_spread: 0.0
+    delays_over_timesteps: 0.33
+    top_amplitude: 2.5
+    max_rank: 15
+    temporal_dim: 200
+
+parameters:
+  snr_db:
+    type: range
+    role: wp 
+    start: -6
+    end: 20
+    num_steps: 14
+    scale: lin
+
+  freq_sep:
+    type: list
+    role: wp
+    values: [0.0005, 0.00295, 0.0035, 0.00426, 0.00502, 0.0054, 0.00578, 0.006540000000000001, 0.0073, 0.00785, 0.0103, 0.012750000000000001, 0.0152, 0.01765, 0.0201, 0.02255, 0.025]
+   
+  eig_mag:
+    type: range
+    role: wp
+    start: 0.95
+    end: 1.0
+    num_steps: 11
+    scale: lin
+
+  delays_over_timesteps:
+    type: range
+    role: wp
+    start: 0.02
+    end: 0.52
+    num_steps: 6
+
+  spatial_dim:
+    type: list
+    role: cartesian
+    values: [1,2,3]
+    as_int: true
+
+  top_amplitude:
+    type: range
+    role: wp
+    start: 1.0
+    end: 5.0
+    num_steps: 9
+    scale: lin
+
+  num_modes:
+    type: list
+    role: cartesian
+    values: [2, 4, 6]
+    as_int: true
+
+  max_rank:
+    type: range
+    role: wp
+    start: 10
+    end: 40
+    num_steps: 7
+    as_int: true
+
+  noise_mode:
+    type: list
+    role: cartesian
+    values: ["gaussian", "hetero"]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Static Arguments (constant across all jobs)
+# ──────────────────────────────────────────────────────────────────────────────
+static_args:
+  n_iter: 500
+  dt: 1.0
+  temporal_dim: 200
+  rho_mode: random
+  eig_mag_spread: 0.0
+  artificial_damping: 1.0
+  pure_real_oscillations: true
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PBS Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+pbs:
+  queue: zeus_comb_short
+  mem: 1000MB
+  mpiprocs: 1
+  walltime: "02:50:00"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Paths
+# ──────────────────────────────────────────────────────────────────────────────
+paths:
+  interpreter: /home/yoav.h/miniconda/envs/zeus-dmd/bin/python3.11
+  code_dir: /home/yoav.h/dcdmd_11_25/dc-dmd-order-detection
+  worker_script: pbs_experimenting/run_single_job.py
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Output Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+output:
+  output_dir: /home/yoav.h/dcdmd_11_25/170526_nyq

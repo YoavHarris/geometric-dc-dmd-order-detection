@@ -1,0 +1,52 @@
+# ===============================
+#  Presentation-style (widescreen slide)
+# ===============================
+
+# Figure size: full 16:9 slide width, suitable panel height
+figure.figsize: 13.333, 4.5
+figure.dpi: 200
+
+# Backgrounds
+figure.facecolor: white
+axes.facecolor: white
+
+# Fonts (sans-serif for presentations)
+font.family: sans-serif
+font.sans-serif: Arial, Helvetica, DejaVu Sans
+font.size: 18
+axes.labelsize: 18
+axes.titlesize: 20
+xtick.labelsize: 16
+ytick.labelsize: 16
+legend.fontsize: 18
+mathtext.fontset: stixsans
+
+# Axes
+axes.spines.top: False
+axes.spines.right: False
+axes.linewidth: 1.2
+axes.labelpad: 4
+axes.grid: False
+
+# Ticks
+xtick.major.size: 5
+ytick.major.size: 5
+xtick.major.width: 1.2
+ytick.major.width: 1.2
+xtick.direction: in
+ytick.direction: in
+
+# Lines (thicker for presentation visibility)
+lines.linewidth: 2.5
+lines.markersize: 8
+
+# Legend
+legend.frameon: False
+
+# Saving
+savefig.transparent: False
+savefig.bbox: tight
+savefig.facecolor: white
+
+# Color cycle
+axes.prop_cycle: cycler('color', ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"])

@@ -1,0 +1,41 @@
+job_id: 0
+base_random_seed: 5445
+random_seed: 196
+
+methods:
+#  - BIC
+#  - GAP
+  - EigenvalueMagnitude
+  - ExactModeNorm
+  - STC
+  - ESR-Energy
+  - NestedDMD
+  - FixedEigenvalueKVFit
+  - ResDMDResidual
+
+clustering:
+  algorithm: gmm
+  strategy: mean
+  normalization: min_max
+
+parameters:
+  snr_db: 4.0
+  freq_sep: 0.007
+  eig_mag: 1.0
+  eig_mag_spread: 0.0
+  delays_over_timesteps: 0.005
+  spatial_dim: 20
+  temporal_dim: 200
+  num_modes: 8
+#  n_independent_modes:
+  top_amplitude: 2.5
+  max_rank: 60
+  noise_mode: gaussian
+
+static_args:
+  n_iter: 30
+  dt: 1.0
+  rho_mode: random
+  artificial_damping: 1.0
+
+output_path: pbs_experimenting/results/single_run_paper_dc_working_point.csv
