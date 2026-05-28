@@ -62,6 +62,10 @@ def _resolve_n_independent_modes_value(value: Any, num_modes: int) -> int | None
     return int(value)
 
 
+def _is_bool_value(value: Any) -> bool:
+    return isinstance(value, bool)
+
+
 def validate_config(config: dict[str, Any]) -> None:
     """
     Validate entire configuration.
@@ -250,6 +254,12 @@ def _validate_range_spec(name: str, spec: dict[str, Any]) -> None:
                 "Absolute-count 'n_independent_modes' ranges must set as_int: true"
             )
 
+    if name == "pure_real_oscillations":
+        raise ConfigValidationError(
+            "Parameter 'pure_real_oscillations' cannot use type 'range'; "
+            "use 'const' or 'list'"
+        )
+
 
 def _validate_list_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate list-type parameter."""
@@ -278,6 +288,13 @@ def _validate_list_spec(name: str, spec: dict[str, Any]) -> None:
             "fractions in (0, 1), or null"
         )
 
+    if name == "pure_real_oscillations" and not all(
+        _is_bool_value(v) for v in values
+    ):
+        raise ConfigValidationError(
+            "Parameter 'pure_real_oscillations' values must be booleans"
+        )
+
 
 def _validate_const_spec(name: str, spec: dict[str, Any]) -> None:
     """Validate const-type parameter."""
@@ -290,6 +307,13 @@ def _validate_const_spec(name: str, spec: dict[str, Any]) -> None:
             raise ConfigValidationError(
                 "Parameter 'n_independent_modes' value must be a positive integer "
                 "count, a fraction in (0, 1), or null"
+            )
+
+    if name == "pure_real_oscillations":
+        value = spec["value"]
+        if not _is_bool_value(value):
+            raise ConfigValidationError(
+                "Parameter 'pure_real_oscillations' value must be a boolean"
             )
 
 
@@ -326,6 +350,13 @@ def _validate_static_args_section(config: dict[str, Any]) -> None:
             raise ConfigValidationError(
                 f"Invalid 'static_args.rho_mode': {rho_mode}. Valid: {VALID_RHO_MODES}"
             )
+
+    if "pure_real_oscillations" in static and not _is_bool_value(
+        static["pure_real_oscillations"]
+    ):
+        raise ConfigValidationError(
+            "'static_args.pure_real_oscillations' must be a boolean"
+        )
 
 
 def _validate_pbs_section(config: dict[str, Any]) -> None:
@@ -410,6 +441,10 @@ def _validate_parameter_compatibility(config: dict[str, Any]) -> None:
         D = job.get("spatial_dim")
         num_modes = job.get("num_modes")
         n_independent_modes = job.get("n_independent_modes")
+        pure_real_oscillations = job.get(
+            "pure_real_oscillations",
+            config.get("static_args", {}).get("pure_real_oscillations", False),
+        )
 
         # Skip if any required param is missing (should be caught by other validators)
         if N is None or tau is None or M is None or D is None:
@@ -421,12 +456,25 @@ def _validate_parameter_compatibility(config: dict[str, Any]) -> None:
                 num_modes,
             )
 
+        if pure_real_oscillations and num_modes is not None:
+            n_independent_modes = num_modes // 2
+
         if n_independent_modes is not None and n_independent_modes > num_modes:
             raise ConfigValidationError(
                 f"Job {i}: n_independent_modes must be <= num_modes. "
                 f"Job parameters: n_independent_modes={n_independent_modes}, "
                 f"num_modes={num_modes}"
             )
+
+        if pure_real_oscillations:
+            if num_modes is None:
+                continue
+            if num_modes % 2 != 0:
+                raise ConfigValidationError(
+                    f"Job {i}: num_modes must be even when "
+                    "pure_real_oscillations is true. "
+                    f"Job parameters: num_modes={num_modes}"
+                )
 
         # Check dimension limit
         L = int(tau * N)

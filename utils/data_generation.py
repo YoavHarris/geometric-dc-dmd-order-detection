@@ -153,6 +153,7 @@ class DMDDataGenerator:
         dt: float = 1.0,
         noise_mode: str = "gaussian",
         force_mode_orthogonality: bool = False,
+        pure_real_oscillations: bool = False,
         random_seed: int | None = None,
     ) -> None:
         self.rho_spec = eigenvalue_magnitude  # scalar or sequence
@@ -164,6 +165,7 @@ class DMDDataGenerator:
         self.dt = dt
         self.noise_mode = noise_mode
         self.force_mode_orthogonality = force_mode_orthogonality
+        self.pure_real_oscillations = pure_real_oscillations
         self.rng = np.random.default_rng(random_seed)  # single RNG for everything
 
     # ───────────────────── private helpers (all use self.rng) ──────────────────
@@ -246,6 +248,27 @@ class DMDDataGenerator:
         )
         eigenvalues = rho_vec * np.exp(1j * omega_vec)
         return eigenvalues
+
+    @staticmethod
+    def _force_pure_real_oscillation_pairs(
+        eigs: NDArray[np.complexfloating],
+        modes: NDArray[np.complexfloating],
+        amps: NDArray[np.floating],
+    ) -> tuple[
+        NDArray[np.complexfloating],
+        NDArray[np.complexfloating],
+        NDArray[np.floating],
+    ]:
+        assert eigs.size % 2 == 0, "pure_real_oscillations requires even num_modes"
+
+        eigs = eigs.copy()
+        modes = modes.copy()
+        amps = amps.copy()
+
+        eigs[1::2] = np.conjugate(eigs[0::2])
+        modes[:, 1::2] = np.conjugate(modes[:, 0::2])
+        amps[1::2] = amps[0::2]
+        return eigs, modes, amps
 
     def _build_unit_modes(
         self, n_spatial: int, n_modes: int, n_independent_modes: int
@@ -418,8 +441,18 @@ class DMDDataGenerator:
         If ``n_independent_modes`` is an integer smaller than ``n_modes``,
         components are grouped so each group shares the same unit spatial
         mode. If it is a float in ``(0, 1)``, it is interpreted as a fraction
-        of ``n_modes`` and rounded.
+        of ``n_modes`` and rounded. If ``pure_real_oscillations`` is enabled,
+        ``n_modes`` must be even and ``n_independent_modes`` is forced to
+        ``n_modes // 2``; adjacent pairs are then forced to have conjugate
+        eigenvalues/modes and equal amplitudes.
         """
+        if self.pure_real_oscillations:
+            if n_modes % 2 != 0:
+                raise ValueError(
+                    "num_modes must be even when pure_real_oscillations=True"
+                )
+            n_independent_modes = n_modes // 2
+
         n_independent_modes = self._resolve_n_independent_modes(
             n_modes,
             n_independent_modes,
@@ -428,6 +461,12 @@ class DMDDataGenerator:
         unit_modes = self._build_unit_modes(n_spatial, n_modes, n_independent_modes)
         amps = self._build_amplitudes(n_modes)
         modes = unit_modes * amps[None, :]
+        if self.pure_real_oscillations:
+            eigs, modes, amps = self._force_pure_real_oscillation_pairs(
+                eigs,
+                modes,
+                amps,
+            )
         dynamics = self._build_time_dynamics(eigs, n_timesteps)
         X_clean = modes @ dynamics
         X = X_clean + self._add_noise(X_clean)

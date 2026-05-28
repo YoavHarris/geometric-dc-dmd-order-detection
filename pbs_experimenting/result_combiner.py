@@ -21,6 +21,7 @@ UNIQUE_FIELDS = [
     "spatial_dim",
     "num_modes",
     "n_independent_modes",
+    "pure_real_oscillations",
     "top_amplitude",
     "max_rank",
     "method",

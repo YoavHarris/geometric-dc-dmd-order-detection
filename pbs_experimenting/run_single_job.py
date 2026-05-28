@@ -88,6 +88,7 @@ def _skip_run_with_empty_csv(
         "spatial_dim",
         "num_modes",
         "n_independent_modes",
+        "pure_real_oscillations",
         "top_amplitude",
         "max_rank",
         "artificial_damping",

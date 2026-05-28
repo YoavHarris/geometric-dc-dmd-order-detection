@@ -1,6 +1,6 @@
 # ══════════════════════════════════════════════════════════════════════════════
 # PBS Experiment Configuration Template
-# NOTE: You must replace all instances of 'REQUIRED_USER_INPUT' with your
+# NOTE: You must replace all instances of '<USER_INPUT>' with your
 # specific environment settings before running this experiment.
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -124,7 +124,7 @@ static_args:
 # PBS Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 pbs:
-  queue: zeus_comb_short
+  queue: <USER_INPUT>
   mem: 1000MB
   ncpus: 1
   mpiprocs: 1
@@ -134,12 +134,12 @@ pbs:
 # Paths
 # ──────────────────────────────────────────────────────────────────────────────
 paths:
-  interpreter: /home/yoav.h/miniconda/envs/zeus-dmd/bin/python3.11
-  code_dir: /home/yoav.h/dcdmd_11_25/dc-dmd-order-detection
+  interpreter: <USER_INPUT>
+  code_dir: <USER_INPUT>
   worker_script: pbs_experimenting/run_single_job.py
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Output Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 output:
-  output_dir: /home/yoav.h/dcdmd_11_25/170526_nyq
+  output_dir: <USER_INPUT>
